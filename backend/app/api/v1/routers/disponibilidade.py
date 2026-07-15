@@ -4,6 +4,7 @@ from sqlmodel import Session
 
 from app.api.v1.deps import get_session
 from app.core.exceptions import EntidadeNaoEncontradaError
+from app.core.security import UtilizadorAutenticado, get_current_user, verificar_acesso_professor_proprio
 from app.schemas.disponibilidade_schema import DisponibilidadeReadSchema, DisponibilidadeSetSchema
 from app.services.disponibilidade_service import DisponibilidadeService
 
@@ -15,7 +16,13 @@ def _get_service(session: Session = Depends(get_session)) -> DisponibilidadeServ
 
 
 @router.get("/{professor_id}/disponibilidade", response_model=DisponibilidadeReadSchema)
-def obter_disponibilidade(professor_id: int, service: DisponibilidadeService = Depends(_get_service)):
+def obter_disponibilidade(
+    professor_id: int,
+    service: DisponibilidadeService = Depends(_get_service),
+    user: UtilizadorAutenticado = Depends(get_current_user),
+):
+    """RF05 — o próprio Professor gere a sua disponibilidade; Gestor/Superadmin têm acesso administrativo."""
+    verificar_acesso_professor_proprio(user, professor_id)
     try:
         slot_ids = service.obter(professor_id)
     except EntidadeNaoEncontradaError as exc:
@@ -28,7 +35,9 @@ def definir_disponibilidade(
     professor_id: int,
     payload: DisponibilidadeSetSchema,
     service: DisponibilidadeService = Depends(_get_service),
+    user: UtilizadorAutenticado = Depends(get_current_user),
 ):
+    verificar_acesso_professor_proprio(user, professor_id)
     try:
         slot_ids = service.definir(professor_id, payload.slot_ids)
     except EntidadeNaoEncontradaError as exc:

@@ -9,6 +9,15 @@ class Settings(BaseSettings):
     solver_max_time_seconds: int = 60
     environment: str = "development"
 
+    # Autenticação (RN09/RN10) — ver core/security.py. project_id vem do Firebase
+    # Console (frontend/lib/core/config/firebase_config.dart); a verificação do ID
+    # Token usa google-auth contra os certificados públicos do Google, sem exigir
+    # firebase-service-account.json (que não está disponível neste projeto).
+    firebase_project_id: str = "g-horario-b00eb"
+    # Bootstrap do primeiro perfil Superadmin — não tem tabela própria (ver
+    # backend/docs/CONVENCOES.md Fase 6); só Superadmin pode criar Utilizador(perfil=GESTOR).
+    superadmin_emails: list[str] = []
+
     # Pesos da função objetivo do solver (docs/analise_requisitos_v5.0.md secção 6).
     # Valores relativos ainda não fixados pela banca/orientador (secção 9 — pergunta em
     # aberto); ordem de grandeza reflete "penalização muito alta" (RN08) > "alta" (RN04)

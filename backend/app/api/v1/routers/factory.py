@@ -8,6 +8,7 @@ from sqlmodel import Session, SQLModel
 
 from app.api.v1.deps import get_session
 from app.core.exceptions import EntidadeNaoEncontradaError, IntegridadeVioladaError
+from app.core.security import require_gestor
 from app.repositories.base import BaseRepository
 from app.services.crud_service import CRUDService
 
@@ -27,7 +28,8 @@ def build_crud_router(
     read_schema: type[ReadSchema],
     repository_cls: type[BaseRepository],
 ) -> APIRouter:
-    router = APIRouter(prefix=prefix, tags=tags)
+    # RN09/RN10 — todo o CRUD de dados mestre é reservado ao Gestor (RF01-RF04).
+    router = APIRouter(prefix=prefix, tags=tags, dependencies=[Depends(require_gestor)])
 
     def get_service(session: Session = Depends(get_session)) -> CRUDService:
         return CRUDService(repository_cls(session))

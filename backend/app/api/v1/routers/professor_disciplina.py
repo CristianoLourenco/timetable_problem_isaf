@@ -4,10 +4,12 @@ from sqlmodel import Session
 
 from app.api.v1.deps import get_session
 from app.core.exceptions import EntidadeNaoEncontradaError
+from app.core.security import require_gestor
 from app.schemas.professor_disciplina_schema import ProfessorDisciplinaReadSchema, ProfessorDisciplinaSetSchema
 from app.services.professor_disciplina_service import ProfessorDisciplinaService
 
-router = APIRouter(prefix="/professores", tags=["Qualificação Docente"])
+# RN09/RN10 — qualificação docente é gerida pelo Gestor (parte de RF01).
+router = APIRouter(prefix="/professores", tags=["Qualificação Docente"], dependencies=[Depends(require_gestor)])
 
 
 def _get_service(session: Session = Depends(get_session)) -> ProfessorDisciplinaService:
