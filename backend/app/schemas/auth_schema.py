@@ -42,3 +42,12 @@ class RegistoResponseSchema(SQLModel):
     refresh_token: str
     expires_in: int
     utilizador: UtilizadorRead
+
+
+class MeResponseSchema(SQLModel):
+    """GET /auth/me — o frontend usa isto após o login para saber o papel (RN09-RN11) e,
+    se for Professor, o professor_id (necessário para "o meu horário", "a minha disponibilidade")."""
+
+    email: str
+    papel: str
+    professor_id: int | None
