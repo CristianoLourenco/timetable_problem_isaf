@@ -5,15 +5,14 @@ from app.models.utilizador import PerfilUtilizador
 
 
 class UtilizadorGestorCreate(SQLModel):
-    """Só o Superadmin invoca isto — cria um novo Gestor (ver core/security.py)."""
+    """Só o Superadmin invoca isto — cria um novo Gestor (ver core/security.py).
+
+    `password` cria a conta Firebase do Gestor no mesmo passo — o Gestor pode
+    trocá-la depois via POST /auth/recuperar-password.
+    """
 
     email: str
-    contacto_telefonico: str
-
-
-class RegistoProfessorSchema(SQLModel):
-    """Auto-registo do Professor — o email vem do ID Token, não deste payload."""
-
+    password: str
     contacto_telefonico: str
 
 

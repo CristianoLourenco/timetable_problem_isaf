@@ -18,6 +18,7 @@
 - 15/07: Modelo de generalização de actores adoptado (Utilizador → Gestor / Professor)
 - 15/07: Login via email/senha **e** Google Sign-In (ambos Firebase nativos)
 - 15/07: Professor cria a própria conta Firebase — validação de email vs. registo do Gestor feita internamente (RN10)
+- 15/07: Login (email/senha e Google), refresh e recuperação de password são mediados pelo backend — o cliente Flutter nunca fala com o Firebase Authentication diretamente. `POST /auth/login`, `/auth/login-google`, `/auth/refresh`, `/auth/recuperar-password`, `/auth/registo-professor` chamam a REST API do Firebase por trás (`app/core/firebase_rest.py`), sem exigir `firebase-service-account.json` nem Client Secret OAuth (login Google recebe o Google ID Token já obtido pelo cliente via SDK nativo, e troca-o por uma sessão Firebase)
 
 ---
 
@@ -56,8 +57,8 @@
 ### Autenticação e Segurança
 | ID | Nome | Ator | Descrição |
 |---|---|---|---|
-| RF15 | Autenticar-se | Utilizador | Login via email/senha ou Google Sign-In, ambos via Firebase Authentication |
-| RF16 | Recuperar Password | Utilizador | Reset self-service via link de email (Firebase nativo — só aplicável a contas email/senha) |
+| RF15 | Autenticar-se | Utilizador | Login via email/senha ou Google Sign-In — mediado pelo backend (`POST /auth/login`, `/auth/login-google`, `/auth/refresh`), que fala com a REST API do Firebase Authentication; o cliente nunca chama o Firebase diretamente |
+| RF16 | Recuperar Password | Utilizador | `POST /auth/recuperar-password` dispara o email de reset nativo do Firebase (só aplicável a contas email/senha); backend nunca confirma se o email existe (evita enumeration) |
 
 ### Trabalho Futuro (fora do escopo MVP)
 | ID | Nome | Descrição |

@@ -4,7 +4,9 @@ from sqlmodel import Session
 
 from app.api.v1.deps import get_session
 from app.core.exceptions import EntidadeNaoEncontradaError, IntegridadeVioladaError
+from app.core.firebase_rest import FirebaseAuthError
 from app.core.security import require_superadmin
+from app.schemas.auth_schema import RegistoResponseSchema
 from app.schemas.utilizador_schema import UtilizadorGestorCreate, UtilizadorRead
 from app.services.utilizador_service import UtilizadorService
 
@@ -20,12 +22,21 @@ def listar(service: UtilizadorService = Depends(_get_service)):
     return service.listar()
 
 
-@router.post("", response_model=UtilizadorRead, status_code=201)
+@router.post("", response_model=RegistoResponseSchema, status_code=201)
 def criar_gestor(payload: UtilizadorGestorCreate, service: UtilizadorService = Depends(_get_service)):
     try:
-        return service.criar_gestor(payload.email, payload.contacto_telefonico)
+        sessao = service.criar_gestor(payload.email, payload.password, payload.contacto_telefonico)
     except IntegridadeVioladaError as exc:
         raise HTTPException(409, str(exc)) from exc
+    except FirebaseAuthError as exc:
+        raise HTTPException(exc.status_http, str(exc)) from exc
+
+    return RegistoResponseSchema(
+        id_token=sessao.id_token,
+        refresh_token=sessao.refresh_token,
+        expires_in=sessao.expires_in,
+        utilizador=sessao.utilizador,
+    )
 
 
 @router.delete("/{utilizador_id}", status_code=204)
