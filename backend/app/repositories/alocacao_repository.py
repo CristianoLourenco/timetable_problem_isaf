@@ -14,3 +14,19 @@ class AlocacaoRepository:
 
     def listar_por_job(self, job_id: str) -> list[Alocacao]:
         return list(self.session.exec(select(Alocacao).where(Alocacao.job_id == job_id)))
+
+    def listar_por_job_e_turma(self, job_id: str, turma_id: int) -> list[Alocacao]:
+        """RF11 — consulta de horário por turma."""
+        return list(
+            self.session.exec(
+                select(Alocacao).where(Alocacao.job_id == job_id, Alocacao.turma_id == turma_id)
+            )
+        )
+
+    def listar_por_job_e_professor(self, job_id: str, professor_id: int) -> list[Alocacao]:
+        """RF12 — consulta de horário por professor."""
+        return list(
+            self.session.exec(
+                select(Alocacao).where(Alocacao.job_id == job_id, Alocacao.professor_id == professor_id)
+            )
+        )
