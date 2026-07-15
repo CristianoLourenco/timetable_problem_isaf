@@ -91,10 +91,35 @@ primeira utilização real (os testes não dependem de nenhuma delas):
   `POST /auth/registo-professor` (token válido + `contacto_telefonico`) — o backend valida o email
   contra um `Professor` já criado pelo Gestor (`POST /professores`); 403 se não houver
   correspondência.
-- Para testar localmente sem um token Firebase real: `tests/test_security.py` e
+- Para testar localmente sem um token Firebase real (nos testes automáticos): `tests/test_security.py` e
   `tests/test_auth_http.py` mostram como isto é feito — substituindo
   `app.core.security.verificar_id_token` por uma função que devolve o email diretamente, sem
   contactar o Google.
+
+### Obter um ID Token real para testar manualmente (Swagger, curl, Postman)
+
+Não há atalho no código — o backend só aceita tokens assinados pelo Firebase de verdade. Sem a app
+Flutter, o caminho mais rápido é a REST API do Firebase Authentication (`API_KEY` é a mesma já
+pública em `../frontend/lib/core/config/firebase_config.dart` — identifica o projeto, não é
+secreta):
+
+```bash
+# 1. Criar um utilizador de teste (ou usar signInWithPassword se já existir)
+curl -X POST \
+  "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyCcmvG_mtxbvyMQnIcFynm2WWv_SwS7wXI" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@isaf.co.ao","password":"palavra-passe-teste","returnSecureToken":true}'
+# resposta inclui "idToken" (válido ~1h) e "refreshToken"
+```
+
+Se o utilizador já existir, troca `accounts:signUp` por `accounts:signInWithPassword` com o mesmo
+corpo. Se der `EMAIL_NOT_FOUND`/`INVALID_LOGIN_CREDENTIALS`, confirma em Firebase Console →
+Authentication → Sign-in method que o provedor **Email/Password** está ativado.
+
+Antes de usar o token, garante que esse email tem papel no sistema (senão é 403, RN10/RN11) — a
+forma mais simples para testes é pôr esse email em `SUPERADMIN_EMAILS` no `.env` e reiniciar o
+`uvicorn`. Depois usa o `idToken` como Bearer: no Swagger (`/docs`) no botão "Authorize", ou
+`curl -H "Authorization: Bearer <idToken>" http://localhost:8000/cursos`.
 
 ## 6. Testes
 
