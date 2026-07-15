@@ -38,10 +38,34 @@ def resolver_horario(dados: HorarioInput, max_time_in_seconds: float) -> SolverR
 
     status_nome = _STATUS_VIAVEL.get(status)
     if status_nome is None:
-        return SolverResult(status="INFEASIBLE", alocacoes=[], diagnostico=_diagnosticar_infeasible(dados))
+        # UNKNOWN (tempo esgotado sem encontrar nenhuma solução) não é o mesmo que
+        # INFEASIBLE (impossibilidade estrutural provada) — reportar cada um com o
+        # diagnóstico correto evita dizer ao Gestor que o cenário é impossível quando
+        # na verdade só precisava de mais tempo (RNF03).
+        diagnostico = (
+            _diagnosticar_tempo_esgotado(max_time_in_seconds)
+            if status == cp_model.UNKNOWN
+            else _diagnosticar_infeasible(dados)
+        )
+        return SolverResult(status="INFEASIBLE", alocacoes=[], diagnostico=diagnostico)
 
     alocacoes = mapear_resultado(solver, variaveis, dados)
     return SolverResult(status=status_nome, alocacoes=alocacoes, diagnostico=None)
+
+
+def _diagnosticar_tempo_esgotado(max_time_in_seconds: float) -> str:
+    """UNKNOWN — o solver esgotou o tempo sem encontrar nenhuma solução (viável ou não).
+
+    Não confundir com INFEASIBLE: isto não prova impossibilidade estrutural, só que o
+    espaço de procura não foi explorado o suficiente no tempo dado (RNF01/RNF03).
+    """
+    return (
+        f"O solver não encontrou nenhuma solução dentro do limite de tempo "
+        f"({max_time_in_seconds:.0f}s) — isto não prova que o cenário seja "
+        "estruturalmente impossível, apenas que o espaço de procura é grande "
+        "demais para o tempo disponível. Aumente solver_max_time_seconds ou "
+        "reduza o âmbito do pedido."
+    )
 
 
 def _diagnosticar_infeasible(dados: HorarioInput) -> str:
