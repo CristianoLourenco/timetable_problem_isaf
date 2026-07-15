@@ -9,6 +9,14 @@ class Settings(BaseSettings):
     solver_max_time_seconds: int = 60
     environment: str = "development"
 
+    # Pesos da função objetivo do solver (docs/analise_requisitos_v5.0.md secção 6).
+    # Valores relativos ainda não fixados pela banca/orientador (secção 9 — pergunta em
+    # aberto); ordem de grandeza reflete "penalização muito alta" (RN08) > "alta" (RN04)
+    # > equidade, conforme classificação da tabela de RNs.
+    solver_peso_rn04_disponibilidade: int = 10
+    solver_peso_rn08_capacidade: int = 20
+    solver_peso_equidade_diaria: int = 1
+
     # Calendário letivo — nunca hardcoded fora daqui (ver CLAUDE.md, proibições gerais).
     # Valores por omissão servem apenas de bootstrap para ambiente local/dev.
     slot_dias_semana: list[str] = ["segunda", "terca", "quarta", "quinta", "sexta"]
