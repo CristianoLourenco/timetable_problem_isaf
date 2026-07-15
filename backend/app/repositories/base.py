@@ -46,4 +46,8 @@ class BaseRepository(Generic[ModelType]):
 
     def delete(self, db_obj: ModelType) -> None:
         self.session.delete(db_obj)
-        self.session.commit()
+        try:
+            self.session.commit()
+        except IntegrityError as exc:
+            self.session.rollback()
+            raise IntegridadeVioladaError from exc
