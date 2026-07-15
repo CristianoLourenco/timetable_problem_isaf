@@ -69,6 +69,7 @@ primeira utilização real (os testes não dependem de nenhuma delas):
 |---|---|
 | `DATABASE_URL` | Só muda se não usares o Postgres do `docker-compose.yml` tal como está. |
 | `FIREBASE_PROJECT_ID` | `project_id` do Firebase Console (visível em `../frontend/lib/core/config/firebase_config.dart`). Usado como `audience` na verificação do ID Token — **não é preciso `firebase-service-account.json`** para isto (ver secção 5). |
+| `FIREBASE_WEB_API_KEY` | Web API Key do Firebase (também pública, mesma origem). Usada para o backend chamar a REST API de login/refresh/recuperação de password/login Google (ver secção 5) — **não é um segredo**, mas ainda assim configurável via `.env` para outros ambientes/projetos Firebase. |
 | `SUPERADMIN_EMAILS` | Lista JSON de emails com papel Superadmin (bootstrap, sem tabela própria — ver secção 5). Sem isto configurado, ninguém consegue criar o primeiro Gestor. |
 | `SOLVER_MAX_TIME_SECONDS` | Limite de tempo do CP-SAT por pedido de geração de horário. Cenários maiores podem precisar de mais que os 60s por omissão (ver `tests/test_solver_escala.py` para uma referência de tempo a uma escala intermédia). |
 | `SLOT_*` | Calendário letivo (dias, tempos/dia, hora do 1º tempo, duração). Só é lido por `init_db.py` no momento do seed — mudar isto depois de já teres corrido `init_db.py` não atualiza os `Slot` já criados. |
@@ -87,39 +88,41 @@ primeira utilização real (os testes não dependem de nenhuma delas):
 - **Superadmin não tem tabela na BD.** É só a lista `SUPERADMIN_EMAILS` no `.env` — o único papel
   que existe fora da BD. É o único que pode criar `Utilizador(perfil=GESTOR)` via `POST
   /utilizadores`.
-- **Professor regista-se a si próprio.** Cria a conta Firebase no cliente Flutter, depois chama
-  `POST /auth/registo-professor` (token válido + `contacto_telefonico`) — o backend valida o email
-  contra um `Professor` já criado pelo Gestor (`POST /professores`); 403 se não houver
-  correspondência.
-- Para testar localmente sem um token Firebase real (nos testes automáticos): `tests/test_security.py` e
-  `tests/test_auth_http.py` mostram como isto é feito — substituindo
-  `app.core.security.verificar_id_token` por uma função que devolve o email diretamente, sem
-  contactar o Google.
+- **O cliente Flutter nunca fala com o Firebase diretamente.** Login (email/senha e Google),
+  refresh e recuperação de password são todos endpoints deste backend (`app/api/v1/routers/auth.py`
+  chama `app/core/firebase_rest.py`, que fala com a REST API do Identity Toolkit/Secure Token do
+  Firebase por trás). Isto não precisa de `firebase-service-account.json` nem de Client
+  ID/Secret OAuth — só da `FIREBASE_WEB_API_KEY` (pública, ver `Settings`).
+- **Professor regista-se a si próprio pelo backend.** `POST /auth/registo-professor` (`email` +
+  `password` + `contacto_telefonico`, sem precisar de nenhum token prévio) cria a conta Firebase E o
+  registo no sistema num único passo — valida primeiro que o email corresponde a um `Professor` já
+  criado pelo Gestor (`POST /professores`); 403 se não houver correspondência, e **nunca chega a
+  criar a conta Firebase** nesse caso (evita contas órfãs).
+- **Login com Google não usa OAuth redirect.** O cliente obtém o Google ID Token através do SDK
+  nativo do Google Sign-In (isso continua no telemóvel/browser — é padrão para apps móveis), e
+  envia-o a `POST /auth/login-google`; o backend troca-o por uma sessão Firebase via
+  `accounts:signInWithIdp`. Não precisamos de gerir nenhum Client Secret OAuth.
+- Para testar localmente sem tocar no Firebase real (nos testes automáticos): `tests/test_firebase_rest.py`,
+  `tests/test_auth_router_http.py` e `tests/test_security.py` mostram como isto é feito — mockando
+  `app.core.firebase_rest` (chamadas HTTP) e `app.core.security.verificar_id_token` (verificação de
+  token), sem rede real.
 
-### Obter um ID Token real para testar manualmente (Swagger, curl, Postman)
-
-Não há atalho no código — o backend só aceita tokens assinados pelo Firebase de verdade. Sem a app
-Flutter, o caminho mais rápido é a REST API do Firebase Authentication (`API_KEY` é a mesma já
-pública em `../frontend/lib/core/config/firebase_config.dart` — identifica o projeto, não é
-secreta):
+### Testar manualmente (Swagger, curl, Postman)
 
 ```bash
-# 1. Criar um utilizador de teste (ou usar signInWithPassword se já existir)
-curl -X POST \
-  "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyCcmvG_mtxbvyMQnIcFynm2WWv_SwS7wXI" \
+# 1. Login — cria conta de teste primeiro via Firebase Console (Authentication > Users > Add user)
+#    ou via POST /auth/registo-professor se já tiveres um Professor criado.
+curl -X POST http://localhost:8000/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@isaf.co.ao","password":"palavra-passe-teste","returnSecureToken":true}'
-# resposta inclui "idToken" (válido ~1h) e "refreshToken"
+  -d '{"email":"admin@isaf.co.ao","password":"palavra-passe-teste"}'
+# resposta: {"id_token": "...", "refresh_token": "...", "expires_in": 3600}
 ```
 
-Se o utilizador já existir, troca `accounts:signUp` por `accounts:signInWithPassword` com o mesmo
-corpo. Se der `EMAIL_NOT_FOUND`/`INVALID_LOGIN_CREDENTIALS`, confirma em Firebase Console →
-Authentication → Sign-in method que o provedor **Email/Password** está ativado.
-
-Antes de usar o token, garante que esse email tem papel no sistema (senão é 403, RN10/RN11) — a
-forma mais simples para testes é pôr esse email em `SUPERADMIN_EMAILS` no `.env` e reiniciar o
-`uvicorn`. Depois usa o `idToken` como Bearer: no Swagger (`/docs`) no botão "Authorize", ou
-`curl -H "Authorization: Bearer <idToken>" http://localhost:8000/cursos`.
+Antes de usar o `id_token`, garante que esse email tem papel no sistema (senão é 403, RN10/RN11) —
+a forma mais simples para testes é pôr esse email em `SUPERADMIN_EMAILS` no `.env` e reiniciar o
+`uvicorn`. Depois usa o `id_token` como Bearer: no Swagger (`/docs`) no botão "Authorize", ou
+`curl -H "Authorization: Bearer <id_token>" http://localhost:8000/cursos`. Quando expirar (~1h),
+`POST /auth/refresh` com o `refresh_token` dá um novo `id_token` sem repetir o login.
 
 ## 6. Testes
 

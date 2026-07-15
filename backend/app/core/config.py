@@ -14,6 +14,15 @@ class Settings(BaseSettings):
     # Token usa google-auth contra os certificados públicos do Google, sem exigir
     # firebase-service-account.json (que não está disponível neste projeto).
     firebase_project_id: str = "g-horario-b00eb"
+    # Web API Key do Firebase (pública — não é segredo, identifica o projeto; ver
+    # frontend/lib/core/config/firebase_config.dart). Usada para chamar a REST API do
+    # Identity Toolkit (login, refresh, recuperação de password, login Google) a
+    # partir do backend — o login NÃO é feito no cliente Flutter (ver core/firebase_rest.py).
+    firebase_web_api_key: str = "AIzaSyCcmvG_mtxbvyMQnIcFynm2WWv_SwS7wXI"
+    # URI arbitrário exigido pelo endpoint accounts:signInWithIdp do Firebase para o
+    # login com Google — não é um redirect real (o Google ID Token já vem do cliente),
+    # só precisa de ser um URI sintaticamente válido associado ao projeto.
+    google_login_request_uri: str = "https://g-horario-b00eb.firebaseapp.com"
     # Bootstrap do primeiro perfil Superadmin — não tem tabela própria (ver
     # backend/docs/CONVENCOES.md Fase 6); só Superadmin pode criar Utilizador(perfil=GESTOR).
     superadmin_emails: list[str] = []
