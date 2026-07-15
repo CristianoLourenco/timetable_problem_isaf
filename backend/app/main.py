@@ -1,7 +1,18 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1.routers import curso, disciplina, disponibilidade, importacao, professor, sala, turma
+from app.api.v1.routers import (
+    curso,
+    disciplina,
+    disponibilidade,
+    horario,
+    importacao,
+    professor,
+    professor_disciplina,
+    sala,
+    turma,
+    turma_disciplina,
+)
 
 app = FastAPI(title="ISAF — Sistema Inteligente de Geração de Horários", version="0.1.0")
 
@@ -19,7 +30,10 @@ app.include_router(turma.router)
 app.include_router(disciplina.router)
 app.include_router(sala.router)
 app.include_router(disponibilidade.router)
+app.include_router(turma_disciplina.router)
+app.include_router(professor_disciplina.router)
 app.include_router(importacao.router)
+app.include_router(horario.router)
 
 
 @app.get("/health")
