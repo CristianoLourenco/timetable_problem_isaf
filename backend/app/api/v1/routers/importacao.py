@@ -3,10 +3,12 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from sqlmodel import Session
 
 from app.api.v1.deps import get_session
+from app.core.security import require_gestor
 from app.schemas.importacao_schema import RelatorioImportacaoSchema
 from app.services import importacao_service
 
-router = APIRouter(prefix="/upload", tags=["Importação"])
+# RN09/RN10 — importação em massa é reservada ao Gestor (RF06).
+router = APIRouter(prefix="/upload", tags=["Importação"], dependencies=[Depends(require_gestor)])
 
 ENTIDADES_SUPORTADAS = frozenset({"professores", "turmas", "disciplinas", "salas"})
 

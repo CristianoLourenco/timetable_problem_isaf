@@ -4,6 +4,7 @@ from sqlmodel import Session
 
 from app.api.v1.deps import get_session
 from app.core.exceptions import EntidadeNaoEncontradaError
+from app.core.security import require_gestor
 from app.schemas.turma_disciplina_schema import (
     ItemGradeCurricular,
     TurmaDisciplinaReadSchema,
@@ -11,7 +12,8 @@ from app.schemas.turma_disciplina_schema import (
 )
 from app.services.turma_disciplina_service import TurmaDisciplinaService
 
-router = APIRouter(prefix="/turmas", tags=["Grade Curricular"])
+# RN09/RN10 — grade curricular é gerida pelo Gestor (parte de RF02/RF03).
+router = APIRouter(prefix="/turmas", tags=["Grade Curricular"], dependencies=[Depends(require_gestor)])
 
 
 def _get_service(session: Session = Depends(get_session)) -> TurmaDisciplinaService:

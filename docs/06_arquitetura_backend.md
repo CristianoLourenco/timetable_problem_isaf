@@ -32,6 +32,7 @@ erDiagram
     PROFESSOR ||--o{ ALOCACAO : tem
     SALA ||--o{ ALOCACAO : tem
     JOB ||--o{ ALOCACAO : produz
+    PROFESSOR |o--o| UTILIZADOR : "auto-registo (RN10)"
 ```
 
 **Decisões de modelagem fechadas (07/07 e sessão atual):**
@@ -40,6 +41,7 @@ erDiagram
 - `Turma_Disciplina` (N:N) — grade curricular, corresponde ao conjunto de eventos `E` da definição formal.
 - `Professor_Disciplina` (N:N) — qualificação docente, filtro obrigatório da modelagem esparsa.
 - `Job` + `Alocacao` — entidades de output, ausentes na proposta inicial, obrigatórias para RF09–RF13.
+- `Utilizador` (Fase 6, 15/07) — entidade introduzida para RN09/RN10, ausente da proposta inicial e do diagrama de classes original. Guarda **apenas** Gestores (`perfil=GESTOR`, criados exclusivamente pelo Superadmin) e Professores que completaram o auto-registo (`perfil=PROFESSOR`, `professor_id` associado). Superadmin **não** tem tabela própria — é uma lista de bootstrap em `Settings.superadmin_emails` (ver secção 5, Fase 6), decisão tomada por não existir ainda um mecanismo de provisionamento de Gestores anterior ao próprio sistema.
 
 ---
 
@@ -149,6 +151,18 @@ class Alocacao(SQLModel, table=True):
     sala_id: int = Field(foreign_key="sala.id")
     slot_id: int = Field(foreign_key="slot.id")
     penalizacao_aplicada: float = 0.0   # rastreio de RN04/RN08 para auditoria
+
+# app/models/utilizador.py — Fase 6, RN09/RN10 (Superadmin não tem tabela própria)
+class PerfilUtilizador(StrEnum):
+    GESTOR = "GESTOR"
+    PROFESSOR = "PROFESSOR"
+
+class Utilizador(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    email: str = Field(unique=True)
+    contacto_telefonico: str
+    perfil: PerfilUtilizador
+    professor_id: Optional[int] = Field(default=None, foreign_key="professor.id")  # nulo quando GESTOR
 ```
 
 ---
@@ -187,8 +201,13 @@ class Alocacao(SQLModel, table=True):
 ### Fase 5 — Consulta (RF11/RF12) — contrato "frontend first"
 - `GET /horarios/turma/{id}` e `GET /horarios/professor/{id}` devolvem JSON estruturado por dia/slot, pronto para desserializar em Models/Entities Flutter (Clean Architecture) — nunca linhas soltas de `Alocacao`.
 
-### Fase 6 — Segurança (RF15/RF16/RN09)
-- Middleware em `core/security.py` valida o Firebase ID Token em todas as rotas exceto login/reset; 401 em token ausente/inválido.
+### Fase 6 — Segurança (RF15/RF16/RN09/RN10/RN11)
+- `core/security.py` valida o Firebase ID Token em todas as rotas (RN09) via `google.oauth2.id_token.verify_firebase_token` — não usa o Firebase Admin SDK completo nem exige `firebase-service-account.json` (indisponível neste projeto); verifica contra os certificados públicos do Google usando apenas `firebase_project_id`. 401 em token ausente/inválido.
+- Resolução de papel por email (nenhuma tabela para Superadmin): (1) email em `Settings.superadmin_emails` (bootstrap) → Superadmin; (2) senão, email em `Utilizador` → Gestor ou Professor conforme `perfil`; (3) senão → 403.
+- Auto-registo do Professor (RN10): `POST /auth/registo-professor` (token válido + `contacto_telefonico`) valida o email contra `Professor.email` já criado pelo Gestor via RF01 — 403 se não corresponder, senão cria `Utilizador(perfil=PROFESSOR)`.
+- Gestor só é criado pelo Superadmin via `POST /utilizadores` — não há auto-registo de Gestor.
+- RN11 (Gestor vê/exporta qualquer horário; Professor só o seu): aplicado em `GET /horarios/professor/{id}` e em `GET/POST /professores/{id}/disponibilidade`, comparando `professor_id` do pedido com `UtilizadorAutenticado.professor_id`.
+- RF15/RF16 (login, reset de password) não têm rota no backend — geridos inteiramente pelo Firebase Authentication no cliente Flutter.
 
 ### Fase 7 — Testes
 - Testes unitários do solver com cenários pequenos e controlados (ex: 3 turmas), validando zero-conflitos antes de escalar — mesma metodologia de validação usada por Harshalatha et al. (2026), já citada no Cap. 2.

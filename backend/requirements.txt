@@ -6,6 +6,7 @@ pydantic==2.10.4
 pydantic-settings==2.7.1
 ortools==9.11.4210
 firebase-admin==6.6.0
+google-auth==2.56.0
 python-multipart==0.0.20
 openpyxl==3.1.5
 pytest==8.3.4
