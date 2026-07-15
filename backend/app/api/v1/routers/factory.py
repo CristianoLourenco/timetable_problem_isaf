@@ -65,5 +65,7 @@ def build_crud_router(
             service.remover(id_)
         except EntidadeNaoEncontradaError as exc:
             raise HTTPException(404, str(exc)) from exc
+        except IntegridadeVioladaError as exc:
+            raise HTTPException(409, "Não é possível remover: existem registos dependentes deste.") from exc
 
     return router
