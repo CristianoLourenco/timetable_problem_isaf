@@ -8,6 +8,7 @@ from typing import Any
 import openpyxl
 from sqlmodel import Session
 
+from app.models.curso import Curso
 from app.models.disciplina import Disciplina
 from app.models.professor import Professor
 from app.models.sala import Sala
@@ -20,9 +21,11 @@ from app.repositories.turma_repository import TurmaRepository
 from app.schemas.importacao_schema import ErroImportacaoSchema, RelatorioImportacaoSchema
 
 COLUNAS_ESPERADAS: dict[str, list[str]] = {
+    "cursos": ["codigo", "nome"],
     "professores": ["nome", "email", "classificacao", "vinculo_casa"],
     "disciplinas": ["codigo", "nome"],
     "salas": ["codigo", "nome", "capacidade"],
+    # turmas depende de "cursos" já estar importado (curso_codigo tem de existir)
     "turmas": ["codigo", "nome", "ano_letivo", "turno", "numero_alunos", "curso_codigo"],
 }
 
@@ -56,6 +59,14 @@ def _importar_professores(
                 ErroImportacaoSchema(linha=numero_linha, campo="email", motivo="Email institucional em falta")
             )
             continue
+        classificacao = int(dados.get("classificacao") or 3)
+        if not (1 <= classificacao <= 5):
+            relatorio.erros.append(
+                ErroImportacaoSchema(
+                    linha=numero_linha, campo="classificacao", motivo="Classificação deve ser entre 1 e 5"
+                )
+            )
+            continue
         if repo.get_by_email(str(email)):
             relatorio.ignorados_idempotencia += 1
             continue
@@ -63,10 +74,29 @@ def _importar_professores(
             Professor(
                 nome=str(nome),
                 email=str(email),
-                classificacao=int(dados.get("classificacao") or 3),
+                classificacao=classificacao,
                 vinculo_casa=bool(dados.get("vinculo_casa")),
             )
         )
+        relatorio.importados += 1
+
+
+def _importar_cursos(
+    session: Session, colunas: list[str], linhas: Sequence[tuple[Any, ...]], relatorio: RelatorioImportacaoSchema
+) -> None:
+    repo = CursoRepository(session)
+    for numero_linha, linha in enumerate(linhas, start=2):
+        dados = dict(zip(colunas, linha, strict=False))
+        codigo, nome = dados.get("codigo"), dados.get("nome")
+        if not codigo or not nome:
+            relatorio.erros.append(
+                ErroImportacaoSchema(linha=numero_linha, campo="codigo/nome", motivo="Código ou nome em falta")
+            )
+            continue
+        if repo.get_by_codigo(str(codigo)):
+            relatorio.ignorados_idempotencia += 1
+            continue
+        repo.create(Curso(codigo=str(codigo), nome=str(nome)))
         relatorio.importados += 1
 
 
@@ -101,9 +131,9 @@ def _importar_salas(
                 ErroImportacaoSchema(linha=numero_linha, campo="codigo/nome", motivo="Código ou nome em falta")
             )
             continue
-        if not capacidade:
+        if not capacidade or int(capacidade) <= 0:
             relatorio.erros.append(
-                ErroImportacaoSchema(linha=numero_linha, campo="capacidade", motivo="Capacidade em falta")
+                ErroImportacaoSchema(linha=numero_linha, campo="capacidade", motivo="Capacidade deve ser maior que 0")
             )
             continue
         if repo.get_by_codigo(str(codigo)):
@@ -137,6 +167,14 @@ def _importar_turmas(
                 )
             )
             continue
+        numero_alunos = int(dados.get("numero_alunos") or 0)
+        if numero_alunos <= 0:
+            relatorio.erros.append(
+                ErroImportacaoSchema(
+                    linha=numero_linha, campo="numero_alunos", motivo="Número de alunos deve ser maior que 0"
+                )
+            )
+            continue
         if turma_repo.get_by_codigo(str(codigo)):
             relatorio.ignorados_idempotencia += 1
             continue
@@ -146,7 +184,7 @@ def _importar_turmas(
                 nome=str(dados.get("nome") or ""),
                 ano_letivo=int(dados.get("ano_letivo") or 0),
                 turno=str(dados.get("turno") or ""),
-                numero_alunos=int(dados.get("numero_alunos") or 0),
+                numero_alunos=numero_alunos,
                 curso_id=curso.id,  # type: ignore[arg-type]
             )
         )
@@ -154,6 +192,7 @@ def _importar_turmas(
 
 
 _IMPORTADORES: dict[str, Callable[[Session, list[str], Sequence[tuple[Any, ...]], RelatorioImportacaoSchema], None]] = {
+    "cursos": _importar_cursos,
     "professores": _importar_professores,
     "disciplinas": _importar_disciplinas,
     "salas": _importar_salas,
