@@ -48,9 +48,11 @@ backend/
 - **NUNCA** usar `dict` cru onde deveria existir um modelo Pydantic.
 - **NUNCA** bloquear a ligação HTTP em operações estimadas a demorar mais de 5s — usar o padrão Job Queue (`BackgroundTasks`, sem Celery/Redis no MVP).
 
-## Persistência — nota de decisão
+## Persistência — decisão confirmada
 
-`docs/06_arquitetura_backend.md` (Fase 0) propõe SQLite para simplicidade do MVP. `docs/analise_requisitos_v5.0.md` (secção 8, decisão de 15/07 — mais recente) fixa **PostgreSQL + SQLModel**. Seguir a decisão mais recente (PostgreSQL) salvo indicação contrária do utilizador — confirmar antes de gerar `requirements.txt`/`database.py` na Fase 0.
+PostgreSQL + SQLModel (decisão de `docs/analise_requisitos_v5.0.md` secção 8, confirmada com o utilizador na Fase 0), correndo via `docker-compose.yml` (`backend/`). `docs/06_arquitetura_backend.md` (Fase 0) tinha proposto SQLite como alternativa mais simples — descartado. `DATABASE_URL` em `.env` (ver `.env.example`), driver `psycopg` v3 (`postgresql+psycopg://`).
+
+Ambiente Python: `venv` padrão (`python3 -m venv .venv`) + `pip install -r requirements.txt` — Python 3.12 já traz `ensurepip`, sem necessidade de `uv` ou instalação adicional de `pip`/`venv` a nível de sistema.
 
 ## Modelos SQLModel de referência
 
