@@ -7,7 +7,7 @@ from sqlmodel import Session, SQLModel, create_engine
 import app.api.v1.routers.auth as auth_router
 import app.models  # noqa: F401 - garante que todos os modelos entram no metadata
 from app.api.v1.deps import get_session
-from app.core import firebase_rest
+from app.core import firebase_rest, security
 from app.core.firebase_rest import FirebaseAuthError
 from app.main import app as fastapi_app
 from app.models.professor import Professor
@@ -133,6 +133,40 @@ def test_registo_professor_sem_correspondencia_devolve_403(monkeypatch):
             json={"email": "desconhecido@isaf.co.ao", "password": "palavra-passe", "contacto_telefonico": "900000000"},
         )
         assert resposta.status_code == 403
+    finally:
+        fastapi_app.dependency_overrides.clear()
+
+
+def test_me_devolve_papel_e_professor_id(monkeypatch):
+    client, engine = _cliente_com_bd_teste()
+    try:
+        with Session(engine) as session:
+            professor = Professor(nome="Prof A", email="prof@isaf.co.ao", classificacao=5, vinculo_casa=True)
+            session.add(professor)
+            session.commit()
+            session.refresh(professor)
+            professor_id_esperado = professor.id
+
+        monkeypatch.setattr(firebase_rest, "criar_conta_com_password", lambda email, password: SESSAO_FIREBASE_FAKE)
+        client.post(
+            "/auth/registo-professor",
+            json={"email": "prof@isaf.co.ao", "password": "palavra-passe", "contacto_telefonico": "900000000"},
+        )
+
+        monkeypatch.setattr(security, "verificar_id_token", lambda token: "prof@isaf.co.ao")
+        resposta = client.get("/auth/me", headers={"Authorization": "Bearer qualquer"})
+
+        assert resposta.status_code == 200
+        assert resposta.json() == {"email": "prof@isaf.co.ao", "papel": "PROFESSOR", "professor_id": professor_id_esperado}
+    finally:
+        fastapi_app.dependency_overrides.clear()
+
+
+def test_me_sem_token_devolve_401(monkeypatch):
+    client, _ = _cliente_com_bd_teste()
+    try:
+        resposta = client.get("/auth/me")
+        assert resposta.status_code == 401
     finally:
         fastapi_app.dependency_overrides.clear()
 
