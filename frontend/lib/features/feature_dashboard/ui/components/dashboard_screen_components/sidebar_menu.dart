@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:ghorario/core/constants/app_strings.dart';
+import 'package:ghorario/features/feature_auth/domain/entities/user.dart';
 
 /// Sidebar menu items definition.
 class _MenuItem {
@@ -9,22 +10,30 @@ class _MenuItem {
     required this.label,
     required this.icon,
     required this.route,
+    this.gestorOnly = false,
   });
 
   final String label;
   final IconData icon;
   final String route;
+
+  /// Ecrãs de gestão de dados mestre — o Professor não tem acesso a estes
+  /// dados no backend (CRUD/importação Excel), por isso nem aparecem aqui.
+  final bool gestorOnly;
 }
 
 /// The sidebar navigation for the dashboard.
 ///
 /// Uses GoRouter location to determine the active item.
-/// Does NOT access any Provider directly — purely declarative; logout is
-/// passed in as a callback from the Screen.
+/// Filters items by [user]'s papel (RN11) — items marked `gestorOnly` are
+/// hidden for a Professor. Also shows who is logged in above "Terminar
+/// Sessão". Does NOT read Provider directly — [user] and [onLogout] are
+/// passed in by the Screen.
 class SidebarMenu extends StatelessWidget {
-  const SidebarMenu({super.key, required this.onLogout});
+  const SidebarMenu({super.key, required this.onLogout, required this.user});
 
   final VoidCallback onLogout;
+  final User? user;
 
   static const List<_MenuItem> _items = [
     _MenuItem(
@@ -36,26 +45,31 @@ class SidebarMenu extends StatelessWidget {
       label: AppStrings.menuDocentes,
       icon: Icons.people,
       route: '/dashboard/docentes',
+      gestorOnly: true,
     ),
     _MenuItem(
       label: AppStrings.menuCursos,
       icon: Icons.school,
       route: '/dashboard/cursos',
+      gestorOnly: true,
     ),
     _MenuItem(
       label: AppStrings.menuTurmas,
       icon: Icons.groups,
       route: '/dashboard/turmas',
+      gestorOnly: true,
     ),
     _MenuItem(
       label: AppStrings.menuDisciplinas,
       icon: Icons.spellcheck_sharp,
       route: '/dashboard/disciplinas',
+      gestorOnly: true,
     ),
     _MenuItem(
       label: AppStrings.menuSalas,
       icon: Icons.meeting_room,
       route: '/dashboard/salas',
+      gestorOnly: true,
     ),
     _MenuItem(
       label: AppStrings.menuHorario,
@@ -72,6 +86,10 @@ class SidebarMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentLocation = GoRouterState.of(context).uri.path;
+    final isProfessor = user?.isProfessor ?? false;
+    final items = isProfessor
+        ? _items.where((item) => !item.gestorOnly).toList()
+        : _items;
 
     return Column(
       children: <Widget>[
@@ -79,9 +97,9 @@ class SidebarMenu extends StatelessWidget {
         Expanded(
           flex: 3,
           child: ListView.builder(
-            itemCount: _items.length,
+            itemCount: items.length,
             itemBuilder: (context, index) {
-              final item = _items[index];
+              final item = items[index];
               final isActive = currentLocation == item.route;
 
               return Padding(
@@ -106,6 +124,41 @@ class SidebarMenu extends StatelessWidget {
             },
           ),
         ),
+        if (user != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 8),
+            child: Row(
+              children: <Widget>[
+                const CircleAvatar(
+                  radius: 16,
+                  backgroundColor: Colors.white24,
+                  child: Icon(Icons.person, size: 18, color: Colors.white),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(
+                        user!.nomeVisivel,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        user!.papel.rotulo,
+                        style: const TextStyle(color: Colors.white54, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.only(left: 30, bottom: 16),
           child: ListTile(

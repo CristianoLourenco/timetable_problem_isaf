@@ -22,6 +22,7 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = context.watch<AuthProvider>().currentUser;
     return Scaffold(
       body: Row(
         children: <Widget>[
@@ -29,7 +30,7 @@ class DashboardScreen extends StatelessWidget {
             child: GradientContainer(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              child: SidebarMenu(onLogout: () => _handleLogout(context)),
+              child: SidebarMenu(onLogout: () => _handleLogout(context), user: user),
             ),
           ),
           Expanded(
