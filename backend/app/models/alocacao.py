@@ -1,5 +1,8 @@
-# Implementa: RF11, RF12 (UC11, UC12) — ver docs/analise_requisitos_v5.0.md
+# Implementa: RF11, RF12 (UC11, UC12) — ver docs/04_04_analise_desenvolvimento.md
 # Entidade de output — resultado do solver persistido, ausente enquanto dado de entrada.
+#
+# dia_semana + turno + periodo em vez de slot_id (não existe tabela Slot — ver
+# app/core/calendario.py para o cálculo das horas reais a partir destes campos).
 from sqlmodel import Field, SQLModel
 
 
@@ -10,5 +13,7 @@ class Alocacao(SQLModel, table=True):
     disciplina_id: int = Field(foreign_key="disciplina.id")
     professor_id: int = Field(foreign_key="professor.id")
     sala_id: int = Field(foreign_key="sala.id")
-    slot_id: int = Field(foreign_key="slot.id")
+    dia_semana: str
+    turno: str
+    periodo: int
     penalizacao_aplicada: float = 0.0  # rastreio de RN04/RN08 para auditoria

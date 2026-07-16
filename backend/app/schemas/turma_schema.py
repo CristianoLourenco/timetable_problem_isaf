@@ -1,12 +1,14 @@
 # Implementa: RF02 (UC02) — ver docs/analise_requisitos_v5.0.md
 from sqlmodel import SQLModel
 
+from app.core.calendario import TurnoEnum
+
 
 class TurmaBase(SQLModel):
     codigo: str
     nome: str
     ano_letivo: int
-    turno: str
+    turno: TurnoEnum
     numero_alunos: int
     curso_id: int
 
@@ -19,7 +21,7 @@ class TurmaUpdate(SQLModel):
     codigo: str | None = None
     nome: str | None = None
     ano_letivo: int | None = None
-    turno: str | None = None
+    turno: TurnoEnum | None = None
     numero_alunos: int | None = None
     curso_id: int | None = None
 

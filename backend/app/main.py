@@ -12,6 +12,7 @@ from app.api.v1.routers import (
     professor,
     professor_disciplina,
     sala,
+    slot,
     turma,
     turma_disciplina,
     utilizador,
@@ -48,6 +49,7 @@ app.include_router(professor.router)
 app.include_router(turma.router)
 app.include_router(disciplina.router)
 app.include_router(sala.router)
+app.include_router(slot.router)
 app.include_router(disponibilidade.router)
 app.include_router(turma_disciplina.router)
 app.include_router(professor_disciplina.router)

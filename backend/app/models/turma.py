@@ -1,12 +1,17 @@
 # Implementa: RF02 (UC02) — ver docs/analise_requisitos_v5.0.md
 from sqlmodel import Field, SQLModel
 
+from app.core.calendario import TurnoEnum
+
 
 class Turma(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     codigo: str = Field(unique=True, index=True)  # chave de idempotência (RF08)
     nome: str
     ano_letivo: int
-    turno: str
+    # Define o turno em que a turma tem aulas — o solver só gera variáveis nos
+    # tempos desse turno (ver app/solver/builder.py) e a numeração de periodo
+    # reinicia em 1 a cada turno (ver app/core/calendario.py).
+    turno: TurnoEnum
     numero_alunos: int
     curso_id: int = Field(foreign_key="curso.id")

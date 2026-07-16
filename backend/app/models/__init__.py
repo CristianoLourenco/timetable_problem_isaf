@@ -6,7 +6,6 @@ from app.models.job import Job, JobStatus
 from app.models.professor import Professor
 from app.models.professor_disciplina import ProfessorDisciplina
 from app.models.sala import Sala
-from app.models.slot import Slot
 from app.models.turma import Turma
 from app.models.turma_disciplina import TurmaDisciplina
 from app.models.utilizador import PerfilUtilizador, Utilizador
@@ -22,7 +21,6 @@ __all__ = [
     "Professor",
     "ProfessorDisciplina",
     "Sala",
-    "Slot",
     "Turma",
     "TurmaDisciplina",
     "Utilizador",

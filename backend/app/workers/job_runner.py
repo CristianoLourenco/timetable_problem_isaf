@@ -50,7 +50,9 @@ def executar(job_id: str, *, engine=_engine_producao) -> None:
                 disciplina_id=a.disciplina_id,
                 professor_id=a.professor_id,
                 sala_id=a.sala_id,
-                slot_id=a.slot_id,
+                dia_semana=a.dia_semana,
+                turno=a.turno,
+                periodo=a.periodo,
                 penalizacao_aplicada=a.penalizacao_aplicada,
             )
             for a in resultado.alocacoes

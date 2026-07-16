@@ -37,9 +37,12 @@ class Settings(BaseSettings):
 
     # Calendário letivo — nunca hardcoded fora daqui (ver docs/CONVENCOES.md, proibições gerais).
     # Valores por omissão servem apenas de bootstrap para ambiente local/dev.
+    # Não existe tabela Slot (ver docs/04_04_analise_desenvolvimento.md secção 4.2.4) —
+    # dia_semana + turno + periodo são campos simples; a grelha de horas reais é
+    # calculada a partir daqui em app/core/calendario.py, nunca persistida.
     slot_dias_semana: list[str] = ["segunda", "terca", "quarta", "quinta", "sexta"]
-    slot_tempos_por_dia: int = 9
-    slot_inicio_primeiro_tempo: str = "07:30"
+    turno_periodos: dict[str, int] = {"manha": 6, "tarde": 5, "noite": 5}
+    turno_hora_inicio: dict[str, str] = {"manha": "07:30", "tarde": "13:00", "noite": "18:00"}
     slot_duracao_minutos: int = 45
 
 

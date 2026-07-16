@@ -1,4 +1,4 @@
-# Implementa: RN01, RN02, RN03, RN05, RN06 — ver docs/analise_requisitos_v5.0.md secção 6
+# Implementa: RN01, RN02, RN03, RN05, RN06 — ver docs/04_04_analise_desenvolvimento.md secção 4.1.2
 from collections import defaultdict
 
 from ortools.sat.python import cp_model
@@ -8,28 +8,28 @@ from app.solver.dto import HorarioInput
 
 
 def add_professor_sem_dupla_alocacao(model: cp_model.CpModel, variaveis: VariaveisModelo, dados: HorarioInput) -> None:
-    """RN01 — professor sem dupla alocação no mesmo slot."""
+    """RN01 — professor sem dupla alocação no mesmo tempo."""
     for professor in dados.professores:
         for slot in dados.slots:
-            chaves = variaveis.por_professor_slot.get((professor.id, slot.id), [])
+            chaves = variaveis.por_professor_tempo.get((professor.id, slot.dia_semana, slot.turno, slot.periodo), [])
             if chaves:
                 model.Add(sum(variaveis.x[c] for c in chaves) <= 1)
 
 
 def add_turma_sem_dupla_disciplina(model: cp_model.CpModel, variaveis: VariaveisModelo, dados: HorarioInput) -> None:
-    """RN02 — turma sem duas disciplinas no mesmo slot."""
+    """RN02 — turma sem duas disciplinas no mesmo tempo."""
     for turma in dados.turmas:
         for slot in dados.slots:
-            chaves = variaveis.por_turma_slot.get((turma.id, slot.id), [])
+            chaves = variaveis.por_turma_tempo.get((turma.id, slot.dia_semana, slot.turno, slot.periodo), [])
             if chaves:
                 model.Add(sum(variaveis.x[c] for c in chaves) <= 1)
 
 
 def add_sala_sem_dupla_turma(model: cp_model.CpModel, variaveis: VariaveisModelo, dados: HorarioInput) -> None:
-    """RN03 — sala sem duas turmas no mesmo slot."""
+    """RN03 — sala sem duas turmas no mesmo tempo."""
     for sala in dados.salas:
         for slot in dados.slots:
-            chaves = variaveis.por_sala_slot.get((sala.id, slot.id), [])
+            chaves = variaveis.por_sala_tempo.get((sala.id, slot.dia_semana, slot.turno, slot.periodo), [])
             if chaves:
                 model.Add(sum(variaveis.x[c] for c in chaves) <= 1)
 
@@ -44,23 +44,27 @@ def add_carga_horaria_cumprida(model: cp_model.CpModel, variaveis: VariaveisMode
 def add_agrupamento_em_blocos(model: cp_model.CpModel, variaveis: VariaveisModelo, dados: HorarioInput) -> None:
     """RN06 — aulas agrupadas em blocos contíguos (>=2 tempos), sem tempos isolados.
 
-    Aplicada à sequência x[turma, disciplina, professor, sala, *] de cada dia — e não
-    a um agregado por turma+disciplina — para que um bloco nunca troque de docente/sala
-    a meio (decisão confirmada com o utilizador: bloco = mesmo professor e mesma sala
-    do início ao fim). RN02 garante que a turma não tem duas disciplinas no mesmo slot,
-    logo não há ambiguidade entre blocos de disciplinas diferentes no mesmo dia.
+    Aplicada à sequência x[turma, disciplina, professor, sala, *] de cada (dia, turno) —
+    e não a um agregado por turma+disciplina — para que um bloco nunca troque de
+    docente/sala a meio (decisão confirmada com o utilizador: bloco = mesmo professor e
+    mesma sala do início ao fim). Agrupar por (dia, turno) e não só por dia evita que
+    tempos de turnos diferentes (periodo reinicia em 1 a cada turno) sejam tratados como
+    vizinhos. RN02 garante que a turma não tem duas disciplinas no mesmo tempo, logo não
+    há ambiguidade entre blocos de disciplinas diferentes no mesmo (dia, turno).
     """
-    slots_por_dia: dict[str, list] = defaultdict(list)
+    slots_por_dia_turno: dict[tuple[str, str], list] = defaultdict(list)
     for slot in dados.slots:
-        slots_por_dia[slot.dia_semana].append(slot)
-    for slots_do_dia in slots_por_dia.values():
-        slots_do_dia.sort(key=lambda s: s.tempo_ordem)
+        slots_por_dia_turno[(slot.dia_semana, slot.turno)].append(slot)
+    for slots_do_grupo in slots_por_dia_turno.values():
+        slots_do_grupo.sort(key=lambda s: s.periodo)
 
     for chaves in variaveis.por_turma_disciplina_professor_sala.values():
-        slot_para_chave: dict[int, ChaveVar] = {chave[4]: chave for chave in chaves}
+        tempo_para_chave: dict[tuple[str, str, int], ChaveVar] = {chave[4:7]: chave for chave in chaves}
 
-        for slots_do_dia in slots_por_dia.values():
-            sequencia = [slot_para_chave.get(slot.id) for slot in slots_do_dia]
+        for slots_do_grupo in slots_por_dia_turno.values():
+            sequencia = [
+                tempo_para_chave.get((slot.dia_semana, slot.turno, slot.periodo)) for slot in slots_do_grupo
+            ]
             _proibir_tempo_isolado(model, variaveis, sequencia)
 
 

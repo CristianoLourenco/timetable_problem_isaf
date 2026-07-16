@@ -1,4 +1,4 @@
-# Implementa: RF06, RF07, RF08 (UC06, UC07) — ver docs/analise_requisitos_v5.0.md
+# Implementa: RF06, RF07, RF08 (UC06, UC07) — ver docs/04_04_analise_desenvolvimento.md
 # Fluxo (ver skill excel-import-openpyxl): parse -> validar (RF07) -> gravar com idempotência por
 # chave única (RF08). Nunca aborta no primeiro erro de linha — reporta todos.
 from collections.abc import Callable, Sequence
@@ -8,6 +8,7 @@ from typing import Any
 import openpyxl
 from sqlmodel import Session
 
+from app.core.calendario import TurnoEnum
 from app.models.curso import Curso
 from app.models.disciplina import Disciplina
 from app.models.professor import Professor
@@ -15,8 +16,10 @@ from app.models.sala import Sala
 from app.models.turma import Turma
 from app.repositories.curso_repository import CursoRepository
 from app.repositories.disciplina_repository import DisciplinaRepository
+from app.repositories.professor_disciplina_repository import ProfessorDisciplinaRepository
 from app.repositories.professor_repository import ProfessorRepository
 from app.repositories.sala_repository import SalaRepository
+from app.repositories.turma_disciplina_repository import TurmaDisciplinaRepository
 from app.repositories.turma_repository import TurmaRepository
 from app.schemas.importacao_schema import ErroImportacaoSchema, RelatorioImportacaoSchema
 
@@ -27,21 +30,65 @@ COLUNAS_ESPERADAS: dict[str, list[str]] = {
     "salas": ["codigo", "nome", "capacidade"],
     # turmas depende de "cursos" já estar importado (curso_codigo tem de existir)
     "turmas": ["codigo", "nome", "ano_letivo", "turno", "numero_alunos", "curso_codigo"],
+    # qualificacoes/grade_curricular dependem de professores/turmas/disciplinas já importados
+    "qualificacoes": ["professor_email", "disciplina_codigo"],
+    "grade_curricular": ["turma_codigo", "disciplina_codigo", "carga_horaria_semanal"],
+}
+
+# Uma Turma sem grade curricular (e um Professor sem qualificação) não serve para nada
+# no solver — por isso o mesmo ficheiro .xlsx pode trazer a entidade principal e o seu
+# complemento em folhas (sheets) diferentes, e ambas são importadas na mesma chamada.
+# A folha do complemento só é processada se existir (identificada pelo nome, não pela
+# posição) — um ficheiro de "turmas" sem folha de grade curricular continua a funcionar
+# como antes.
+COMPLEMENTOS: dict[str, str] = {
+    "turmas": "grade_curricular",
+    "professores": "qualificacoes",
 }
 
 
-def _ler_planilha(conteudo: bytes) -> tuple[list[str], list[tuple[Any, ...]]]:
+def _abrir_workbook(conteudo: bytes):
     try:
-        workbook = openpyxl.load_workbook(BytesIO(conteudo), read_only=True, data_only=True)
+        return openpyxl.load_workbook(BytesIO(conteudo), read_only=True, data_only=True)
     except Exception as exc:  # ficheiro corrompido ou não é .xlsx
         raise ValueError("Ficheiro Excel inválido ou corrompido.") from exc
 
-    sheet = workbook.active
+
+def _obter_folha_por_nome(workbook, nome: str):
+    """Procura uma folha pelo nome (case-insensitive) — nunca pela posição, para que a
+    ordem das folhas no ficheiro seja irrelevante."""
+    for sheet_name in workbook.sheetnames:
+        if sheet_name.strip().lower() == nome:
+            return workbook[sheet_name]
+    return None
+
+
+def _ler_folha(sheet) -> tuple[list[str], list[tuple[Any, ...]]]:
     linhas = list(sheet.iter_rows(values_only=True))
     if not linhas:
         return [], []
     cabecalho = [str(c).strip().lower() if c is not None else "" for c in linhas[0]]
     return cabecalho, linhas[1:]
+
+
+def _processar_folha(
+    entidade: str, sheet, session: Session, relatorio: RelatorioImportacaoSchema
+) -> None:
+    cabecalho, linhas_dados = _ler_folha(sheet)
+    relatorio.total_linhas += len(linhas_dados)
+
+    esperadas = COLUNAS_ESPERADAS[entidade]
+    if cabecalho[: len(esperadas)] != esperadas:
+        relatorio.erros.append(
+            ErroImportacaoSchema(
+                linha=1,
+                campo="cabecalho",
+                motivo=f"[{entidade}] Colunas esperadas (nesta ordem): {', '.join(esperadas)}",
+            )
+        )
+        return
+
+    _IMPORTADORES[entidade](session, cabecalho, linhas_dados, relatorio)
 
 
 def _importar_professores(
@@ -175,6 +222,19 @@ def _importar_turmas(
                 )
             )
             continue
+        turno_bruto = str(dados.get("turno") or "").strip().lower()
+        try:
+            turno = TurnoEnum(turno_bruto)
+        except ValueError:
+            valores_validos = ", ".join(t.value for t in TurnoEnum)
+            relatorio.erros.append(
+                ErroImportacaoSchema(
+                    linha=numero_linha,
+                    campo="turno",
+                    motivo=f"Turno '{turno_bruto}' inválido — valores aceites: {valores_validos}",
+                )
+            )
+            continue
         if turma_repo.get_by_codigo(str(codigo)):
             relatorio.ignorados_idempotencia += 1
             continue
@@ -183,11 +243,110 @@ def _importar_turmas(
                 codigo=str(codigo),
                 nome=str(dados.get("nome") or ""),
                 ano_letivo=int(dados.get("ano_letivo") or 0),
-                turno=str(dados.get("turno") or ""),
+                turno=turno,
                 numero_alunos=numero_alunos,
                 curso_id=curso.id,  # type: ignore[arg-type]
             )
         )
+        relatorio.importados += 1
+
+
+def _importar_qualificacoes(
+    session: Session, colunas: list[str], linhas: Sequence[tuple[Any, ...]], relatorio: RelatorioImportacaoSchema
+) -> None:
+    """Qualificação docente (professor↔disciplinas) — RN filtro obrigatório do solver.
+    Aditiva: cada linha é um par a acrescentar, nunca substitui os pares já existentes
+    (isso é o que o diálogo manual `POST /professores/{id}/disciplinas` faz)."""
+    qualificacao_repo = ProfessorDisciplinaRepository(session)
+    professor_repo = ProfessorRepository(session)
+    disciplina_repo = DisciplinaRepository(session)
+    for numero_linha, linha in enumerate(linhas, start=2):
+        dados = dict(zip(colunas, linha, strict=False))
+        email, disciplina_codigo = dados.get("professor_email"), dados.get("disciplina_codigo")
+        if not email or not disciplina_codigo:
+            relatorio.erros.append(
+                ErroImportacaoSchema(
+                    linha=numero_linha,
+                    campo="professor_email/disciplina_codigo",
+                    motivo="Email do professor ou código da disciplina em falta",
+                )
+            )
+            continue
+        professor = professor_repo.get_by_email(str(email))
+        if professor is None:
+            relatorio.erros.append(
+                ErroImportacaoSchema(
+                    linha=numero_linha, campo="professor_email", motivo=f"Professor '{email}' não existe"
+                )
+            )
+            continue
+        disciplina = disciplina_repo.get_by_codigo(str(disciplina_codigo))
+        if disciplina is None:
+            relatorio.erros.append(
+                ErroImportacaoSchema(
+                    linha=numero_linha,
+                    campo="disciplina_codigo",
+                    motivo=f"Disciplina '{disciplina_codigo}' não existe",
+                )
+            )
+            continue
+        if qualificacao_repo.existe(professor.id, disciplina.id):  # type: ignore[arg-type]
+            relatorio.ignorados_idempotencia += 1
+            continue
+        qualificacao_repo.adicionar(professor.id, disciplina.id)  # type: ignore[arg-type]
+        relatorio.importados += 1
+
+
+def _importar_grade_curricular(
+    session: Session, colunas: list[str], linhas: Sequence[tuple[Any, ...]], relatorio: RelatorioImportacaoSchema
+) -> None:
+    """Grade curricular (turma↔disciplina+carga horária) — pré-requisito de dados do solver.
+    Aditiva, mesmo princípio de `_importar_qualificacoes`."""
+    grade_repo = TurmaDisciplinaRepository(session)
+    turma_repo = TurmaRepository(session)
+    disciplina_repo = DisciplinaRepository(session)
+    for numero_linha, linha in enumerate(linhas, start=2):
+        dados = dict(zip(colunas, linha, strict=False))
+        turma_codigo, disciplina_codigo = dados.get("turma_codigo"), dados.get("disciplina_codigo")
+        if not turma_codigo or not disciplina_codigo:
+            relatorio.erros.append(
+                ErroImportacaoSchema(
+                    linha=numero_linha,
+                    campo="turma_codigo/disciplina_codigo",
+                    motivo="Código da turma ou da disciplina em falta",
+                )
+            )
+            continue
+        turma = turma_repo.get_by_codigo(str(turma_codigo))
+        if turma is None:
+            relatorio.erros.append(
+                ErroImportacaoSchema(linha=numero_linha, campo="turma_codigo", motivo=f"Turma '{turma_codigo}' não existe")
+            )
+            continue
+        disciplina = disciplina_repo.get_by_codigo(str(disciplina_codigo))
+        if disciplina is None:
+            relatorio.erros.append(
+                ErroImportacaoSchema(
+                    linha=numero_linha,
+                    campo="disciplina_codigo",
+                    motivo=f"Disciplina '{disciplina_codigo}' não existe",
+                )
+            )
+            continue
+        carga_horaria_semanal = int(dados.get("carga_horaria_semanal") or 0)
+        if carga_horaria_semanal <= 0:
+            relatorio.erros.append(
+                ErroImportacaoSchema(
+                    linha=numero_linha,
+                    campo="carga_horaria_semanal",
+                    motivo="Carga horária semanal deve ser maior que 0",
+                )
+            )
+            continue
+        if grade_repo.existe(turma.id, disciplina.id):  # type: ignore[arg-type]
+            relatorio.ignorados_idempotencia += 1
+            continue
+        grade_repo.adicionar(turma.id, disciplina.id, carga_horaria_semanal)  # type: ignore[arg-type]
         relatorio.importados += 1
 
 
@@ -197,6 +356,8 @@ _IMPORTADORES: dict[str, Callable[[Session, list[str], Sequence[tuple[Any, ...]]
     "disciplinas": _importar_disciplinas,
     "salas": _importar_salas,
     "turmas": _importar_turmas,
+    "qualificacoes": _importar_qualificacoes,
+    "grade_curricular": _importar_grade_curricular,
 }
 
 
@@ -204,17 +365,19 @@ def importar(entidade: str, conteudo: bytes, session: Session) -> RelatorioImpor
     if entidade not in COLUNAS_ESPERADAS:
         raise ValueError(f"Entidade '{entidade}' não suportada para importação.")
 
-    cabecalho, linhas_dados = _ler_planilha(conteudo)
-    relatorio = RelatorioImportacaoSchema(total_linhas=len(linhas_dados))
+    workbook = _abrir_workbook(conteudo)
+    relatorio = RelatorioImportacaoSchema()
 
-    esperadas = COLUNAS_ESPERADAS[entidade]
-    if cabecalho[: len(esperadas)] != esperadas:
-        relatorio.erros.append(
-            ErroImportacaoSchema(
-                linha=1, campo="cabecalho", motivo=f"Colunas esperadas (nesta ordem): {', '.join(esperadas)}"
-            )
-        )
-        return relatorio
+    # Folha principal: procurada pelo nome da entidade; se o ficheiro só tiver uma
+    # folha sem esse nome (caso comum de upload de uma única entidade), usa-se a
+    # folha ativa — mantém compatível com ficheiros de uma folha só.
+    folha_principal = _obter_folha_por_nome(workbook, entidade) or workbook.active
+    _processar_folha(entidade, folha_principal, session, relatorio)
 
-    _IMPORTADORES[entidade](session, cabecalho, linhas_dados, relatorio)
+    complemento = COMPLEMENTOS.get(entidade)
+    if complemento:
+        folha_complemento = _obter_folha_por_nome(workbook, complemento)
+        if folha_complemento is not None:
+            _processar_folha(complemento, folha_complemento, session, relatorio)
+
     return relatorio
