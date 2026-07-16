@@ -29,6 +29,10 @@ frontend/.packages
 **/ios/Flutter/Flutter.framework
 **/ios/Pods/
 
+# TFC — documento compilado (gerado a partir de docs/*.md via Pandoc, ver docs/dist/README.md)
+docs/dist/*.docx
+docs/dist/*.pdf
+
 # IDE
 .idea/
 *.iml
