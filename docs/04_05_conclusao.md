@@ -46,4 +46,3 @@ automática dos horários gerados para as agendas pessoais de docentes e
 estudantes; e (iv) a extensão do estudo a outras instituições angolanas
 de ensino superior, contribuindo para a generalização da solução e para
 a modernização da gestão académica no país.
-

@@ -579,4 +579,3 @@ registo de disponibilidade docente, visualização do horário gerado em
 formato de grelha semanal, consulta do relatório de inviabilidade quando
 aplicável, e exportação do horário em PDF. As capturas de ecrã do
 sistema encontram-se no Apêndice C.
-

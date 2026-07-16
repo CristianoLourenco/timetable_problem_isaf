@@ -402,4 +402,3 @@ determinismo (garante a satisfação de todas as restrições rígidas),
 adaptabilidade (suporta actualizações em tempo real sem regeneração
 completa) e escalabilidade (os tempos de solução escalam polinomialmente
 com a dimensão do problema) ([@harshalatha2026]).
-

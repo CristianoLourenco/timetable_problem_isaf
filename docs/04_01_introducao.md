@@ -178,4 +178,3 @@ adoptada na investigação e no desenvolvimento do sistema. O quarto
 capítulo destina-se à análise, ao desenvolvimento e à discussão dos
 resultados obtidos. Por fim, o quinto capítulo apresenta as conclusões,
 as limitações do estudo e as recomendações para trabalhos futuros.
-
