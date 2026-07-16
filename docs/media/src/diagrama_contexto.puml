@@ -1,0 +1,35 @@
+@startuml contexto
+!pragma layout smetana
+!theme plain
+skinparam backgroundColor white
+skinparam actor {
+  BorderColor #6366F1
+  BackgroundColor #EEF2FF
+}
+skinparam rectangle {
+  BorderColor #6366F1
+  BackgroundColor #EEF2FF
+  FontColor #1E1B4B
+}
+skinparam ArrowColor #4338CA
+skinparam nodesep 90
+skinparam ranksep 90
+
+actor "Gestor Académico\n/ Secretaria" as Gestor
+actor "Professor" as Professor
+rectangle "Sistema Inteligente de\nGeração de Horários (ISAF)" as Sistema
+rectangle "Firebase\nAuthentication" as Firebase
+
+Gestor -right-> Sistema : dados mestre, Excel,\ncomando de geração
+Sistema -left-> Gestor : estado do job,\nhorário, alertas
+
+Professor -right-> Sistema : disponibilidade,\nconsulta de horário
+Sistema -left-> Professor : confirmação, horário
+
+Sistema -down-> Firebase : login / refresh /\nrecuperação de password
+Firebase -up-> Sistema : Token
+
+Gestor -[hidden]down- Professor
+
+
+@enduml
