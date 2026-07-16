@@ -105,7 +105,6 @@ entity "ALOCACAO" as alocacao {
   professor_id : int <<FK>>
   sala_id : int <<FK>>
   dia_semana : string
-  turno : string
   periodo : int
   penalizacao_aplicada : float
 }
