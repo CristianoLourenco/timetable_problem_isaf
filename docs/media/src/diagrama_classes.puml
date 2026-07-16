@@ -35,6 +35,7 @@ class Turma {
   +id : int
   +codigo : string
   +nome : string
+  +ano_letivo : int
   +turno : TurnoEnum
   +numero_alunos : int
 }

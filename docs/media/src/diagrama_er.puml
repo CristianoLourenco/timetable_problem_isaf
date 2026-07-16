@@ -44,6 +44,7 @@ entity "TURMA" as turma {
   --
   codigo : string <<UK>>
   nome : string
+  ano_letivo : int
   turno : string
   plano_curricular_id : int <<FK>>
   numero_alunos : int
