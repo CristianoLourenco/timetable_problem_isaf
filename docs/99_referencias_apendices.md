@@ -1,87 +1,7 @@
 REFERÊNCIAS
 
-Abdipoor, S., Yaakob, R., Goh, S. L., & Abdullah, S. (2023).
-Meta-heuristic approaches for the University Course Timetabling Problem.
-*Intelligent Systems with Applications*, 19, 200253.
-<https://doi.org/10.1016/j.iswa.2023.200253>
-
-Bashab, A., Ibrahim, A. O., Hashem, I. A. T., Aggarwal, K., Mukhlif, F.,
-Ghaleb, F. A., & Abdelmaboud, A. (2023). Optimization techniques in
-university timetabling problem: Constraints, methodologies, benchmarks,
-and open issues. *Computers, Materials & Continua*, 74(3), 6461--6484.
-<https://doi.org/10.32604/cmc.2023.034051>
-
-Bittner, K., & Spence, I. (2002). *Use case modeling*. Addison-Wesley.
-
-Booch, G., Rumbaugh, J., & Jacobson, I. (2005). *UML: Guia do usuário*
-(2.ª ed.). Elsevier.
-
-Chen, P. P. (1976). The entity-relationship model --- Toward a unified
-view of data. *ACM Transactions on Database Systems*, 1(1), 9--36.
-<https://doi.org/10.1145/320434.320440>
-
-Cockburn, A. (2000). *Writing effective use cases*. Addison-Wesley.
-
-Dechter, R. (2003). *Constraint processing*. Morgan Kaufmann.
-
-Dijkstra, E. W. (1974). On the role of scientific thought.
-
-El-Sakka, T. (2015). University course timetable using constraint
-satisfaction and optimization. *International Journal of Computing
-Academic Research (IJCAR)*, 4(3), 83--95.
-
-Gil, A. C. (2017). *Como elaborar projetos de pesquisa* (6.ª ed.).
-Atlas.
-
-Guedes, G. T. A. (2011). *UML 2: Uma abordagem prática* (2.ª ed.).
-Novatec.
-
-Harshalatha, K., Harshitha, N., & Priyanka, C. M. (2026). Intelligent
-timetable and workload manager using constraint programming (CP-SAT
-solver). Cambridge Institute of Technology (VTU), Bengaluru, India.
-
-IEEE. (1998). *IEEE recommended practice for software requirements
-specifications* (IEEE Std 830-1998). IEEE.
-
-ISO/IEC/IEEE. (2011). *Systems and software engineering --- Life cycle
-processes --- Requirements engineering* (ISO/IEC/IEEE 29148:2011). ISO.
-
-Kruchten, P. (2003). *Introdução ao RUP: Rational Unified Process*.
-Ciência Moderna.
-
-Lakatos, E. M., & Marconi, M. de A. (2017). *Fundamentos de metodologia
-científica* (8.ª ed.). Atlas.
-
-Martin, R. C. (2017). *Clean Architecture: A Craftsman\'s Guide to
-Software Structure and Design*. Pearson.
-
-Object Management Group. (2017). *OMG Unified Modeling Language (OMG
-UML), Version 2.5.1*. <https://www.omg.org/spec/UML/2.5.1>
-
-Oude Vrielink, R. A., Jansen, E. A., Hans, E. W., & van Hillegersberg,
-J. (2019). Practices in timetabling higher education institutions: A
-systematic review. *Annals of Operations Research*, 275(1), 145--160.
-<https://doi.org/10.1007/s10479-017-2688-8>
-
-Perron, L., Didier, F., & Gay, S. (2023). The CP-SAT-LP solver \[Invited
-talk\]. In *Proceedings of the 29th International Conference on
-Principles and Practice of Constraint Programming (CP 2023)*, LIPIcs,
-Vol. 280, Article 3. <https://doi.org/10.4230/LIPIcs.CP.2023.3>
-
-Prodanov, C. C., & Freitas, E. C. de. (2013). *Metodologia do trabalho
-científico* (2.ª ed.). Feevale.
-
-Russell, S., & Norvig, P. (2021). *Artificial intelligence: A modern
-approach* (4th ed.). Pearson.
-
-Sommerville, I. (2011). *Software engineering* (9th ed.). Pearson.
-
-Vazquez, C. E., & Simões, G. S. (2016). *Engenharia de requisitos:
-Software orientado ao negócio*. Brasport.
-
-Wren, A. (1996). Scheduling, timetabling and rostering --- A special
-relationship? In E. Burke & P. Ross (Eds.), *Practice and theory of
-automated timetabling* (pp. 46--75). Springer.
+::: {#refs}
+:::
 
 APÊNDICES
 
@@ -157,19 +77,22 @@ UC13 --- Autenticar-se
 **Pré-condição:** O actor possui conta registada no Firebase
 Authentication.
 
-**Fluxo Principal:** 1. O actor submete email e password. 2. A aplicação
-Flutter envia as credenciais ao Firebase Authentication (SDK nativo). 3.
-O Firebase valida e devolve um ID Token. 4. A aplicação Flutter anexa o
-ID Token a cada pedido subsequente ao backend FastAPI. 5. O backend
-valida o ID Token através do Firebase Admin SDK antes de processar
-qualquer pedido (RN09).
+**Fluxo Principal:** 1. O actor submete email e password na aplicação
+Flutter. 2. A aplicação envia as credenciais ao backend FastAPI
+(`POST /auth/login`) --- o cliente nunca comunica directamente com o
+Firebase Authentication. 3. O backend troca as credenciais pela REST API
+do Firebase Identity Toolkit e devolve à aplicação Flutter um ID Token e
+um Refresh Token. 4. A aplicação Flutter anexa o ID Token a cada pedido
+subsequente ao backend FastAPI (cabeçalho `Authorization: Bearer`). 5. O
+backend valida o ID Token contra os certificados públicos do Google
+antes de processar qualquer pedido (RN09).
 
 **Fluxo de Excepção E1:** Credenciais inválidas --- mensagem de erro
 genérica, sem indicar qual campo falhou.
 
-**Fluxo de Excepção E2:** Token expirado --- backend devolve HTTP 401; o
-SDK tenta renovação silenciosa; novo login só é exigido se essa
-renovação falhar.
+**Fluxo de Excepção E2:** Token expirado --- backend devolve HTTP 401; a
+aplicação Flutter tenta renovação silenciosa via `POST /auth/refresh`;
+novo login só é exigido se essa renovação falhar.
 
 **Garantia Mínima:** Nenhuma sessão é criada sem validação bem-sucedida
 da identidade.

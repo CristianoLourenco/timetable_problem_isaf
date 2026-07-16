@@ -1,5 +1,4 @@
-![](/media/image2.png){width="2.4479166666666665in"
-height="0.8333333333333334in"}
+<!-- TODO: inserir logótipo do ISAF aqui quando disponível -->
 
 **INSTITUTO SUPERIOR DE ADMINISTRAÇÃO E FINANÇAS**
 
@@ -12,8 +11,7 @@ HORÁRIOS ACADÉMICOS**
 
 **Luanda, 2026**
 
-![](/media/image2.png){width="2.4479166666666665in"
-height="0.8333333333333334in"}
+<!-- TODO: inserir logótipo do ISAF aqui quando disponível -->
 
 **INSTITUTO SUPERIOR DE ADMINISTRAÇÃO E FINANÇAS**
 

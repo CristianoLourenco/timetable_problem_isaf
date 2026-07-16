@@ -17,12 +17,12 @@ consistente, modificável, priorizada, verificável e rastreável --- os
 requisitos do sistema foram elicitados a partir das entrevistas
 realizadas com a gestão académica do ISAF, da análise documental dos
 horários vigentes e da revisão da literatura científica sobre o UCTP
-(IEEE, 1998; ISO/IEC/IEEE, 2011).
+[@ieee830; @isoiec29148].
 
 De acordo com a norma ISO/IEC/IEEE 29148:2011, os requisitos de sistemas
 e software devem expressar necessidades, propriedades esperadas e
 especificações verificáveis ao longo do ciclo de vida do produto
-(ISO/IEC/IEEE, 2011). Neste trabalho, a necessidade central identificada
+[@isoiec29148]. Neste trabalho, a necessidade central identificada
 é a seguinte: a gestão pedagógica do ISAF necessita de gerar horários
 académicos de forma automática, eliminando os conflitos de alocação de
 docentes e salas que ocorrem no processo manual actualmente utilizado. A
@@ -486,9 +486,9 @@ Figura 4 --- Diagrama entidade-relacional
 ## **4.3 Arquitectura da solução**
 
 O sistema adoptou uma arquitectura de três camadas com separação
-rigorosa de responsabilidades, em alinhamento com princípios de
-arquitectura limpa e separação de responsabilidades em sistemas de
-software. Esta separação garante que a lógica matemática do solver é
+rigorosa de responsabilidades, em alinhamento com os princípios de
+Clean Architecture [@martin2017]. Esta separação garante que a lógica
+matemática do solver é
 independente da camada de comunicação HTTP e da camada de apresentação,
 facilitando a manutenção, a substituição de componentes e a
 escalabilidade futura.
