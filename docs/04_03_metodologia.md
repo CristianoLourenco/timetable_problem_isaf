@@ -103,7 +103,7 @@ Dado o carácter aplicado e delimitado da investigação, recorreu-se a uma
 amostra não-probabilista intencional, seleccionada por conveniência e
 relevância para os objectivos do estudo. Esta escolha justifica-se pelo
 facto de a investigação não visar a generalização estatística, mas sim a
-resolução de um problema concreto e identificado num contexto real ([@gil2017]).
+resolução de um problema concreto e identificado num contexto real [@gil2017].
 
 ### 3.5.1 Dados de referência para validação do motor de optimização
 

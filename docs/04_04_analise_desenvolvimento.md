@@ -295,7 +295,7 @@ contexto institucional do ISAF.
 A modelagem do sistema foi realizada com recurso à Unified Modeling
 Language (UML), linguagem amplamente utilizada para especificar,
 visualizar e documentar artefactos de sistemas orientados a objectos
-([@boochrumbaughjacobson2005]). São apresentados os actores do
+[@boochrumbaughjacobson2005]. São apresentados os actores do
 sistema, os casos de uso principais e a especificação formal do modelo
 matemático que fundamenta o motor de optimização.
 
@@ -315,7 +315,7 @@ Diagrama de Fluxo de Dados (DFD), representando todo o sistema como um
 informação, através de fluxos de dados que mostram as interfaces entre o
 sistema e essas entidades, permitindo identificar os limites dos
 processos, as áreas envolvidas e os relacionamentos com elementos
-externos à organização ([@vazquezsimoes2016]).
+externos à organização [@vazquezsimoes2016].
 
 No caso do sistema proposto, identificam-se duas entidades externas
 humanas --- o Gestor Académico/Secretaria e o Professor --- e uma
@@ -333,7 +333,7 @@ Figura 1 --- Diagrama de contexto
 O Diagrama de Casos de Uso é um artefacto UML formal que demonstra o
 comportamento externo do sistema na perspectiva do utilizador,
 evidenciando as funções e serviços oferecidos e os actores que podem
-utilizá-los ([@guedes2011]). O sistema envolve dois actores humanos ---
+utilizá-los [@guedes2011]. O sistema envolve dois actores humanos ---
 Gestor Académico/Secretaria e Professor --- cujas responsabilidades e
 interacções se encontram descritas na tabela seguinte, com
 rastreabilidade directa aos requisitos funcionais.
@@ -403,7 +403,7 @@ rastreabilidade directa aos requisitos funcionais.
                                                             gráfico, para evitar
                                                             poluição visual do
                                                             diagrama
-                                                            ([@bittnerspence2002]);
+                                                            [@bittnerspence2002];
                                                             representada em
                                                             alternativa por
                                                             generalização de actor
@@ -458,7 +458,7 @@ Figura 2 --- Diagrama de casos de uso
 O Diagrama de Classes é o diagrama estrutural central da UML,
 representando as classes do sistema, os seus atributos, operações e
 relacionamentos, e servindo de base lógica para a maioria dos demais
-diagramas e para a própria estrutura da base de dados ([@guedes2011]).
+diagramas e para a própria estrutura da base de dados [@guedes2011].
 Neste projecto, o Diagrama de Classes cumpre dupla função: artefacto de
 modelação e esquema directo de persistência, uma vez que cada classe de
 domínio corresponde a um modelo SQLModel no backend FastAPI, persistido
@@ -577,7 +577,7 @@ deste MVP.
 A implementação seguiu uma abordagem incremental e iterativa inspirada
 no Rational Unified Process (RUP), com o desenvolvimento organizado em
 módulos independentes e testáveis, por ordem de prioridade técnica e de
-dependência entre componentes ([@kruchten2003]).
+dependência entre componentes [@kruchten2003].
 
 ### **4.4.1 Módulo 1 --- Motor de Optimização (Core)**
 
