@@ -5,11 +5,12 @@ import app.models  # noqa: F401 - garante que todos os modelos entram no metadat
 from app.models.curso import Curso
 from app.models.disciplina import Disciplina
 from app.models.job import JobStatus
+from app.models.plano_curricular import PlanoCurricular
+from app.models.plano_curricular_disciplina import PlanoCurricularDisciplina
 from app.models.professor import Professor
 from app.models.professor_disciplina import ProfessorDisciplina
 from app.models.sala import Sala
 from app.models.turma import Turma
-from app.models.turma_disciplina import TurmaDisciplina
 from app.repositories.alocacao_repository import AlocacaoRepository
 from app.repositories.job_repository import JobRepository
 from app.workers.job_runner import executar
@@ -21,13 +22,25 @@ def _criar_engine_teste():
     return engine
 
 
-def _semear_cenario_viavel(session: Session) -> None:
+def _semear_plano_curricular(session: Session) -> PlanoCurricular:
     curso = Curso(codigo="INF", nome="Informática")
     session.add(curso)
     session.commit()
     session.refresh(curso)
 
-    turma = Turma(codigo="T1", nome="Turma 1", ano_letivo=2026, turno="manha", numero_alunos=20, curso_id=curso.id)
+    plano = PlanoCurricular(curso_id=curso.id, ano=1, semestre="1")
+    session.add(plano)
+    session.commit()
+    session.refresh(plano)
+    return plano
+
+
+def _semear_cenario_viavel(session: Session) -> None:
+    plano = _semear_plano_curricular(session)
+
+    turma = Turma(
+        codigo="T1", nome="Turma 1", ano_letivo=2026, turno="manha", numero_alunos=20, plano_curricular_id=plano.id
+    )
     professor = Professor(nome="Prof A", email="profa@isaf.co.ao", classificacao=5, vinculo_casa=True)
     disciplina = Disciplina(codigo="MAT", nome="Matemática")
     sala = Sala(codigo="S1", nome="Sala 1", capacidade=30)
@@ -38,7 +51,9 @@ def _semear_cenario_viavel(session: Session) -> None:
     session.refresh(disciplina)
     session.refresh(sala)
 
-    session.add(TurmaDisciplina(turma_id=turma.id, disciplina_id=disciplina.id, carga_horaria_semanal=2))
+    session.add(
+        PlanoCurricularDisciplina(plano_curricular_id=plano.id, disciplina_id=disciplina.id, carga_horaria_semanal=2)
+    )
     session.add(ProfessorDisciplina(professor_id=professor.id, disciplina_id=disciplina.id))
     session.commit()
 
@@ -67,12 +82,16 @@ def test_job_runner_marca_infeasible_com_diagnostico():
     engine = _criar_engine_teste()
 
     with Session(engine) as session:
-        curso = Curso(codigo="INF", nome="Informática")
-        session.add(curso)
-        session.commit()
-        session.refresh(curso)
+        plano = _semear_plano_curricular(session)
 
-        turma = Turma(codigo="T1", nome="Turma 1", ano_letivo=2026, turno="manha", numero_alunos=20, curso_id=curso.id)
+        turma = Turma(
+            codigo="T1",
+            nome="Turma 1",
+            ano_letivo=2026,
+            turno="manha",
+            numero_alunos=20,
+            plano_curricular_id=plano.id,
+        )
         professor = Professor(nome="Prof A", email="profa@isaf.co.ao", classificacao=5, vinculo_casa=True)
         disciplina = Disciplina(codigo="MAT", nome="Matemática")
         sala = Sala(codigo="S1", nome="Sala 1", capacidade=30)
@@ -82,7 +101,11 @@ def test_job_runner_marca_infeasible_com_diagnostico():
         session.refresh(professor)
         session.refresh(disciplina)
 
-        session.add(TurmaDisciplina(turma_id=turma.id, disciplina_id=disciplina.id, carga_horaria_semanal=1))
+        session.add(
+            PlanoCurricularDisciplina(
+                plano_curricular_id=plano.id, disciplina_id=disciplina.id, carga_horaria_semanal=1
+            )
+        )
         session.add(ProfessorDisciplina(professor_id=professor.id, disciplina_id=disciplina.id))
         session.commit()
 
