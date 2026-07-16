@@ -13,20 +13,41 @@ pandoc \
   99_referencias_apendices.md \
   --citeproc --bibliography=referencias.bib --csl=apa.csl \
   --reference-doc=dist/custom-reference.docx \
+  --toc --toc-depth=3 \
   -o dist/TFC_Cristiano_Lourenco.docx
 
 python3 dist/postprocess_pagination.py dist/TFC_Cristiano_Lourenco.docx
+
+# opcional mas recomendado — pré-resolve o campo do Índice no próprio
+# .docx (exige LibreOffice instalado; ver docstring do script)
+python3 dist/resolve_toc_libreoffice.py dist/TFC_Cristiano_Lourenco.docx
 ```
 
-O segundo passo (`postprocess_pagination.py`) **é obrigatório** — insere a quebra
-de secção OOXML entre o pré-textual e o "1. INTRODUÇÃO" e liga o rodapé com
-numeração de página: romano minúsculo (i, ii, iii...) no pré-textual, arábico a
-partir de 1 do "1. INTRODUÇÃO" até ao fim (textual + pós-textual). O pandoc não
-tem forma nativa de expressar isto a partir do markdown/reference-doc, por isso
-edita directamente o pacote OOXML já compilado. Se a estrutura de
-`00_capa_pretextual.md` ou `04_01_introducao.md` mudar (nomeadamente o heading
-"1. INTRODUÇÃO"), reveja o script — ele falha alto (`sys.exit`) em vez de
-produzir um DOCX com numeração errada caso não encontre os marcadores esperados.
+O segundo passo (`postprocess_pagination.py`) **é obrigatório** — faz três
+coisas que o pandoc não expõe a partir do markdown/reference-doc, editando
+directamente o pacote OOXML já compilado:
+
+1. Insere a quebra de secção entre o pré-textual e o "1. INTRODUÇÃO" e liga um
+   rodapé com numeração de página: romano minúsculo (i, ii, iii...) no
+   pré-textual, arábico a partir de 1 do "1. INTRODUÇÃO" até ao fim (textual +
+   pós-textual).
+2. Reposiciona o campo `ÍNDICE` (Índice/TOC), que o pandoc `--toc` insere
+   sempre no início absoluto do documento (antes da capa), para o local
+   correcto: depois da "Lista de Abreviaturas e Siglas" e antes do "1.
+   INTRODUÇÃO".
+3. Abre uma página nova a seguir ao Índice, para que "1. INTRODUÇÃO" comece
+   sempre em página própria.
+
+Se não correr o passo opcional `resolve_toc_libreoffice.py`, o Word ainda
+assim resolve o campo do Índice automaticamente ao abrir o ficheiro (o
+pandoc marca-o como "dirty"); se por algum motivo isso não acontecer,
+actualize manualmente com botão direito sobre o Índice → "Atualizar campo"
+→ "Atualizar índice inteiro".
+
+Se a estrutura de `00_capa_pretextual.md` ou `04_01_introducao.md` mudar
+(nomeadamente o heading "1. INTRODUÇÃO"), reveja o script — ele falha alto
+(`sys.exit`) em vez de produzir um DOCX com numeração ou Índice errados caso
+não encontre os marcadores esperados.
 
 - `referencias.bib` — exportado do Zotero (Better BibTeX); manter sincronizado lá, não
   editar as entradas manualmente aqui.

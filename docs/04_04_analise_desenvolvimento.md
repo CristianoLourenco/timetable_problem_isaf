@@ -139,6 +139,16 @@ uma área busca alcançar.
           (Segurança)   consulta restrita ou geração exige um ID Token
                         válido do Firebase no cabeçalho HTTP
                         (Authorization Bearer).
+
+  RN10    HC            Ao registar conta, o email da conta Firebase do
+          (Segurança)   Professor deve corresponder ao email do registo
+                        criado previamente pelo Gestor --- caso contrário,
+                        o backend devolve 403 e a conta não é associada.
+
+  RN11    HC (Acesso)   O Gestor consulta e exporta o horário de qualquer
+                        turma ou professor; o Professor só pode consultar
+                        o seu próprio horário (UC15 --- Validar Nível de
+                        Acesso).
   ------------------------------------------------------------------------
 
 *Tabela 2 --- Requisitos de negócio*
@@ -233,6 +243,14 @@ solução produzida.
   RF16   Recuperação de    Segurança       Recuperação self-service integrada
          Password                          com fluxo nativo do Firebase (link
                                            de reset por email).
+
+  RF17   Sincronização com Integrações     Sincronizar os horários gerados
+         Calendário                        com serviços de calendário
+         Externo (Fora do                  externos, nomeadamente a Google
+         Âmbito)                           Calendar API. Classificado como
+                                           trabalho futuro e fora do âmbito
+                                           de implementação e validação deste
+                                           MVP (cf. Secção 4.4).
   ---------------------------------------------------------------------------
 
 *Tabela 3 --- Requisitos Funcionais*
@@ -286,6 +304,15 @@ contexto institucional do ISAF.
                                Professor). O backend FastAPI atua sem
                                persistência de credenciais diretas, apenas
                                validando tokens criptográficos.
+
+  RNF07     Persistência de    Utilização de um SGBD relacional transaccional
+            Dados              (PostgreSQL) para garantir integridade
+                               referencial e transaccional nas operações de
+                               importação em massa, com esquema mapeado
+                               directamente pelos modelos SQLModel. Suporte a
+                               escrita concorrente é uma propriedade de
+                               desenho do SGBD, não validada por teste de
+                               carga dedicado neste trabalho.
   --------------------------------------------------------------------------
 
 *Tabela 4 --- Requisitos Não Funcionais*
@@ -560,11 +587,19 @@ CSP, instância as variáveis de decisão de acordo com a modelagem esparsa
 (RNF01), adiciona as restrições rígidas e flexíveis ao modelo, e invoca
 o solver. O resultado é devolvido como um objecto estruturado que a
 camada FastAPI serializa em JSON para consumo pela interface Flutter.
-Caso o solver, devolva o status INFEASIBLE --- indicando que o conjunto
+Caso o solver devolva o status INFEASIBLE --- indicando que o conjunto
 de restrições é matematicamente irresolvível --- o motor activa o
-mecanismo de diagnóstico (RF13), introduzindo variáveis de folga que
-permitem identificar e reportar o conjunto mínimo de restrições
-conflituantes, em vez de falhar criticamente.
+mecanismo de diagnóstico (RF13): uma verificação estrutural leve,
+executada antes de qualquer nova resolução, que testa as causas mais
+comuns de inviabilidade (ausência de professor qualificado para uma
+disciplina, número de alunos da turma a exceder a capacidade de todas
+as salas disponíveis, ou carga horária semanal incompatível com o
+tamanho mínimo de bloco exigido pelo RN06) e devolve a causa
+identificada em vez de falhar criticamente. Não recorre a variáveis de
+folga (*slack variables*) nem a extracção do conjunto mínimo de
+restrições em conflito via `SufficientAssumptionsForInfeasibility` do
+CP-SAT --- ficando como melhoria futura (cf. Secção 5.2) para os casos
+em que nenhuma das causas estruturais verificadas é identificada.
 
 A sincronização dos horários gerados com serviços de calendário externos
 (Google Calendar API) foi identificada como extensão de valor
@@ -586,7 +621,7 @@ para validar a lógica matemática sem dependências de framework.
 Implementa a modelagem esparsa do CSP com Google OR-Tools CP-SAT, a
 gestão das Hard Constraints (RN01, RN02, RN03 e RN05), a penalização das
 Soft Constraints (RN04, RN06 e RN08) na função objectivo, e o mecanismo
-de variáveis de folga para diagnóstico de inviabilidade (RF13). A
+de diagnóstico estrutural para inviabilidade (RF13, cf. Secção 4.3.3). A
 arquitectura do modelo foi preparada para suportar, em iterações
 futuras, o congelamento de alocações necessário à reoptimização
 incremental (RF14, classificado como trabalho futuro). O código deste
@@ -612,3 +647,109 @@ registo de disponibilidade docente, visualização do horário gerado em
 formato de grelha semanal, consulta do relatório de inviabilidade quando
 aplicável, e exportação do horário em PDF. As capturas de ecrã do
 sistema encontram-se no Apêndice C.
+
+## **4.5 Testes e validação**
+
+Em conformidade com a abordagem exploratória-descritiva definida na
+Secção 3, a validação do sistema seguiu uma estratégia de cenários de
+teste progressivos --- do cenário mínimo controlável até um cenário de
+escala --- complementada por dois cenários de inviabilidade intencional,
+destinados a verificar especificamente o mecanismo de diagnóstico
+estrutural descrito na Secção 4.3.3 (RF13, RNF03). A suite de testes
+automatizados totaliza 32 testes, cobrindo o motor de optimização, o
+fluxo assíncrono de geração (RF09/RF10), a consulta estruturada de
+horários (RF11/RF12), a importação em massa (RF06--RF08) e a
+autenticação/autorização (RN09--RN11); a suite completa executa em
+aproximadamente 15 segundos.
+
+  ---------------------------------------------------------------------------
+  ID     Cenário         Dimensão                    Critério de Aceitação
+  ------ --------------- --------------------------- -------------------------
+  CT01   Cenário mínimo  3 turmas, 3 disciplinas, 2  Status OPTIMAL/FEASIBLE;
+         viável          professores, 1 sala         6 alocações geradas;
+                                                     RN01--RN03, RN05 e RN06
+                                                     satisfeitas.
+
+  CT02   Cenário de      12 turmas, 6 disciplinas,   Status OPTIMAL/FEASIBLE
+         escala          8 professores, 5 salas      em até 10s; RN01--RN03 e
+                                                     RN05 satisfeitas sem
+                                                     violação.
+
+  CT03   Inviabilidade   1 turma, 1 disciplina, 1    Status INFEASIBLE;
+         estrutural      professor, 1 sala, carga    diagnóstico identifica a
+         intencional     semanal = 1                 causa estrutural (carga
+                                                     incompatível com o bloco
+                                                     mínimo do RN06); zero
+                                                     alocações.
+
+  CT04   Distinção entre Cenário de escala (CT02)    Status INFEASIBLE;
+         esgotamento de  com tempo-limite reduzido   diagnóstico refere o
+         tempo e         para 0,01s                  limite de tempo, sem
+         inviabilidade                               reportar falsamente uma
+         genuína                                     causa estrutural.
+
+  CT05   Fluxo           Criação de entidades via    Job conclui com sucesso;
+         ponta-a-ponta   API, POST /gerar-horario,   GET /horarios/turma/{id}
+         (Golden Path)   polling do Job, consulta    e /horarios/professor/{id}
+                         por turma e por professor   devolvem JSON estruturado
+                                                     por dia/slot.
+
+  CT06   Idempotência da Reimportação do mesmo       Registos já existentes
+         importação      ficheiro institucional      são ignorados; nenhum
+         Excel                                       registo duplicado é
+                                                     criado na segunda
+                                                     importação.
+  ---------------------------------------------------------------------------
+
+*Tabela 6 --- Cenários de Teste e Critérios de Aceitação*
+
+O cenário CT01 corresponde ao critério mínimo de aceitação definido na
+Secção 3.5.1 e foi o primeiro a ser validado, na Fase 3, antes de
+qualquer dependência de framework ser introduzida. O cenário CT02,
+introduzido na Fase 7, aumenta a dimensão do problema para 12 turmas
+(cada uma com 30 alunos) e 8 professores --- dos quais 6 são
+especialistas numa única disciplina e 2 partilham qualificação entre
+duas disciplinas, testando a resolução de ambiguidade de alocação pelo
+solver --- restringidos a um único turno (45 slots). Todos os testes
+foram executados contra uma base de dados SQLite em memória, e não
+contra o PostgreSQL utilizado em produção (cf. RNF07, Secção 4.1.4).
+
+Os cenários CT03 e CT04 validam especificamente o mecanismo de
+diagnóstico descrito na Secção 4.3.3. O CT03 força uma violação
+estrutural do RN06 (uma disciplina com carga semanal de apenas 1 tempo
+lectivo, incompatível com o tamanho mínimo de bloco de 2 tempos) e
+verifica que o diagnóstico identifica correctamente essa causa. O CT04
+verifica um requisito de correcção mais subtil: ao reduzir
+artificialmente o tempo disponível ao solver para o cenário de escala
+(CT02) para 0,01 segundos, o CP-SAT devolve um status que, sem
+tratamento adequado, seria indistinguível de uma inviabilidade
+estrutural genuína. O sistema distingue correctamente entre as duas
+situações, evitando que um simples esgotamento do orçamento de tempo
+seja reportado ao utilizador como uma revisão manual necessária.
+
+## **4.6 Discussão dos resultados**
+
+Os resultados obtidos confirmam a hipótese H1 (Secção 1.5) nos limites
+testados: em todos os cenários matematicamente viáveis (CT01, CT02,
+CT05), o motor produziu horários sem conflitos de professor, turma ou
+sala (RN01--RN03), com a carga horária semanal integralmente cumprida
+(RN05). O mecanismo de diagnóstico estrutural (CT03, CT04) cumpriu o
+RNF03 ao garantir que nenhum cenário sem solução resulta em falha
+silenciosa, incluindo o caso de fronteira --- esgotamento do tempo de
+resolução --- que poderia ser confundido com uma inviabilidade real.
+
+Dois limites da validação efectuada devem ser assinalados com rigor
+científico. Primeiro, o cenário de maior escala testado (CT02, 12
+turmas e 8 professores) fica substancialmente aquém do limite superior
+formalmente definido pelo RNF01 (100+ professores, 60+ turmas); embora a
+modelagem esparsa (Secção 2.4.3) sustente teoricamente a escalabilidade
+do motor para instâncias maiores, essa extrapolação não foi validada
+empiricamente neste trabalho. Segundo, na ausência de dados
+institucionais reais e completos do ISAF (limitação já identificada na
+Secção 5.1), não foi possível realizar a análise comparativa de
+desempenho prevista na Secção 3.7 entre os horários gerados pelo motor
+CP-SAT e os horários actualmente produzidos manualmente pela instituição
+--- a validação obtida circunscreve-se, portanto, à correcção matemática
+do motor face às restrições formalizadas, e não a uma medição directa do
+ganho de eficiência face ao processo manual. Ambos os limites motivam as
+recomendações apresentadas na Secção 5.2.
