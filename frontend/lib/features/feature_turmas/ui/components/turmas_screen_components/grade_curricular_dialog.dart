@@ -5,21 +5,23 @@ import 'package:ghorario/features/feature_turmas/domain/entities/item_grade_curr
 import 'package:ghorario/features/feature_turmas/domain/usecase/get_grade_curricular_usecase.dart';
 import 'package:ghorario/features/feature_turmas/domain/usecase/set_grade_curricular_usecase.dart';
 
-/// Dialog to view/edit a Turma's curriculum grid (`GET|POST /turmas/{id}/disciplinas`).
+/// Dialog to view/edit a PlanoCurricular's curriculum grid
+/// (`GET|POST /planos-curriculares/{id}/disciplinas`) — a Turma follows one
+/// PlanoCurricular, partilhado por todas as turmas desse curso+ano+semestre.
 ///
 /// Receives use cases and data as parameters — no direct Provider access,
 /// per the project's architecture rule for Components.
 class GradeCurricularDialog extends StatefulWidget {
   const GradeCurricularDialog({
     super.key,
-    required this.turmaId,
+    required this.planoCurricularId,
     required this.turmaNome,
     required this.disciplinas,
     required this.getGradeCurricularUseCase,
     required this.setGradeCurricularUseCase,
   });
 
-  final int turmaId;
+  final int planoCurricularId;
   final String turmaNome;
   final List<Disciplina> disciplinas;
   final GetGradeCurricularUseCase getGradeCurricularUseCase;
@@ -55,7 +57,7 @@ class _GradeCurricularDialogState extends State<GradeCurricularDialog> {
   }
 
   Future<void> _load() async {
-    final result = await widget.getGradeCurricularUseCase(widget.turmaId);
+    final result = await widget.getGradeCurricularUseCase(widget.planoCurricularId);
     if (!mounted) return;
     if (result.success && result.data != null) {
       setState(() {
@@ -82,7 +84,7 @@ class _GradeCurricularDialogState extends State<GradeCurricularDialog> {
             ))
         .toList();
     final result = await widget.setGradeCurricularUseCase(
-      SetGradeCurricularParams(turmaId: widget.turmaId, itens: itens),
+      SetGradeCurricularParams(planoCurricularId: widget.planoCurricularId, itens: itens),
     );
     if (!mounted) return;
     if (result.success) {

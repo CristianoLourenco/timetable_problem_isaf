@@ -16,18 +16,23 @@ import 'package:ghorario/features/feature_docentes/domain/usecase/create_docente
 import 'package:ghorario/features/feature_docentes/domain/usecase/get_all_docentes_usecase.dart';
 import 'package:ghorario/features/feature_docentes/presentation/provider/docentes_provider.dart';
 
-// Feature Turmas (+ Cursos, support entity for Turma.cursoId)
+// Feature Turmas (+ Cursos e PlanoCurricular, entidades de suporte de Turma)
 import 'package:ghorario/features/feature_turmas/data/datasource/remote/curso_remote_impl.dart';
 import 'package:ghorario/features/feature_turmas/data/datasource/remote/i_curso_remote.dart';
+import 'package:ghorario/features/feature_turmas/data/datasource/remote/i_plano_curricular_remote.dart';
 import 'package:ghorario/features/feature_turmas/data/datasource/remote/i_turma_remote.dart';
+import 'package:ghorario/features/feature_turmas/data/datasource/remote/plano_curricular_remote_impl.dart';
 import 'package:ghorario/features/feature_turmas/data/datasource/remote/turma_remote_impl.dart';
 import 'package:ghorario/features/feature_turmas/data/repository_impl/curso_repository_impl.dart';
+import 'package:ghorario/features/feature_turmas/data/repository_impl/plano_curricular_repository_impl.dart';
 import 'package:ghorario/features/feature_turmas/data/repository_impl/turma_repository_impl.dart';
 import 'package:ghorario/features/feature_turmas/domain/repository/i_curso_repository.dart';
+import 'package:ghorario/features/feature_turmas/domain/repository/i_plano_curricular_repository.dart';
 import 'package:ghorario/features/feature_turmas/domain/repository/i_turma_repository.dart';
 import 'package:ghorario/features/feature_turmas/domain/usecase/create_curso_usecase.dart';
 import 'package:ghorario/features/feature_turmas/domain/usecase/create_turma_usecase.dart';
 import 'package:ghorario/features/feature_turmas/domain/usecase/get_all_cursos_usecase.dart';
+import 'package:ghorario/features/feature_turmas/domain/usecase/get_all_planos_curriculares_usecase.dart';
 import 'package:ghorario/features/feature_turmas/domain/usecase/get_all_turmas_usecase.dart';
 import 'package:ghorario/features/feature_turmas/presentation/provider/cursos_provider.dart';
 import 'package:ghorario/features/feature_turmas/presentation/provider/turmas_provider.dart';
@@ -156,6 +161,10 @@ class AppMultiProviders {
     final ICursoRepository cursoRepository = CursoRepositoryImpl(remoteDatasource: cursoRemote);
     final getAllCursosUseCase = GetAllCursosUseCase(cursoRepository);
     final createCursoUseCase = CreateCursoUseCase(cursoRepository);
+    final IPlanoCurricularRemote planoCurricularRemote = PlanoCurricularRemoteImpl(httpMethods);
+    final IPlanoCurricularRepository planoCurricularRepository =
+        PlanoCurricularRepositoryImpl(remoteDatasource: planoCurricularRemote);
+    final getAllPlanosCurricularesUseCase = GetAllPlanosCurricularesUseCase(planoCurricularRepository);
 
     // 5. Disciplinas Dependencies
     final IDisciplinaRemote disciplinaRemote = DisciplinaRemoteImpl(httpMethods);
@@ -264,6 +273,7 @@ class AppMultiProviders {
         ),
       ),
       Provider<GetAllCursosUseCase>.value(value: getAllCursosUseCase),
+      Provider<GetAllPlanosCurricularesUseCase>.value(value: getAllPlanosCurricularesUseCase),
       Provider<ImportarExcelUseCase>.value(value: importarExcelUseCase),
       Provider<GetGradeCurricularUseCase>.value(value: getGradeCurricularUseCase),
       Provider<SetGradeCurricularUseCase>.value(value: setGradeCurricularUseCase),

@@ -22,13 +22,13 @@ class TurmaDisciplinaRepositoryImpl implements ITurmaDisciplinaRepository {
   }
 
   @override
-  Future<DataState<List<ItemGradeCurricular>>> obter(int turmaId) async {
-    return _toEntityState(await remoteDatasource.obter(turmaId));
+  Future<DataState<List<ItemGradeCurricular>>> obter(int planoCurricularId) async {
+    return _toEntityState(await remoteDatasource.obter(planoCurricularId));
   }
 
   @override
-  Future<DataState<List<ItemGradeCurricular>>> definir(int turmaId, List<ItemGradeCurricular> itens) async {
+  Future<DataState<List<ItemGradeCurricular>>> definir(int planoCurricularId, List<ItemGradeCurricular> itens) async {
     final dtos = itens.map((i) => ItemGradeCurricularDto.fromEntity(i)).toList();
-    return _toEntityState(await remoteDatasource.definir(turmaId, dtos));
+    return _toEntityState(await remoteDatasource.definir(planoCurricularId, dtos));
   }
 }

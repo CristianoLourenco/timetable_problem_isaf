@@ -2,7 +2,7 @@ import 'package:ghorario/core/enums/turno.dart';
 import 'package:ghorario/features/feature_turmas/domain/entities/turma.dart';
 
 /// Data Transfer Object for [Turma] entity (`TurmaRead`: id, codigo, nome,
-/// ano_letivo, turno, numero_alunos, curso_id).
+/// ano_letivo, turno, numero_alunos, plano_curricular_id).
 class TurmaDto {
   const TurmaDto({
     required this.id,
@@ -11,7 +11,7 @@ class TurmaDto {
     this.year,
     this.period,
     this.studentsCount,
-    this.cursoId,
+    this.planoCurricularId,
     this.createdAt,
     this.updatedAt,
   });
@@ -22,7 +22,7 @@ class TurmaDto {
   final int? year;
   final Turno? period;
   final int? studentsCount;
-  final int? cursoId;
+  final int? planoCurricularId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -34,7 +34,7 @@ class TurmaDto {
       year: json['ano_letivo'] as int?,
       period: Turno.fromApi(json['turno'] as String?),
       studentsCount: json['numero_alunos'] as int?,
-      cursoId: json['curso_id'] as int?,
+      planoCurricularId: json['plano_curricular_id'] as int?,
     );
   }
 
@@ -45,7 +45,7 @@ class TurmaDto {
       'ano_letivo': year,
       'turno': period?.apiValue,
       'numero_alunos': studentsCount,
-      'curso_id': cursoId,
+      'plano_curricular_id': planoCurricularId,
     };
   }
 
@@ -57,7 +57,7 @@ class TurmaDto {
       year: year,
       period: period,
       studentsCount: studentsCount,
-      cursoId: cursoId,
+      planoCurricularId: planoCurricularId,
       createdAt: createdAt,
       updatedAt: updatedAt,
     );
@@ -71,7 +71,7 @@ class TurmaDto {
       year: entity.year,
       period: entity.period,
       studentsCount: entity.studentsCount,
-      cursoId: entity.cursoId,
+      planoCurricularId: entity.planoCurricularId,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     );

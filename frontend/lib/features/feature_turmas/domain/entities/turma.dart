@@ -11,7 +11,7 @@ class Turma {
     this.year,
     this.period,
     this.studentsCount,
-    this.cursoId,
+    this.planoCurricularId,
     this.createdAt,
     this.updatedAt,
   });
@@ -22,7 +22,7 @@ class Turma {
   final int? year;
   final Turno? period;
   final int? studentsCount;
-  final int? cursoId;
+  final int? planoCurricularId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 }

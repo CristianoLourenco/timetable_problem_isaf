@@ -30,18 +30,18 @@ class TurmaDisciplinaRemoteImpl implements ITurmaDisciplinaRemote {
   }
 
   @override
-  Future<DataState<List<ItemGradeCurricularDto>>> obter(int turmaId) async {
-    return _parse(await _http.get<dynamic>('/turmas/$turmaId/disciplinas'));
+  Future<DataState<List<ItemGradeCurricularDto>>> obter(int planoCurricularId) async {
+    return _parse(await _http.get<dynamic>('/planos-curriculares/$planoCurricularId/disciplinas'));
   }
 
   @override
   Future<DataState<List<ItemGradeCurricularDto>>> definir(
-    int turmaId,
+    int planoCurricularId,
     List<ItemGradeCurricularDto> itens,
   ) async {
     return _parse(
       await _http.post<dynamic>(
-        '/turmas/$turmaId/disciplinas',
+        '/planos-curriculares/$planoCurricularId/disciplinas',
         data: {'itens': itens.map((i) => i.toJson()).toList()},
       ),
     );
