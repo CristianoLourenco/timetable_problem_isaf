@@ -22,3 +22,21 @@ class ProfessorDisciplinaRepository:
         for disciplina_id in disciplina_ids:
             self.session.add(ProfessorDisciplina(professor_id=professor_id, disciplina_id=disciplina_id))
         self.session.commit()
+
+    def existe(self, professor_id: int, disciplina_id: int) -> bool:
+        return (
+            self.session.exec(
+                select(ProfessorDisciplina).where(
+                    ProfessorDisciplina.professor_id == professor_id,
+                    ProfessorDisciplina.disciplina_id == disciplina_id,
+                )
+            ).first()
+            is not None
+        )
+
+    def adicionar(self, professor_id: int, disciplina_id: int) -> None:
+        """Insere um par sem apagar os já existentes — usado pela importação
+        em massa (RF06/RF08), que é aditiva e idempotente por par, ao contrário
+        de `substituir` (usado pelo diálogo manual, que troca o conjunto todo)."""
+        self.session.add(ProfessorDisciplina(professor_id=professor_id, disciplina_id=disciplina_id))
+        self.session.commit()
