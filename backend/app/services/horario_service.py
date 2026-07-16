@@ -13,11 +13,11 @@ from app.core.exceptions import EntidadeNaoEncontradaError
 from app.models.alocacao import Alocacao
 from app.models.disponibilidade import Disponibilidade
 from app.models.job import Job
+from app.models.plano_curricular_disciplina import PlanoCurricularDisciplina
 from app.models.professor import Professor
 from app.models.professor_disciplina import ProfessorDisciplina
 from app.models.sala import Sala
 from app.models.turma import Turma
-from app.models.turma_disciplina import TurmaDisciplina
 from app.repositories.alocacao_repository import AlocacaoRepository
 from app.repositories.disciplina_repository import DisciplinaRepository
 from app.repositories.job_repository import JobRepository
@@ -41,13 +41,33 @@ _ORDEM_TURNOS = ["manha", "tarde", "noite"]
 
 
 def extrair_dados(session: Session) -> HorarioInput:
-    """Lê todas as entidades relevantes da BD e monta o HorarioInput do solver."""
+    """Lê todas as entidades relevantes da BD e monta o HorarioInput do solver.
+
+    turma_disciplinas é derivado de Turma.plano_curricular_id -> PlanoCurricularDisciplina
+    (não existe TurmaDisciplina — grade curricular é partilhada por curso+ano+semestre,
+    ver docs/04_04_analise_desenvolvimento.md secção 4.2.3). O solver continua a receber
+    a mesma forma (turma_id, disciplina_id, carga_horaria_semanal) de sempre.
+    """
     turmas = session.exec(select(Turma)).all()
     professores = session.exec(select(Professor)).all()
     salas = session.exec(select(Sala)).all()
-    turma_disciplinas = session.exec(select(TurmaDisciplina)).all()
+    itens_plano = session.exec(select(PlanoCurricularDisciplina)).all()
     professor_disciplinas = session.exec(select(ProfessorDisciplina)).all()
     disponibilidades = session.exec(select(Disponibilidade)).all()
+
+    itens_por_plano: dict[int, list[PlanoCurricularDisciplina]] = defaultdict(list)
+    for item in itens_plano:
+        itens_por_plano[item.plano_curricular_id].append(item)
+
+    turma_disciplinas = [
+        TurmaDisciplinaDTO(
+            turma_id=turma.id,
+            disciplina_id=item.disciplina_id,
+            carga_horaria_semanal=item.carga_horaria_semanal,
+        )
+        for turma in turmas
+        for item in itens_por_plano.get(turma.plano_curricular_id, [])
+    ]
 
     return HorarioInput(
         turmas=[TurmaDTO(id=t.id, numero_alunos=t.numero_alunos, turno=t.turno) for t in turmas],
@@ -56,14 +76,7 @@ def extrair_dados(session: Session) -> HorarioInput:
         ],
         salas=[SalaDTO(id=s.id, capacidade=s.capacidade) for s in salas],
         slots=[SlotDTO(dia_semana=g.dia_semana, turno=g.turno, periodo=g.periodo) for g in gerar_grelha_tempos()],
-        turma_disciplinas=[
-            TurmaDisciplinaDTO(
-                turma_id=td.turma_id,
-                disciplina_id=td.disciplina_id,
-                carga_horaria_semanal=td.carga_horaria_semanal,
-            )
-            for td in turma_disciplinas
-        ],
+        turma_disciplinas=turma_disciplinas,
         professor_disciplinas=[
             ProfessorDisciplinaDTO(professor_id=pd.professor_id, disciplina_id=pd.disciplina_id)
             for pd in professor_disciplinas
@@ -122,7 +135,12 @@ class HorarioService:
         return job
 
     def _montar_resposta(self, job_id: str, alocacoes: list[Alocacao]) -> HorarioResponseSchema:
-        """Traduz linhas de Alocacao em JSON estruturado por dia/tempo (nunca linhas soltas)."""
+        """Traduz linhas de Alocacao em JSON estruturado por dia/tempo (nunca linhas soltas).
+
+        Alocacao não guarda turno (é sempre o da Turma alocada, RN de normalização até
+        à 3.ª Forma Normal — ver docs/media/src/diagrama_er.puml) — obtém-se aqui via
+        turmas[aloc.turma_id].turno.
+        """
         turmas = {t.id: t for t in self.turma_repo.list()}
         professores = {p.id: p for p in self.professor_repo.list()}
         disciplinas = {d.id: d for d in self.disciplina_repo.list()}
@@ -131,11 +149,12 @@ class HorarioService:
 
         itens_por_dia: dict[str, list[HorarioItemSchema]] = defaultdict(list)
         for aloc in alocacoes:
-            hora_inicio, hora_fim = horas[(aloc.dia_semana, aloc.turno, aloc.periodo)]
+            turno = turmas[aloc.turma_id].turno
+            hora_inicio, hora_fim = horas[(aloc.dia_semana, turno, aloc.periodo)]
             itens_por_dia[aloc.dia_semana].append(
                 HorarioItemSchema(
                     dia_semana=aloc.dia_semana,
-                    turno=aloc.turno,
+                    turno=turno,
                     periodo=aloc.periodo,
                     hora_inicio=hora_inicio,
                     hora_fim=hora_fim,

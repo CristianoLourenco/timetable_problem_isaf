@@ -1,4 +1,4 @@
-# Implementa: RF06, RF07, RF08 (UC06, UC07) — ver docs/analise_requisitos_v5.0.md
+# Implementa: RF06, RF07, RF08 (UC06, UC07) — ver docs/04_04_analise_desenvolvimento.md
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from sqlmodel import Session
 
@@ -11,7 +11,16 @@ from app.services import importacao_service
 router = APIRouter(prefix="/upload", tags=["Importação"], dependencies=[Depends(require_gestor)])
 
 ENTIDADES_SUPORTADAS = frozenset(
-    {"cursos", "professores", "turmas", "disciplinas", "salas", "qualificacoes", "grade_curricular"}
+    {
+        "cursos",
+        "planos_curriculares",
+        "professores",
+        "turmas",
+        "disciplinas",
+        "salas",
+        "qualificacoes",
+        "grade_curricular",
+    }
 )
 
 
@@ -24,25 +33,28 @@ exatamente pela ordem abaixo (nomes não sensíveis a maiúsculas/minúsculas). 
 chave única — reimportar ignora linhas cuja chave já exista (não atualiza, não duplica).
 Nunca aborta na primeira linha inválida — devolve um relatório com todos os erros.
 
-Se `turmas` referencia um `curso_codigo`, importa `cursos` primeiro. `qualificacoes` e
-`grade_curricular` são aditivas (nunca substituem associações já existentes) e exigem que
-professores/turmas/disciplinas referenciados já estejam importados.
+`turmas` referencia um `plano_curricular` por curso_codigo+ano+semestre (importar
+`planos_curriculares` primeiro), que por sua vez referencia um `curso_codigo` (importar
+`cursos` primeiro). `qualificacoes` e `grade_curricular` são aditivas (nunca substituem
+associações já existentes) e exigem que professores/planos curriculares/disciplinas
+referenciados já estejam importados.
 
-**Ficheiro com múltiplas folhas**: ao importar `entidade=turmas`, se o mesmo .xlsx tiver também
-uma folha chamada `grade_curricular`, esta é importada na mesma chamada (idem para
-`entidade=professores` + folha `qualificacoes`). As folhas são identificadas pelo nome, não pela
-posição — a folha principal pode ter qualquer nome (cai na folha ativa), mas o complemento só é
-detetado se a folha se chamar exatamente `grade_curricular`/`qualificacoes`.
+**Ficheiro com múltiplas folhas**: ao importar `entidade=planos_curriculares`, se o mesmo
+.xlsx tiver também uma folha chamada `grade_curricular`, esta é importada na mesma chamada
+(idem para `entidade=professores` + folha `qualificacoes`). As folhas são identificadas pelo
+nome, não pela posição — a folha principal pode ter qualquer nome (cai na folha ativa), mas
+o complemento só é detetado se a folha se chamar exatamente `grade_curricular`/`qualificacoes`.
 
 | entidade | colunas (nesta ordem) | chave de idempotência |
 |---|---|---|
 | `cursos` | codigo, nome | codigo |
+| `planos_curriculares` | curso_codigo, ano, semestre | (curso_codigo, ano, semestre) |
 | `professores` | nome, email, classificacao (1-5), vinculo_casa (true/false) | email |
 | `disciplinas` | codigo, nome | codigo |
 | `salas` | codigo, nome, capacidade (>0) | codigo |
-| `turmas` | codigo, nome, ano_letivo, turno, numero_alunos (>0), curso_codigo | codigo (curso_codigo tem de já existir) |
+| `turmas` | codigo, nome, ano_letivo, turno, numero_alunos (>0), curso_codigo, ano, semestre | codigo (curso_codigo+ano+semestre tem de já existir como plano_curricular) |
 | `qualificacoes` | professor_email, disciplina_codigo | par (professor_email, disciplina_codigo) |
-| `grade_curricular` | turma_codigo, disciplina_codigo, carga_horaria_semanal (>0) | par (turma_codigo, disciplina_codigo) |
+| `grade_curricular` | curso_codigo, ano, semestre, disciplina_codigo, carga_horaria_semanal (>0) | par (plano_curricular, disciplina_codigo) |
 """,
 )
 async def importar_excel(

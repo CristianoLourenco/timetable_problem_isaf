@@ -6,11 +6,12 @@ import app.models  # noqa: F401 - garante que todos os modelos entram no metadat
 from app.core.exceptions import EntidadeNaoEncontradaError
 from app.models.curso import Curso
 from app.models.disciplina import Disciplina
+from app.models.plano_curricular import PlanoCurricular
+from app.models.plano_curricular_disciplina import PlanoCurricularDisciplina
 from app.models.professor import Professor
 from app.models.professor_disciplina import ProfessorDisciplina
 from app.models.sala import Sala
 from app.models.turma import Turma
-from app.models.turma_disciplina import TurmaDisciplina
 from app.repositories.job_repository import JobRepository
 from app.services.horario_service import HorarioService
 from app.workers.job_runner import executar
@@ -30,7 +31,14 @@ def _semear_e_gerar(engine) -> tuple[int, int]:
         session.commit()
         session.refresh(curso)
 
-        turma = Turma(codigo="T1", nome="Turma 1", ano_letivo=2026, turno="manha", numero_alunos=20, curso_id=curso.id)
+        plano = PlanoCurricular(curso_id=curso.id, ano=1, semestre="1")
+        session.add(plano)
+        session.commit()
+        session.refresh(plano)
+
+        turma = Turma(
+            codigo="T1", nome="Turma 1", ano_letivo=2026, turno="manha", numero_alunos=20, plano_curricular_id=plano.id
+        )
         professor = Professor(nome="Prof A", email="profa@isaf.co.ao", classificacao=5, vinculo_casa=True)
         disciplina = Disciplina(codigo="MAT", nome="Matemática")
         sala = Sala(codigo="S1", nome="Sala 1", capacidade=30)
@@ -40,7 +48,9 @@ def _semear_e_gerar(engine) -> tuple[int, int]:
         session.refresh(professor)
         session.refresh(disciplina)
 
-        session.add(TurmaDisciplina(turma_id=turma.id, disciplina_id=disciplina.id, carga_horaria_semanal=2))
+        session.add(
+            PlanoCurricularDisciplina(plano_curricular_id=plano.id, disciplina_id=disciplina.id, carga_horaria_semanal=2)
+        )
         session.add(ProfessorDisciplina(professor_id=professor.id, disciplina_id=disciplina.id))
         session.commit()
 
@@ -101,7 +111,13 @@ def test_sem_job_concluido_levanta_erro_404():
         session.add(curso)
         session.commit()
         session.refresh(curso)
-        turma = Turma(codigo="T1", nome="Turma 1", ano_letivo=2026, turno="manha", numero_alunos=20, curso_id=curso.id)
+        plano = PlanoCurricular(curso_id=curso.id, ano=1, semestre="1")
+        session.add(plano)
+        session.commit()
+        session.refresh(plano)
+        turma = Turma(
+            codigo="T1", nome="Turma 1", ano_letivo=2026, turno="manha", numero_alunos=20, plano_curricular_id=plano.id
+        )
         session.add(turma)
         session.commit()
         session.refresh(turma)

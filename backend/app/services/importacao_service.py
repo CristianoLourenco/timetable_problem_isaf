@@ -11,15 +11,17 @@ from sqlmodel import Session
 from app.core.calendario import TurnoEnum
 from app.models.curso import Curso
 from app.models.disciplina import Disciplina
+from app.models.plano_curricular import PlanoCurricular
 from app.models.professor import Professor
 from app.models.sala import Sala
 from app.models.turma import Turma
 from app.repositories.curso_repository import CursoRepository
 from app.repositories.disciplina_repository import DisciplinaRepository
+from app.repositories.plano_curricular_disciplina_repository import PlanoCurricularDisciplinaRepository
+from app.repositories.plano_curricular_repository import PlanoCurricularRepository
 from app.repositories.professor_disciplina_repository import ProfessorDisciplinaRepository
 from app.repositories.professor_repository import ProfessorRepository
 from app.repositories.sala_repository import SalaRepository
-from app.repositories.turma_disciplina_repository import TurmaDisciplinaRepository
 from app.repositories.turma_repository import TurmaRepository
 from app.schemas.importacao_schema import ErroImportacaoSchema, RelatorioImportacaoSchema
 
@@ -28,21 +30,24 @@ COLUNAS_ESPERADAS: dict[str, list[str]] = {
     "professores": ["nome", "email", "classificacao", "vinculo_casa"],
     "disciplinas": ["codigo", "nome"],
     "salas": ["codigo", "nome", "capacidade"],
-    # turmas depende de "cursos" já estar importado (curso_codigo tem de existir)
-    "turmas": ["codigo", "nome", "ano_letivo", "turno", "numero_alunos", "curso_codigo"],
-    # qualificacoes/grade_curricular dependem de professores/turmas/disciplinas já importados
+    # planos_curriculares depende de "cursos" já estar importado (curso_codigo tem de existir)
+    "planos_curriculares": ["curso_codigo", "ano", "semestre"],
+    # turmas depende de "planos_curriculares" já estar importado
+    "turmas": ["codigo", "nome", "ano_letivo", "turno", "numero_alunos", "curso_codigo", "ano", "semestre"],
+    # qualificacoes depende de professores/disciplinas; grade_curricular depende de
+    # planos_curriculares/disciplinas já importados
     "qualificacoes": ["professor_email", "disciplina_codigo"],
-    "grade_curricular": ["turma_codigo", "disciplina_codigo", "carga_horaria_semanal"],
+    "grade_curricular": ["curso_codigo", "ano", "semestre", "disciplina_codigo", "carga_horaria_semanal"],
 }
 
-# Uma Turma sem grade curricular (e um Professor sem qualificação) não serve para nada
-# no solver — por isso o mesmo ficheiro .xlsx pode trazer a entidade principal e o seu
-# complemento em folhas (sheets) diferentes, e ambas são importadas na mesma chamada.
-# A folha do complemento só é processada se existir (identificada pelo nome, não pela
-# posição) — um ficheiro de "turmas" sem folha de grade curricular continua a funcionar
-# como antes.
+# Um PlanoCurricular sem grade curricular (e um Professor sem qualificação) não serve
+# para nada no solver — por isso o mesmo ficheiro .xlsx pode trazer a entidade principal
+# e o seu complemento em folhas (sheets) diferentes, e ambas são importadas na mesma
+# chamada. A folha do complemento só é processada se existir (identificada pelo nome,
+# não pela posição) — um ficheiro de "planos_curriculares" sem folha de grade curricular
+# continua a funcionar como antes.
 COMPLEMENTOS: dict[str, str] = {
-    "turmas": "grade_curricular",
+    "planos_curriculares": "grade_curricular",
     "professores": "qualificacoes",
 }
 
@@ -147,6 +152,39 @@ def _importar_cursos(
         relatorio.importados += 1
 
 
+def _importar_planos_curriculares(
+    session: Session, colunas: list[str], linhas: Sequence[tuple[Any, ...]], relatorio: RelatorioImportacaoSchema
+) -> None:
+    plano_repo = PlanoCurricularRepository(session)
+    curso_repo = CursoRepository(session)
+    for numero_linha, linha in enumerate(linhas, start=2):
+        dados = dict(zip(colunas, linha, strict=False))
+        curso_codigo, ano_bruto, semestre = dados.get("curso_codigo"), dados.get("ano"), dados.get("semestre")
+        if not curso_codigo or not ano_bruto or not semestre:
+            relatorio.erros.append(
+                ErroImportacaoSchema(
+                    linha=numero_linha,
+                    campo="curso_codigo/ano/semestre",
+                    motivo="Curso, ano ou semestre em falta",
+                )
+            )
+            continue
+        curso = curso_repo.get_by_codigo(str(curso_codigo))
+        if curso is None:
+            relatorio.erros.append(
+                ErroImportacaoSchema(
+                    linha=numero_linha, campo="curso_codigo", motivo=f"Curso '{curso_codigo}' não existe"
+                )
+            )
+            continue
+        ano = int(ano_bruto)
+        if plano_repo.get_by_curso_ano_semestre(curso.id, ano, str(semestre)):  # type: ignore[arg-type]
+            relatorio.ignorados_idempotencia += 1
+            continue
+        plano_repo.create(PlanoCurricular(curso_id=curso.id, ano=ano, semestre=str(semestre)))  # type: ignore[arg-type]
+        relatorio.importados += 1
+
+
 def _importar_disciplinas(
     session: Session, colunas: list[str], linhas: Sequence[tuple[Any, ...]], relatorio: RelatorioImportacaoSchema
 ) -> None:
@@ -195,15 +233,21 @@ def _importar_turmas(
 ) -> None:
     turma_repo = TurmaRepository(session)
     curso_repo = CursoRepository(session)
+    plano_repo = PlanoCurricularRepository(session)
     for numero_linha, linha in enumerate(linhas, start=2):
         dados = dict(zip(colunas, linha, strict=False))
-        codigo, curso_codigo = dados.get("codigo"), dados.get("curso_codigo")
+        codigo = dados.get("codigo")
+        curso_codigo, ano_bruto, semestre = dados.get("curso_codigo"), dados.get("ano"), dados.get("semestre")
         if not codigo:
             relatorio.erros.append(ErroImportacaoSchema(linha=numero_linha, campo="codigo", motivo="Código em falta"))
             continue
-        if not curso_codigo:
+        if not curso_codigo or not ano_bruto or not semestre:
             relatorio.erros.append(
-                ErroImportacaoSchema(linha=numero_linha, campo="curso_codigo", motivo="Código do curso em falta")
+                ErroImportacaoSchema(
+                    linha=numero_linha,
+                    campo="curso_codigo/ano/semestre",
+                    motivo="Curso, ano ou semestre do plano curricular em falta",
+                )
             )
             continue
         curso = curso_repo.get_by_codigo(str(curso_codigo))
@@ -211,6 +255,19 @@ def _importar_turmas(
             relatorio.erros.append(
                 ErroImportacaoSchema(
                     linha=numero_linha, campo="curso_codigo", motivo=f"Curso '{curso_codigo}' não existe"
+                )
+            )
+            continue
+        plano = plano_repo.get_by_curso_ano_semestre(curso.id, int(ano_bruto), str(semestre))  # type: ignore[arg-type]
+        if plano is None:
+            relatorio.erros.append(
+                ErroImportacaoSchema(
+                    linha=numero_linha,
+                    campo="curso_codigo/ano/semestre",
+                    motivo=(
+                        f"Não existe PlanoCurricular para curso '{curso_codigo}', "
+                        f"ano {ano_bruto}, semestre '{semestre}' — importar planos_curriculares primeiro"
+                    ),
                 )
             )
             continue
@@ -245,7 +302,7 @@ def _importar_turmas(
                 ano_letivo=int(dados.get("ano_letivo") or 0),
                 turno=turno,
                 numero_alunos=numero_alunos,
-                curso_id=curso.id,  # type: ignore[arg-type]
+                plano_curricular_id=plano.id,  # type: ignore[arg-type]
             )
         )
         relatorio.importados += 1
@@ -300,27 +357,46 @@ def _importar_qualificacoes(
 def _importar_grade_curricular(
     session: Session, colunas: list[str], linhas: Sequence[tuple[Any, ...]], relatorio: RelatorioImportacaoSchema
 ) -> None:
-    """Grade curricular (turma↔disciplina+carga horária) — pré-requisito de dados do solver.
-    Aditiva, mesmo princípio de `_importar_qualificacoes`."""
-    grade_repo = TurmaDisciplinaRepository(session)
-    turma_repo = TurmaRepository(session)
+    """Grade curricular (PlanoCurricular↔disciplina+carga horária) — pré-requisito de
+    dados do solver. O plano é identificado por curso+ano+semestre (chave natural, mais
+    prática para o Gestor preencher do que um id interno). Aditiva, mesmo princípio de
+    `_importar_qualificacoes`."""
+    itens_repo = PlanoCurricularDisciplinaRepository(session)
+    plano_repo = PlanoCurricularRepository(session)
+    curso_repo = CursoRepository(session)
     disciplina_repo = DisciplinaRepository(session)
     for numero_linha, linha in enumerate(linhas, start=2):
         dados = dict(zip(colunas, linha, strict=False))
-        turma_codigo, disciplina_codigo = dados.get("turma_codigo"), dados.get("disciplina_codigo")
-        if not turma_codigo or not disciplina_codigo:
+        curso_codigo, ano_bruto, semestre = dados.get("curso_codigo"), dados.get("ano"), dados.get("semestre")
+        disciplina_codigo = dados.get("disciplina_codigo")
+        if not curso_codigo or not ano_bruto or not semestre or not disciplina_codigo:
             relatorio.erros.append(
                 ErroImportacaoSchema(
                     linha=numero_linha,
-                    campo="turma_codigo/disciplina_codigo",
-                    motivo="Código da turma ou da disciplina em falta",
+                    campo="curso_codigo/ano/semestre/disciplina_codigo",
+                    motivo="Curso, ano, semestre ou disciplina em falta",
                 )
             )
             continue
-        turma = turma_repo.get_by_codigo(str(turma_codigo))
-        if turma is None:
+        curso = curso_repo.get_by_codigo(str(curso_codigo))
+        if curso is None:
             relatorio.erros.append(
-                ErroImportacaoSchema(linha=numero_linha, campo="turma_codigo", motivo=f"Turma '{turma_codigo}' não existe")
+                ErroImportacaoSchema(
+                    linha=numero_linha, campo="curso_codigo", motivo=f"Curso '{curso_codigo}' não existe"
+                )
+            )
+            continue
+        plano = plano_repo.get_by_curso_ano_semestre(curso.id, int(ano_bruto), str(semestre))  # type: ignore[arg-type]
+        if plano is None:
+            relatorio.erros.append(
+                ErroImportacaoSchema(
+                    linha=numero_linha,
+                    campo="curso_codigo/ano/semestre",
+                    motivo=(
+                        f"Não existe PlanoCurricular para curso '{curso_codigo}', "
+                        f"ano {ano_bruto}, semestre '{semestre}'"
+                    ),
+                )
             )
             continue
         disciplina = disciplina_repo.get_by_codigo(str(disciplina_codigo))
@@ -343,15 +419,16 @@ def _importar_grade_curricular(
                 )
             )
             continue
-        if grade_repo.existe(turma.id, disciplina.id):  # type: ignore[arg-type]
+        if itens_repo.existe(plano.id, disciplina.id):  # type: ignore[arg-type]
             relatorio.ignorados_idempotencia += 1
             continue
-        grade_repo.adicionar(turma.id, disciplina.id, carga_horaria_semanal)  # type: ignore[arg-type]
+        itens_repo.adicionar(plano.id, disciplina.id, carga_horaria_semanal)  # type: ignore[arg-type]
         relatorio.importados += 1
 
 
 _IMPORTADORES: dict[str, Callable[[Session, list[str], Sequence[tuple[Any, ...]], RelatorioImportacaoSchema], None]] = {
     "cursos": _importar_cursos,
+    "planos_curriculares": _importar_planos_curriculares,
     "professores": _importar_professores,
     "disciplinas": _importar_disciplinas,
     "salas": _importar_salas,

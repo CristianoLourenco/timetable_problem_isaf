@@ -9,12 +9,12 @@ from app.api.v1.routers import (
     disponibilidade,
     horario,
     importacao,
+    plano_curricular,
     professor,
     professor_disciplina,
     sala,
     slot,
     turma,
-    turma_disciplina,
     utilizador,
 )
 from app.core.exceptions import AcessoNegadoError, TokenInvalidoError
@@ -51,7 +51,8 @@ app.include_router(disciplina.router)
 app.include_router(sala.router)
 app.include_router(slot.router)
 app.include_router(disponibilidade.router)
-app.include_router(turma_disciplina.router)
+app.include_router(plano_curricular.router)
+app.include_router(plano_curricular.itens_router)
 app.include_router(professor_disciplina.router)
 app.include_router(importacao.router)
 app.include_router(horario.router)

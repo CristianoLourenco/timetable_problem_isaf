@@ -1,4 +1,4 @@
-# Implementa: RF09, RF10, RF13 (UC08, UC09, UC10) — ver docs/analise_requisitos_v5.0.md
+# Implementa: RF09, RF10, RF13 (UC08, UC09, UC10) — ver docs/04_04_analise_desenvolvimento.md
 #
 # Corre fora do ciclo do pedido HTTP (FastAPI BackgroundTasks, sem Celery/Redis no MVP —
 # ver backend/CLAUDE.md "Proibições absolutas"). Abre a sua própria Session porque o
@@ -43,6 +43,9 @@ def executar(job_id: str, *, engine=_engine_producao) -> None:
             )
             return
 
+        # turno não é gravado em Alocacao — é sempre o da Turma alocada (3FN), o
+        # solver ainda usa turno internamente (a.turno) para gerar/validar as
+        # variáveis, só não persiste porque seria dependência transitiva.
         alocacoes = [
             Alocacao(
                 job_id=job_id,
@@ -51,7 +54,6 @@ def executar(job_id: str, *, engine=_engine_producao) -> None:
                 professor_id=a.professor_id,
                 sala_id=a.sala_id,
                 dia_semana=a.dia_semana,
-                turno=a.turno,
                 periodo=a.periodo,
                 penalizacao_aplicada=a.penalizacao_aplicada,
             )

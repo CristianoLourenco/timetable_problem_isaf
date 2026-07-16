@@ -52,6 +52,14 @@ def test_fluxo_completo_gestor_cria_dados_gera_e_consulta_horario(monkeypatch):
         assert professor.status_code == 201, professor.text
         professor_id = professor.json()["id"]
 
+        plano = client.post(
+            "/planos-curriculares",
+            json={"curso_id": curso_id, "ano": 1, "semestre": "1"},
+            headers=CABECALHO_AUTH,
+        )
+        assert plano.status_code == 201, plano.text
+        plano_id = plano.json()["id"]
+
         turma = client.post(
             "/turmas",
             json={
@@ -60,7 +68,7 @@ def test_fluxo_completo_gestor_cria_dados_gera_e_consulta_horario(monkeypatch):
                 "ano_letivo": 2026,
                 "turno": "manha",
                 "numero_alunos": 25,
-                "curso_id": curso_id,
+                "plano_curricular_id": plano_id,
             },
             headers=CABECALHO_AUTH,
         )
@@ -75,7 +83,7 @@ def test_fluxo_completo_gestor_cria_dados_gera_e_consulta_horario(monkeypatch):
         assert sala.status_code == 201, sala.text
 
         grade = client.post(
-            f"/turmas/{turma_id}/disciplinas",
+            f"/planos-curriculares/{plano_id}/disciplinas",
             json={"itens": [{"disciplina_id": disciplina_id, "carga_horaria_semanal": 2}]},
             headers=CABECALHO_AUTH,
         )
