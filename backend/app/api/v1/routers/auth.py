@@ -18,6 +18,7 @@ from app.core.firebase_rest import (
     renovar_token,
 )
 from app.core.security import UtilizadorAutenticado, get_current_user
+from app.repositories.professor_repository import ProfessorRepository
 from app.schemas.auth_schema import (
     LoginGoogleSchema,
     LoginSchema,
@@ -108,8 +109,17 @@ def registar_professor(payload: RegistoProfessorSchema, service: UtilizadorServi
 
 
 @router.get("/me", response_model=MeResponseSchema)
-def obter_utilizador_atual(user: UtilizadorAutenticado = Depends(get_current_user)):
+def obter_utilizador_atual(
+    user: UtilizadorAutenticado = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
     """Única rota de /auth que EXIGE token válido (RN09) — é precisamente para o
     cliente descobrir o próprio papel/professor_id depois de autenticar, e para
     verificar se uma sessão guardada localmente ainda é válida."""
-    return MeResponseSchema(email=user.email, papel=user.papel.value, professor_id=user.professor_id)
+    nome = None
+    if user.professor_id is not None:
+        professor = ProfessorRepository(session).get(user.professor_id)
+        nome = professor.nome if professor is not None else None
+    return MeResponseSchema(
+        email=user.email, papel=user.papel.value, professor_id=user.professor_id, nome=nome
+    )

@@ -51,3 +51,6 @@ class MeResponseSchema(SQLModel):
     email: str
     papel: str
     professor_id: int | None
+    nome: str | None = None
+    """Nome do Professor (Professor.nome), quando papel=PROFESSOR. O Gestor não tem
+    nome próprio no modelo actual (Utilizador só guarda email) — fica None."""

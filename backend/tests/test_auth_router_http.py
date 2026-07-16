@@ -157,7 +157,12 @@ def test_me_devolve_papel_e_professor_id(monkeypatch):
         resposta = client.get("/auth/me", headers={"Authorization": "Bearer qualquer"})
 
         assert resposta.status_code == 200
-        assert resposta.json() == {"email": "prof@isaf.co.ao", "papel": "PROFESSOR", "professor_id": professor_id_esperado}
+        assert resposta.json() == {
+            "email": "prof@isaf.co.ao",
+            "papel": "PROFESSOR",
+            "professor_id": professor_id_esperado,
+            "nome": "Prof A",
+        }
     finally:
         fastapi_app.dependency_overrides.clear()
 
