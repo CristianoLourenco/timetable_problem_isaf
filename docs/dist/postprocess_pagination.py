@@ -88,7 +88,9 @@ def main(docx_path: str) -> None:
             styles = styles.replace("</w:styles>", FOOTER_STYLE + "</w:styles>")
             styles_path.write_text(styles, encoding="utf-8")
 
-        # 5. document.xml: section break before "1. INTRODUÇÃO" + pgNumType wiring
+        # 5. document.xml: reposiciona o Índice (--toc do pandoc insere-o sempre
+        #    no início absoluto do body, antes da capa) + secção break antes de
+        #    "1. INTRODUÇÃO" + pgNumType wiring
         doc_path = tmp / "word" / "document.xml"
         doc = doc_path.read_text(encoding="utf-8")
 
@@ -102,6 +104,23 @@ def main(docx_path: str) -> None:
         if doc.count(marker) != 1:
             sys.exit("ERRO: marcador do início da Introdução não é único.")
 
+        # extrai o bloco <w:sdt>...</w:sdt> do Índice, se presente (gerado por
+        # --toc), do início do body, para o reinserir mais à frente
+        toc_block = ""
+        body_open = "<w:body>"
+        i = doc.find(body_open)
+        sdt_start = i + len(body_open)
+        if doc[sdt_start:sdt_start + 7] == "<w:sdt>":
+            sdt_end = doc.find("</w:sdt>", sdt_start) + len("</w:sdt>")
+            toc_block = doc[sdt_start:sdt_end]
+            doc = doc[:sdt_start] + doc[sdt_end:]
+            # pandoc não expõe --toc-title na versão instalada; renomeia aqui
+            toc_block = toc_block.replace(
+                "<w:t xml:space=\"preserve\">Table of Contents</w:t>",
+                "<w:t xml:space=\"preserve\">ÍNDICE</w:t>",
+            )
+
+        page_break = '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'
         section_break = (
             "<w:p><w:pPr><w:sectPr>"
             '<w:footerReference w:type="default" r:id="rIdFooterMain"/>'
@@ -109,7 +128,9 @@ def main(docx_path: str) -> None:
             + '<w:pgNumType w:fmt="lowerRoman" w:start="1"/>'
             "</w:sectPr></w:pPr></w:p>"
         )
-        doc = doc.replace(marker, section_break + marker, 1)
+        doc = doc.replace(
+            marker, toc_block + page_break + section_break + marker, 1
+        )
 
         old_final_sectpr = (
             "<w:sectPr>"

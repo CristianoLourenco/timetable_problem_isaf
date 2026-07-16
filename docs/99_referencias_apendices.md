@@ -68,7 +68,7 @@ consulta (UC11, UC12).
 com o motivo registado --- o sistema nunca falha silenciosamente
 (RNF03).
 
-### UC13 --- Autenticar-se
+### UC13 --- Login
 
 **Atores:** Gestor Académico/Secretaria; Professor
 
