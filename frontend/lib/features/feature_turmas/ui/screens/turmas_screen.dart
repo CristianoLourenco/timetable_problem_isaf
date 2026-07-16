@@ -8,8 +8,10 @@ import 'package:ghorario/features/feature_disciplinas/presentation/provider/disc
 import 'package:ghorario/features/feature_importacao/domain/entities/entidade_importacao.dart';
 import 'package:ghorario/features/feature_importacao/domain/usecase/importar_excel_usecase.dart';
 import 'package:ghorario/features/feature_turmas/domain/entities/curso.dart';
+import 'package:ghorario/features/feature_turmas/domain/entities/plano_curricular.dart';
 import 'package:ghorario/features/feature_turmas/domain/entities/turma.dart';
 import 'package:ghorario/features/feature_turmas/domain/usecase/get_all_cursos_usecase.dart';
+import 'package:ghorario/features/feature_turmas/domain/usecase/get_all_planos_curriculares_usecase.dart';
 import 'package:ghorario/features/feature_turmas/domain/usecase/get_grade_curricular_usecase.dart';
 import 'package:ghorario/features/feature_turmas/domain/usecase/set_grade_curricular_usecase.dart';
 import 'package:ghorario/features/feature_turmas/presentation/controller/turmas_controller.dart';
@@ -28,6 +30,7 @@ class TurmasScreen extends StatefulWidget {
 class _TurmasScreenState extends State<TurmasScreen> {
   late final TurmasController _controller;
   List<Curso> _cursos = const <Curso>[];
+  List<PlanoCurricular> _planos = const <PlanoCurricular>[];
   bool _isListView = false;
 
   Turno? _selectedPeriodFilter;
@@ -38,12 +41,20 @@ class _TurmasScreenState extends State<TurmasScreen> {
     _controller = TurmasController(provider: context.read<TurmasProvider>());
     WidgetsBinding.instance.addPostFrameCallback((_) => _controller.init());
     _loadCursos();
+    _loadPlanos();
   }
 
   Future<void> _loadCursos() async {
     final result = await context.read<GetAllCursosUseCase>()(null);
     if (mounted && result.success && result.data != null) {
       setState(() => _cursos = result.data!);
+    }
+  }
+
+  Future<void> _loadPlanos() async {
+    final result = await context.read<GetAllPlanosCurricularesUseCase>()(null);
+    if (mounted && result.success && result.data != null) {
+      setState(() => _planos = result.data!);
     }
   }
 
@@ -54,8 +65,8 @@ class _TurmasScreenState extends State<TurmasScreen> {
   }
 
   Future<void> _showGradeCurricularDialog(Turma turma) async {
-    final turmaId = int.tryParse(turma.id);
-    if (turmaId == null) return;
+    final planoCurricularId = turma.planoCurricularId;
+    if (planoCurricularId == null) return;
 
     final disciplinasProvider = context.read<DisciplinasProvider>();
     if (disciplinasProvider.disciplinas.isEmpty) {
@@ -66,7 +77,7 @@ class _TurmasScreenState extends State<TurmasScreen> {
     await showDialog<void>(
       context: context,
       builder: (context) => GradeCurricularDialog(
-        turmaId: turmaId,
+        planoCurricularId: planoCurricularId,
         turmaNome: turma.code ?? turma.name,
         disciplinas: disciplinasProvider.disciplinas,
         getGradeCurricularUseCase: context.read<GetGradeCurricularUseCase>(),
@@ -75,10 +86,19 @@ class _TurmasScreenState extends State<TurmasScreen> {
     );
   }
 
-  String _cursoNome(int? cursoId) {
+  String _cursoNomePorId(String? cursoId) {
     if (cursoId == null) return '—';
-    final match = _cursos.where((c) => c.id == cursoId.toString());
+    final match = _cursos.where((c) => c.id == cursoId);
     return match.isEmpty ? '—' : match.first.name;
+  }
+
+  /// "Curso - ano/semestre" label for a Turma's PlanoCurricular (ex: "Informática — 1º Ano, Sem. 1").
+  String _planoLabel(int? planoCurricularId) {
+    if (planoCurricularId == null) return '—';
+    final match = _planos.where((p) => p.id == planoCurricularId.toString());
+    if (match.isEmpty) return '—';
+    final plano = match.first;
+    return '${_cursoNomePorId(plano.cursoId)} — ${plano.ano}º Ano, Sem. ${plano.semestre}';
   }
 
   Widget _buildPeriodBadge(Turno? period) {
@@ -154,7 +174,7 @@ class _TurmasScreenState extends State<TurmasScreen> {
     final studentCountController = TextEditingController(text: '30');
     final yearController = TextEditingController(text: '1');
 
-    Curso? selectedCurso = _cursos.isNotEmpty ? _cursos.first : null;
+    PlanoCurricular? selectedPlano = _planos.isNotEmpty ? _planos.first : null;
     Turno selectedPeriod = Turno.manha;
 
     showModalBottomSheet<void>(
@@ -179,19 +199,19 @@ class _TurmasScreenState extends State<TurmasScreen> {
                   children: [
                     Text('Nova Turma', style: AppTextStyles.heading2.copyWith(color: AppColors.blackBlue)),
                     const SizedBox(height: 16),
-                    if (_cursos.isEmpty)
+                    if (_planos.isEmpty)
                       const Text(
-                        'Nenhum curso encontrado — crie um Curso primeiro.',
+                        'Nenhum plano curricular encontrado — crie um Plano Curricular primeiro.',
                         style: TextStyle(color: AppColors.textSecondary, fontFamily: 'Poppins'),
                       )
                     else
-                      DropdownButtonFormField<Curso>(
-                        initialValue: selectedCurso,
-                        decoration: const InputDecoration(labelText: 'Curso', border: OutlineInputBorder()),
-                        items: _cursos
-                            .map((c) => DropdownMenuItem(value: c, child: Text(c.name)))
+                      DropdownButtonFormField<PlanoCurricular>(
+                        initialValue: selectedPlano,
+                        decoration: const InputDecoration(labelText: 'Plano Curricular', border: OutlineInputBorder()),
+                        items: _planos
+                            .map((p) => DropdownMenuItem(value: p, child: Text(_planoLabel(int.tryParse(p.id)))))
                             .toList(),
-                        onChanged: (val) => setModalState(() => selectedCurso = val),
+                        onChanged: (val) => setModalState(() => selectedPlano = val),
                       ),
                     const SizedBox(height: 12),
                     TextField(
@@ -255,7 +275,7 @@ class _TurmasScreenState extends State<TurmasScreen> {
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           ),
-                          onPressed: selectedCurso == null
+                          onPressed: selectedPlano == null
                               ? null
                               : () async {
                                   if (codeController.text.isEmpty || nameController.text.isEmpty) return;
@@ -266,7 +286,7 @@ class _TurmasScreenState extends State<TurmasScreen> {
                                     year: int.tryParse(yearController.text) ?? 1,
                                     period: selectedPeriod,
                                     studentsCount: int.tryParse(studentCountController.text) ?? 30,
-                                    cursoId: int.tryParse(selectedCurso!.id),
+                                    planoCurricularId: int.tryParse(selectedPlano!.id),
                                   );
                                   final navigator = Navigator.of(context);
                                   final messenger = ScaffoldMessenger.of(context);
@@ -359,7 +379,7 @@ class _TurmasScreenState extends State<TurmasScreen> {
                   child: Row(
                     children: [
                       Expanded(flex: 2, child: Text(turma.code ?? turma.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.blackBlue, fontFamily: 'Poppins'))),
-                      Expanded(flex: 3, child: Text(_cursoNome(turma.cursoId), style: const TextStyle(fontSize: 14, color: AppColors.textSecondary, fontFamily: 'Poppins'))),
+                      Expanded(flex: 3, child: Text(_planoLabel(turma.planoCurricularId), style: const TextStyle(fontSize: 14, color: AppColors.textSecondary, fontFamily: 'Poppins'))),
                       Expanded(flex: 2, child: Text(turma.period?.displayName ?? '—', style: const TextStyle(fontSize: 14, color: AppColors.blackBlue, fontFamily: 'Poppins'))),
                       Expanded(flex: 2, child: Text('${turma.studentsCount ?? '—'}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.blackBlue, fontFamily: 'Poppins'))),
                       Expanded(flex: 2, child: Text('${turma.year ?? '—'}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.lightBlue, fontFamily: 'Poppins'))),
@@ -519,7 +539,7 @@ class _TurmasScreenState extends State<TurmasScreen> {
                                                     runSpacing: 4,
                                                     children: [
                                                       Text(
-                                                        _cursoNome(turma.cursoId),
+                                                        _planoLabel(turma.planoCurricularId),
                                                         style: const TextStyle(
                                                           fontSize: 12,
                                                           fontWeight: FontWeight.w500,

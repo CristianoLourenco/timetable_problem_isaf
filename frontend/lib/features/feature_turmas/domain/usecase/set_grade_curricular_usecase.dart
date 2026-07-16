@@ -3,9 +3,9 @@ import 'package:ghorario/features/feature_turmas/domain/entities/item_grade_curr
 import 'package:ghorario/features/feature_turmas/domain/repository/i_turma_disciplina_repository.dart';
 
 class SetGradeCurricularParams {
-  const SetGradeCurricularParams({required this.turmaId, required this.itens});
+  const SetGradeCurricularParams({required this.planoCurricularId, required this.itens});
 
-  final int turmaId;
+  final int planoCurricularId;
   final List<ItemGradeCurricular> itens;
 }
 
@@ -16,6 +16,6 @@ class SetGradeCurricularUseCase implements IUseCase<List<ItemGradeCurricular>, S
 
   @override
   Future<DataState<List<ItemGradeCurricular>>> call(SetGradeCurricularParams params) {
-    return _repository.definir(params.turmaId, params.itens);
+    return _repository.definir(params.planoCurricularId, params.itens);
   }
 }

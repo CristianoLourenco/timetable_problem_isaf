@@ -6,13 +6,16 @@ import 'package:ghorario/core/widgets/import_excel_button.dart';
 import 'package:ghorario/features/feature_importacao/domain/entities/entidade_importacao.dart';
 import 'package:ghorario/features/feature_importacao/domain/usecase/importar_excel_usecase.dart';
 import 'package:ghorario/features/feature_turmas/domain/entities/curso.dart';
+import 'package:ghorario/features/feature_turmas/domain/entities/plano_curricular.dart';
+import 'package:ghorario/features/feature_turmas/domain/usecase/get_all_planos_curriculares_usecase.dart';
 import 'package:ghorario/features/feature_turmas/presentation/controller/cursos_controller.dart';
 import 'package:ghorario/features/feature_turmas/presentation/provider/cursos_provider.dart';
 import 'package:ghorario/features/feature_turmas/presentation/provider/turmas_provider.dart';
 import 'package:ghorario/features/feature_turmas/presentation/states/cursos_state.dart';
 
 /// Screen for displaying and managing Courses (Cursos) — a support entity
-/// with no RF of its own, required only as `Turma.cursoId`'s prerequisite.
+/// with no RF of its own, required only as `PlanoCurricular.cursoId`'s
+/// prerequisite (a Turma follows a PlanoCurricular, which follows a Curso).
 class CursosScreen extends StatefulWidget {
   const CursosScreen({super.key});
 
@@ -22,6 +25,7 @@ class CursosScreen extends StatefulWidget {
 
 class _CursosScreenState extends State<CursosScreen> {
   late final CursosController _controller;
+  List<PlanoCurricular> _planos = const <PlanoCurricular>[];
 
   @override
   void initState() {
@@ -33,7 +37,15 @@ class _CursosScreenState extends State<CursosScreen> {
       if (turmasProvider.turmas.isEmpty) {
         turmasProvider.loadTurmas();
       }
+      _loadPlanos();
     });
+  }
+
+  Future<void> _loadPlanos() async {
+    final result = await context.read<GetAllPlanosCurricularesUseCase>()(null);
+    if (mounted && result.success && result.data != null) {
+      setState(() => _planos = result.data!);
+    }
   }
 
   @override
@@ -44,7 +56,8 @@ class _CursosScreenState extends State<CursosScreen> {
 
   int _turmasCount(String cursoId) {
     final turmas = context.watch<TurmasProvider>().turmas;
-    return turmas.where((t) => t.cursoId?.toString() == cursoId).length;
+    final planoIds = _planos.where((p) => p.cursoId == cursoId).map((p) => p.id).toSet();
+    return turmas.where((t) => planoIds.contains(t.planoCurricularId?.toString())).length;
   }
 
   void _showNewCourseBottomSheet() {

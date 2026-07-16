@@ -8,7 +8,7 @@ class GetGradeCurricularUseCase implements IUseCase<List<ItemGradeCurricular>, i
   final ITurmaDisciplinaRepository _repository;
 
   @override
-  Future<DataState<List<ItemGradeCurricular>>> call(int turmaId) {
-    return _repository.obter(turmaId);
+  Future<DataState<List<ItemGradeCurricular>>> call(int planoCurricularId) {
+    return _repository.obter(planoCurricularId);
   }
 }
