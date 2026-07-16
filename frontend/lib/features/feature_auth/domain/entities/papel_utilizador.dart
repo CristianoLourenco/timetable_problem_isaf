@@ -12,4 +12,10 @@ enum PapelUtilizador {
   }
 
   String get apiValue => name.toUpperCase();
+
+  String get rotulo => switch (this) {
+        PapelUtilizador.superadmin => 'Superadmin',
+        PapelUtilizador.gestor => 'Gestor',
+        PapelUtilizador.professor => 'Professor',
+      };
 }
