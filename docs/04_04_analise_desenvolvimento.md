@@ -426,8 +426,7 @@ de negócio interna ao comportamento de UC06, sem valor observável
 autónomo para o actor. A especificação textual completa dos casos de uso
 mais complexos encontra-se no Apêndice B.
 
-*\[Inserir aqui: Diagrama de Casos de Uso (UC01--UC14, com relações
-\<\<include\>\> e \<\<extend\>\>) --- exportar do Visual Paradigm\]*
+![](media/diagrama_casos_uso.png)
 
 Figura 2 --- Diagrama de casos de uso
 
@@ -442,19 +441,20 @@ modelação e esquema directo de persistência, uma vez que cada classe de
 domínio corresponde a um modelo SQLModel no backend FastAPI, persistido
 em PostgreSQL (RNF07).
 
-Foram identificadas oito classes de domínio: Professor, Turma,
+Foram identificadas onze classes de domínio: Curso, Professor, Turma,
 Disciplina e Sala (dados mestre, RF01--RF04); Disponibilidade (RF05,
-associada por composição ao Professor); AtribuicaoCurricular (entrada do
-solver, ligando Turma, Disciplina e Professor); GeracaoHorario (o Job
-assíncrono, RF09/RF10, com estado e motivo de falha); e Alocacao (a
-saída do solver, associando cada atribuição curricular a uma sala, dia e
-tempo lectivo). A identidade dos utilizadores não constitui classe de
-domínio própria, por ser gerida pelo Firebase Authentication (RF15): a
-classe Professor guarda apenas o identificador firebase_uid como
-atributo de ligação.
+associada por composição ao Professor); TurmaDisciplina e
+ProfessorDisciplina (entidades associativas — grade curricular e
+qualificação docente, respectivamente — que filtram os pares
+turma-disciplina e professor-disciplina válidos na geração esparsa de
+variáveis do solver, RNF01); Utilizador (identidade — liga, por email,
+uma conta Firebase Authentication a um Gestor ou, opcionalmente, a um
+Professor já registado, RF15/RN09/RN10); Job (a tarefa assíncrona do
+solver, RF09/RF10, com estado e motivo de falha); e Alocacao (a saída
+do solver, associando cada combinação turma-disciplina-professor a uma
+sala, dia, turno e período).
 
-*\[Inserir aqui: Diagrama de Classes (8 classes de domínio, atributos e
-multiplicidades) --- exportar do Visual Paradigm\]*
+![](media/diagrama_classes.png)
 
 Figura 3 --- Diagrama de classes
 
@@ -468,15 +468,16 @@ orientada a objectos da aplicação, o DER modela a estrutura de
 persistência --- neste projecto, o esquema PostgreSQL (RNF07), com
 correspondência directa de uma tabela por classe de domínio persistente.
 
-Destacam-se duas decisões de desenho: as restrições UNIQUE sobre o
-atributo codigo_institucional de cada entidade de dados mestre
-implementam directamente a chave de idempotência da importação (RF08); e
-a restrição UNIQUE composta sobre (geracao, sala, dia, tempo lectivo) na
-tabela de alocações acrescenta uma defesa em profundidade da regra RN03
-ao nível da base de dados, complementar à garantia matemática do solver.
+Destaca-se uma decisão de desenho: as restrições UNIQUE sobre o atributo
+codigo (ou email, no caso de Professor e Utilizador) de cada entidade de
+dados mestre implementam directamente a chave de idempotência da
+importação (RF08). A regra RN03 (sala sem dupla turma no mesmo tempo) é
+garantida matematicamente pelo solver (secção 4.3.3) — não existe, para
+já, uma restrição UNIQUE composta redundante ao nível da base de dados
+sobre a tabela de alocações; fica identificada como melhoria futura de
+defesa em profundidade.
 
-*\[Inserir aqui: Diagrama Entidade-Relacional (8 tabelas, chaves
-primárias e estrangeiras) --- exportar do Visual Paradigm\]*
+![](media/diagrama_er.png)
 
 Figura 4 --- Diagrama entidade-relacional
 
