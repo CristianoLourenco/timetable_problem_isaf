@@ -396,35 +396,59 @@ rastreabilidade directa aos requisitos funcionais.
          por Professor              Académico/Secretaria,   individual de aulas
                                     Professor               (multi-perfil).
 
-  UC13   Autenticar-se     RF15     Gestor                  Pré-condição
+  UC13   Login             RF15     Gestor                  Pré-condição
                                     Académico/Secretaria,   transversal aos
                                     Professor               restantes casos de uso
                                                             --- não representada
                                                             como \<\<include\>\>
                                                             gráfico, para evitar
                                                             poluição visual do
-                                                            diagrama ([@bittnerspence2002]).
+                                                            diagrama
+                                                            ([@bittnerspence2002]);
+                                                            representada em
+                                                            alternativa por
+                                                            generalização de actor
+                                                            (Gestor e Professor
+                                                            generalizam Utilizador,
+                                                            que é quem liga a UC13
+                                                            e UC14).
 
   UC14   Recuperar         RF16     Gestor                  Delegado inteiramente
          Password                   Académico/Secretaria,   ao mecanismo nativo do
                                     Professor               Firebase
                                                             Authentication.
+
+  UC15   Validar Nível     RN11     Gestor                  Incluído
+         de Acesso                  Académico/Secretaria,   (\<\<include\>\>) por
+                                    Professor               UC12 --- restringe a
+                                                            consulta ao horário do
+                                                            próprio Professor
+                                                            quando o actor não é
+                                                            Gestor.
   ---------------------------------------------------------------------------------
 
 Tabela 5 --- Casos de uso do sistema
 
 Registam-se duas decisões de modelação relevantes. Em primeiro lugar, a
-autenticação (UC13) não é representada graficamente como relação
+autenticação (UC13/UC14) não é representada graficamente como relação
 \<\<include\>\> a partir de cada caso de uso: tratando-se de uma
 pré-condição transversal, a sua representação por setas \<\<include\>\>
 universais constitui um uso indevido das relações do diagrama,
-explicitamente desaconselhado por [@bittnerspence2002]; a
-pré-condição é, em alternativa, documentada textualmente na
-especificação de cada caso de uso. Em segundo lugar, o requisito RF08
-(idempotência) não origina caso de uso próprio, por se tratar de regra
-de negócio interna ao comportamento de UC06, sem valor observável
-autónomo para o actor. A especificação textual completa dos casos de uso
-mais complexos encontra-se no Apêndice B.
+explicitamente desaconselhado por [@bittnerspence2002]. Em vez disso,
+o diagrama recorre a generalização de actor --- Gestor e Professor
+generalizam um actor comum, Utilizador, que é quem se liga a UC13 e
+UC14 --- e a validação de token em cada pedido HTTP (RN09) é, essa sim,
+documentada apenas textualmente na especificação de cada caso de uso,
+por ser uma verificação de infraestrutura (incluindo a expiração do
+token) e não um comportamento observável adicional do actor. Já a
+verificação de nível de acesso em UC12 (RN11 --- Professor só vê o seu
+próprio horário) tem valor observável específico daquele caso de uso, e
+é por isso modelada graficamente como UC15, incluída (\<\<include\>\>)
+por UC12. Em segundo lugar, o requisito RF08 (idempotência) não origina
+caso de uso próprio, por se tratar de regra de negócio interna ao
+comportamento de UC06, sem valor observável autónomo para o actor. A
+especificação textual completa dos casos de uso mais complexos
+encontra-se no Apêndice B.
 
 ![](media/diagrama_casos_uso.png)
 
@@ -441,13 +465,13 @@ modelação e esquema directo de persistência, uma vez que cada classe de
 domínio corresponde a um modelo SQLModel no backend FastAPI, persistido
 em PostgreSQL (RNF07).
 
-Foram identificadas doze classes de domínio: Curso, Professor, Turma,
+Foram identificadas onze classes de domínio: Curso, Professor, Turma,
 Disciplina e Sala (dados mestre, RF01--RF04); PlanoCurricular e
 PlanoCurricularDisciplina (a grade curricular oficial — disciplinas e
 carga horária semanal por curso, ano e semestre — partilhada por todas
-as turmas desse ano, em vez de definida turma a turma); ProfessorDisciplina
-(qualificação docente); Disponibilidade (RF05, associada por composição
-ao Professor); Utilizador (identidade — liga, por email, uma conta
+as turmas desse ano, em vez de definida turma a turma); Disponibilidade
+(RF05, associada por composição ao Professor); Utilizador (identidade —
+liga, por email, uma conta
 Firebase Authentication a um Gestor ou, opcionalmente, a um Professor já
 registado, RF15/RN09/RN10); Job (a tarefa assíncrona do solver, RF09/RF10,
 com estado e motivo de falha); e Alocacao (a saída do solver, associando
@@ -457,9 +481,13 @@ Turma alocada, RN de normalização até à 3.ª Forma Normal). Uma Turma
 segue sempre um único PlanoCurricular (RF02), do qual herda curso e ano
 (também não repetidos em Turma pela mesma razão); o Professor liga-se à
 Turma indirectamente — leciona uma Disciplina que integra o
-PlanoCurricular dessa Turma (ProfessorDisciplina), e é entre os
-professores assim qualificados e disponíveis que o solver escolhe quem
-lecciona cada turma (RNF01).
+PlanoCurricular dessa Turma, e é entre os professores assim
+qualificados e disponíveis que o solver escolhe quem lecciona cada
+turma (RNF01). A qualificação docente (Professor--Disciplina) é uma
+associação muitos-para-muitos sem atributos próprios além das chaves
+estrangeiras, pelo que não constitui classe de domínio própria no
+diagrama conceptual — persiste, ainda assim, como tabela de junção
+(ProfessorDisciplina) no esquema físico (secção 4.2.4).
 
 ![](media/diagrama_classes.png)
 
