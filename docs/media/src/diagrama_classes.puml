@@ -54,8 +54,6 @@ class Professor {
   +vinculo_casa : bool
 }
 
-class ProfessorDisciplina
-
 class Disponibilidade {
   +dia_semana : string
   +turno : string
@@ -89,8 +87,7 @@ PlanoCurricular "1" *-- "0..*" PlanoCurricularDisciplina : detalha
 Disciplina "1" --- "0..*" PlanoCurricularDisciplina : integra
 PlanoCurricular "1" -- "0..*" Turma : segue
 
-Professor "1" -- "0..*" ProfessorDisciplina : qualifica
-Disciplina "1" --- "0..*" ProfessorDisciplina : integra
+Professor "0..*" -- "0..*" Disciplina : qualificação
 Professor "1" -- "0..*" Disponibilidade : regista
 Utilizador "0..1" -- "1" Professor : professor_id
 
