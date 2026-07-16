@@ -325,7 +325,7 @@ responsável pela emissão e validação da identidade dos utilizadores. O
 motor CP-SAT e o backend FastAPI não constituem entidades externas, por
 serem componentes internos da fronteira do sistema.
 
-> **[Figura 1 em falta]** — a imagem original não foi extraída corretamente do .docx (pandoc não conseguiu localizar o ficheiro de origem, possivelmente por ter sido inserida como objeto vinculado em vez de imagem embutida). Substituir por: exportar o Diagrama de Contexto do Visual Paradigm (já modelado em `01_diagrama_contexto.md`) e inserir aqui como `.png`.
+![](media/diagrama_contexto.png)
 
 Figura 1 --- Diagrama de contexto
 
@@ -441,18 +441,22 @@ modelação e esquema directo de persistência, uma vez que cada classe de
 domínio corresponde a um modelo SQLModel no backend FastAPI, persistido
 em PostgreSQL (RNF07).
 
-Foram identificadas onze classes de domínio: Curso, Professor, Turma,
-Disciplina e Sala (dados mestre, RF01--RF04); Disponibilidade (RF05,
-associada por composição ao Professor); TurmaDisciplina e
-ProfessorDisciplina (entidades associativas — grade curricular e
-qualificação docente, respectivamente — que filtram os pares
-turma-disciplina e professor-disciplina válidos na geração esparsa de
-variáveis do solver, RNF01); Utilizador (identidade — liga, por email,
-uma conta Firebase Authentication a um Gestor ou, opcionalmente, a um
-Professor já registado, RF15/RN09/RN10); Job (a tarefa assíncrona do
-solver, RF09/RF10, com estado e motivo de falha); e Alocacao (a saída
-do solver, associando cada combinação turma-disciplina-professor a uma
-sala, dia, turno e período).
+Foram identificadas doze classes de domínio: Curso, Professor, Turma,
+Disciplina e Sala (dados mestre, RF01--RF04); PlanoCurricular e
+PlanoCurricularDisciplina (a grade curricular oficial — disciplinas e
+carga horária semanal por curso, ano e semestre — partilhada por todas
+as turmas desse ano, em vez de definida turma a turma); ProfessorDisciplina
+(qualificação docente); Disponibilidade (RF05, associada por composição
+ao Professor); Utilizador (identidade — liga, por email, uma conta
+Firebase Authentication a um Gestor ou, opcionalmente, a um Professor já
+registado, RF15/RN09/RN10); Job (a tarefa assíncrona do solver, RF09/RF10,
+com estado e motivo de falha); e Alocacao (a saída do solver, associando
+cada combinação turma-disciplina-professor a uma sala, dia, turno e
+período). Uma Turma segue sempre um único PlanoCurricular (RF02); o
+Professor liga-se à Turma indirectamente — leciona uma Disciplina que
+integra o PlanoCurricular dessa Turma (ProfessorDisciplina), e é entre os
+professores assim qualificados e disponíveis que o solver escolhe quem
+lecciona cada turma (RNF01).
 
 ![](media/diagrama_classes.png)
 
