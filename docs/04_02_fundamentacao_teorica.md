@@ -13,7 +13,7 @@ de horários para os seus limites operacionais.
 A natureza da tarefa implica a alocação de recursos finitos ---
 professores, turmas, salas e períodos de tempo --- de forma a satisfazer
 um conjunto de condições obrigatórias e preferenciais que variam de
-instituição para instituição ([@oudevrielink2019]). Wren (1995,
+instituição para instituição [@oudevrielink2019]. Wren (1995,
 citado em Oude Vrielink et al., 2019) formalizou esta ideia ao definir o
 processo de elaboração de horários como a alocação de recursos dados a
 objectos específicos posicionados no espaço-tempo, de forma a
@@ -24,11 +24,11 @@ No contexto universitário, este processo repete-se no início de cada
 semestre lectivo, exigindo um esforço administrativo considerável
 [@abdipoor2023; @bashab2023]. Quando conduzido de forma
 manual, o processo é extremamente difícil, demorado e frequentemente
-conduz ao desperdício de recursos ([@abdipoor2023]). A ausência de
+conduz ao desperdício de recursos [@abdipoor2023]. A ausência de
 soluções com aplicabilidade geral na literatura obriga muitas
 instituições a manterem a elaboração manual dos horários, perpetuando
 ineficiências que afectam estudantes, docentes e pessoal administrativo
-([@abdipoor2023]).
+[@abdipoor2023].
 
 @oudevrielink2019 identificam ainda uma lacuna estrutural
 entre a investigação académica e a prática institucional: as aplicações
@@ -58,9 +58,9 @@ subproblemas distintos dentro da área de planeamento sujeito a
 restrições. Especificamente, o timetabling é definido como a alocação,
 sujeita a restrições, de recursos dados a objectos posicionados no
 espaço-tempo, de forma a satisfazer o maior número possível de um
-conjunto de objectivos desejáveis (Wren, 1996, citado em [@bashab2023]). No contexto universitário, o University Course Timetabling
+conjunto de objectivos desejáveis [Wren, 1996, como citado em @bashab2023]. No contexto universitário, o University Course Timetabling
 Problem (UCTP) pode ser formalmente enunciado da seguinte forma
-([@abdipoor2023]):
+[@abdipoor2023]:
 
 **Dado**:
 
@@ -91,7 +91,7 @@ o escalonamento escolar (school timetabling) e o escalonamento
 universitário (university timetabling). O escalonamento universitário
 subdivide-se, por sua vez, em dois subproblemas distintos: o University
 Course Timetabling Problem (UCTP ou UCTTP) e o University Examination
-Timetabling Problem (UETP ou UETTP) ([@abdipoor2023]).
+Timetabling Problem (UETP ou UETTP) [@abdipoor2023].
 
 @bashab2023 clarificam esta distinção, definindo o course
 timetabling como um problema de atribuição multidimensional no qual
@@ -106,7 +106,7 @@ principais: o Curriculum-Based Course Timetabling Problem (CB-CTP) e o
 Post-Enrollment Course Timetabling Problem (PE-CTP). A principal
 diferença entre ambas reside na fonte dos conflitos: no CB-CTP, os
 conflitos emergem do currículo publicado pela instituição, enquanto no
-PE-CTP decorrem dos dados de inscrição dos estudantes ([@abdipoor2023]).
+PE-CTP decorrem dos dados de inscrição dos estudantes [@abdipoor2023].
 
 @oudevrielink2019 observam ainda que a investigação em
 escalonamento universitário avançou de forma mais acelerada do que a
@@ -120,16 +120,16 @@ comparação de metodologias num conjunto de referência comum.
 O UCTP pertence à classe dos problemas de optimização combinatória (COP
 --- Combinatorial Optimization Problems), caracterizados por um espaço
 de soluções que cresce exponencialmente com a dimensão do problema
-([@bashab2023]). Uma vez que existem R\^E formas de alocação
+[@bashab2023]. Uma vez que existem R\^E formas de alocação
 possíveis no UCTP, o tempo computacional necessário aumenta de forma
 exponencial com o crescimento do número de eventos, salas e períodos
-considerados ([@abdipoor2023]).
+considerados [@abdipoor2023].
 
 Consequentemente, o UCTP é classificado como um problema NP-Hard
 (Non-deterministic Polynomial-time hard), o que torna inviável a
 aplicação de algoritmos exactos, em particular para instâncias de maior
-dimensão ([@abdipoor2023]). [@oudevrielink2019], citando
-Even (1975, citado em [@oudevrielink2019]), reforçam que o problema de elaboração de horários é um
+dimensão [@abdipoor2023]. [@oudevrielink2019], citando
+Even (1975), reforçam que o problema de elaboração de horários é um
 problema NP-hard e NP-completo, dependendo das restrições consideradas,
 e que soluções viáveis, eficientes ou rápidas --- todos sinónimos de
 tempo polinomial --- não se aplicam a este domínio. @bashab2023
@@ -149,7 +149,7 @@ flexíveis (Soft Constraints --- SC) [@abdipoor2023; @bashab2023]. As restriçõ
 determinam a viabilidade de uma solução --- a sua violação torna o
 horário inválido. As restrições flexíveis são condicionantes opcionais
 que determinam a qualidade de uma solução --- a sua satisfação é
-desejável, mas não imprescindível para a validade do horário ([@abdipoor2023]).
+desejável, mas não imprescindível para a validade do horário [@abdipoor2023].
 
 @abdipoor2023 apresentam o catálogo formal das restrições
 envolvidas no UCTP padrão. No que respeita às restrições rígidas,
@@ -183,7 +183,7 @@ função de custo de uma solução candidata S é tipicamente calculada como
 a soma ponderada das violações de restrições rígidas e flexíveis: CS =
 WSC × \|SC\| + WHC × \|HC\|, sendo que uma solução que viole qualquer
 restrição rígida é considerada inviável e, portanto, sem valor prático
-([@abdipoor2023]).
+[@abdipoor2023].
 
 ## 2.3 Inteligência Artificial para Optimização Combinatória
 
@@ -196,7 +196,7 @@ explícitas do mundo sob a forma de símbolos, regras e restrições
 lógicas. O seu funcionamento é determinístico e interpretável: dado um
 conjunto de restrições bem definidas, o sistema procura sistematicamente
 uma atribuição de valores às variáveis que satisfaça todas as condições
-impostas ([@russellnorvig2021]). A IA subsimbólica, por contraste,
+impostas [@russellnorvig2021]. A IA subsimbólica, por contraste,
 engloba abordagens como as redes neuronais artificiais e a aprendizagem
 por reforço, que aprendem padrões a partir de dados históricos sem que
 as regras sejam explicitamente programadas.
@@ -220,7 +220,7 @@ definido como um triplo (X, D, C), onde X = {x₁, \..., xₙ} representa o
 conjunto de variáveis, D = {D₁, \..., Dₙ} representa os domínios de
 valores possíveis para cada variável, e C = {C₁, \..., Cₖ} representa o
 conjunto de restrições que limitam os valores que as variáveis podem
-assumir simultaneamente ([@russellnorvig2021]; El-Sakka, 2015).
+assumir simultaneamente [@russellnorvig2021; @elsakka2015].
 
 Uma solução de um CSP consiste numa atribuição completa de valores às
 variáveis, de tal forma que todas as restrições sejam satisfeitas.
@@ -237,7 +237,7 @@ Aplicado ao UCTP, cada aula a escalonar constitui uma variável, o
 conjunto de períodos e salas disponíveis constitui o seu domínio, e as
 restrições rígidas e flexíveis descritas na secção 2.2.4 constituem o
 conjunto C. A resolução do problema consiste em encontrar uma atribuição
-completa e consistente para todas as variáveis ([@elsakka2015]).
+completa e consistente para todas as variáveis [@elsakka2015].
 
 ### 2.3.3 Programação por Restrições (Constraint Programming --- CP)
 
@@ -245,7 +245,7 @@ A Programação por Restrições (CP) é o paradigma computacional que
 operacionaliza a resolução de CSPs. Constitui uma área de investigação
 em Inteligência Artificial que combina a expressividade declarativa da
 programação lógica com a eficiência dos métodos de investigação
-operacional ([@elsakka2015]). A sua principal vantagem reside na
+operacional [@elsakka2015]. A sua principal vantagem reside na
 capacidade de fornecer uma descrição declarativa precisa do problema em
 termos de restrições, permitindo separar a definição do problema da
 estratégia de resolução.
@@ -254,7 +254,7 @@ Os mecanismos fundamentais da CP incluem a propagação de restrições ---
 que elimina valores dos domínios das variáveis que não podem fazer parte
 de nenhuma solução válida --- e a pesquisa sistemática por
 *backtracking*, que explora o espaço de soluções de forma organizada,
-revertendo atribuições inválidas e tentando alternativas ([@dechter2003]). A combinação de ambos os mecanismos permitem reduzir
+revertendo atribuições inválidas e tentando alternativas [@dechter2003]. A combinação de ambos os mecanismos permitem reduzir
 drasticamente o espaço de busca antes e durante a pesquisa, tornando
 viável a resolução de instâncias de média e grande dimensão que seriam
 computacionalmente intratáveis por enumeração exaustiva.
@@ -279,7 +279,7 @@ mutação. Contudo, são métodos inerentemente probabilísticos e não
 garantem a satisfação de restrições rígidas. Quando ocorrem alterações
 dinâmicas --- como ausência de um docente ou realocação de sala --- os
 sistemas baseados em GA frequentemente requerem a regeneração completa
-do horário, o que limita a adaptabilidade em tempo real ([@harshalatha2026]).
+do horário, o que limita a adaptabilidade em tempo real [@harshalatha2026].
 
 O Simulated Annealing (SA) e a Tabu Search (TS) são abordagens de
 pesquisa local de solução única que demonstraram resultados competitivos
@@ -305,7 +305,7 @@ O Google OR-Tools é uma suite de optimização de código aberto
 desenvolvida pela equipa de Investigação Operacional da Google, que
 disponibiliza ferramentas para a resolução de problemas de optimização
 combinatória, incluindo problemas de escalonamento, roteamento e
-satisfação de restrições ([@perron2023], citado em [@harshalatha2026]). A suite integra múltiplos solvers especializados, sendo o
+satisfação de restrições [@perron2023], citado em [@harshalatha2026]. A suite integra múltiplos solvers especializados, sendo o
 CP-SAT o motor principal para problemas de Programação por Restrições
 com variáveis inteiras.
 
@@ -314,14 +314,14 @@ com variáveis inteiras.
 O CP-SAT é descrito pelos seus autores como uma implementação de um
 solver de Programação por Restrições puramente integral, construído
 sobre um solver SAT (*Satisfiability*) utilizando *Lazy Clause
-Generation* ([@perron2023]). O solver inspira-se no *chuffed*
+Generation* [@perron2023]. O solver inspira-se no *chuffed*
 solver e na conferência CP 2013 de Peter Stuckey sobre *Lazy Clause
 Generation*, que introduziu a ideia de gerar cláusulas de inferência
 apenas quando necessário, evitando a sobrecarga de manter explicitamente
 todas as implicações do modelo.
 
 A arquitectura do CP-SAT assenta em dois avanços principais
-relativamente ao seu antecessor ([@perron2023]). O primeiro é a
+relativamente ao seu antecessor [@perron2023]. O primeiro é a
 integração de um *simplex* ao lado do motor SAT, trazendo as vantagens
 da relaxação linear sobre a componente linear do modelo completo e
 iniciando a integração de tecnologia MIP (*Mixed Integer Programming*)
@@ -391,4 +391,4 @@ abordagem CP-SAT distingue-se por três propriedades fundamentais:
 determinismo (garante a satisfação de todas as restrições rígidas),
 adaptabilidade (suporta actualizações em tempo real sem regeneração
 completa) e escalabilidade (os tempos de solução escalam polinomialmente
-com a dimensão do problema) ([@harshalatha2026]).
+com a dimensão do problema) [@harshalatha2026].
