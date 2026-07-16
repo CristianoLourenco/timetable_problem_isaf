@@ -14,7 +14,19 @@ pandoc \
   --citeproc --bibliography=referencias.bib --csl=apa.csl \
   --reference-doc=dist/custom-reference.docx \
   -o dist/TFC_Cristiano_Lourenco.docx
+
+python3 dist/postprocess_pagination.py dist/TFC_Cristiano_Lourenco.docx
 ```
+
+O segundo passo (`postprocess_pagination.py`) **é obrigatório** — insere a quebra
+de secção OOXML entre o pré-textual e o "1. INTRODUÇÃO" e liga o rodapé com
+numeração de página: romano minúsculo (i, ii, iii...) no pré-textual, arábico a
+partir de 1 do "1. INTRODUÇÃO" até ao fim (textual + pós-textual). O pandoc não
+tem forma nativa de expressar isto a partir do markdown/reference-doc, por isso
+edita directamente o pacote OOXML já compilado. Se a estrutura de
+`00_capa_pretextual.md` ou `04_01_introducao.md` mudar (nomeadamente o heading
+"1. INTRODUÇÃO"), reveja o script — ele falha alto (`sys.exit`) em vez de
+produzir um DOCX com numeração errada caso não encontre os marcadores esperados.
 
 - `referencias.bib` — exportado do Zotero (Better BibTeX); manter sincronizado lá, não
   editar as entradas manualmente aqui.
