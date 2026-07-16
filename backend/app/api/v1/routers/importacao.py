@@ -10,7 +10,9 @@ from app.services import importacao_service
 # RN09/RN10 — importação em massa é reservada ao Gestor (RF06).
 router = APIRouter(prefix="/upload", tags=["Importação"], dependencies=[Depends(require_gestor)])
 
-ENTIDADES_SUPORTADAS = frozenset({"cursos", "professores", "turmas", "disciplinas", "salas"})
+ENTIDADES_SUPORTADAS = frozenset(
+    {"cursos", "professores", "turmas", "disciplinas", "salas", "qualificacoes", "grade_curricular"}
+)
 
 
 @router.post(
@@ -22,7 +24,15 @@ exatamente pela ordem abaixo (nomes não sensíveis a maiúsculas/minúsculas). 
 chave única — reimportar ignora linhas cuja chave já exista (não atualiza, não duplica).
 Nunca aborta na primeira linha inválida — devolve um relatório com todos os erros.
 
-Se `turmas` referencia um `curso_codigo`, importa `cursos` primeiro.
+Se `turmas` referencia um `curso_codigo`, importa `cursos` primeiro. `qualificacoes` e
+`grade_curricular` são aditivas (nunca substituem associações já existentes) e exigem que
+professores/turmas/disciplinas referenciados já estejam importados.
+
+**Ficheiro com múltiplas folhas**: ao importar `entidade=turmas`, se o mesmo .xlsx tiver também
+uma folha chamada `grade_curricular`, esta é importada na mesma chamada (idem para
+`entidade=professores` + folha `qualificacoes`). As folhas são identificadas pelo nome, não pela
+posição — a folha principal pode ter qualquer nome (cai na folha ativa), mas o complemento só é
+detetado se a folha se chamar exatamente `grade_curricular`/`qualificacoes`.
 
 | entidade | colunas (nesta ordem) | chave de idempotência |
 |---|---|---|
@@ -31,6 +41,8 @@ Se `turmas` referencia um `curso_codigo`, importa `cursos` primeiro.
 | `disciplinas` | codigo, nome | codigo |
 | `salas` | codigo, nome, capacidade (>0) | codigo |
 | `turmas` | codigo, nome, ano_letivo, turno, numero_alunos (>0), curso_codigo | codigo (curso_codigo tem de já existir) |
+| `qualificacoes` | professor_email, disciplina_codigo | par (professor_email, disciplina_codigo) |
+| `grade_curricular` | turma_codigo, disciplina_codigo, carga_horaria_semanal (>0) | par (turma_codigo, disciplina_codigo) |
 """,
 )
 async def importar_excel(

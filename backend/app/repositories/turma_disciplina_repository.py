@@ -25,3 +25,27 @@ class TurmaDisciplinaRepository:
                 )
             )
         self.session.commit()
+
+    def existe(self, turma_id: int, disciplina_id: int) -> bool:
+        return (
+            self.session.exec(
+                select(TurmaDisciplina).where(
+                    TurmaDisciplina.turma_id == turma_id,
+                    TurmaDisciplina.disciplina_id == disciplina_id,
+                )
+            ).first()
+            is not None
+        )
+
+    def adicionar(self, turma_id: int, disciplina_id: int, carga_horaria_semanal: int) -> None:
+        """Insere um item sem apagar os já existentes — usado pela importação
+        em massa (RF06/RF08), que é aditiva e idempotente por par, ao contrário
+        de `substituir` (usado pelo diálogo manual, que troca a grade toda)."""
+        self.session.add(
+            TurmaDisciplina(
+                turma_id=turma_id,
+                disciplina_id=disciplina_id,
+                carga_horaria_semanal=carga_horaria_semanal,
+            )
+        )
+        self.session.commit()
