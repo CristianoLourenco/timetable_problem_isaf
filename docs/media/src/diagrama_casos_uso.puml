@@ -63,5 +63,6 @@ Utilizador -[hidden]up- Gestor
 Gestor -[hidden]up- Professor
 UC13 -[hidden]up- UC03
 UC14 -[hidden]up- UC04
+UC08 -[hidden]left- UC09
 
 @enduml
