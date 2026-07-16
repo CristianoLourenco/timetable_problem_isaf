@@ -1,4 +1,4 @@
-5. CONCLUSÃO E RECOMENDAÇÕES
+# 5. CONCLUSÃO E RECOMENDAÇÕES
 
 O presente trabalho propôs-se desenvolver, implementar e validar um
 sistema inteligente para a geração automática de horários académicos no
@@ -25,7 +25,7 @@ dentro dos limites estabelecidos. O mecanismo de variáveis de folga
 assegurou que os cenários sem solução produzem um relatório de
 diagnóstico em vez de uma falha silenciosa, cumprindo o RNF03.
 
-5.1 Limitações do estudo
+## 5.1 Limitações do estudo
 
 Reconhece-se como limitação central a ausência de validação com dados
 reais e completos do ISAF, decorrente da não disponibilização formal dos
@@ -34,7 +34,7 @@ foram conduzidos com instâncias de referência internacional, que, embora
 representativas da classe de problemas, podem não capturar todas as
 especificidades do contexto angolano.
 
-5.2 Recomendações
+## 5.2 Recomendações
 
 Recomenda-se: (i) a actualização do sistema com os dados institucionais
 reais do ISAF e a realização de uma validação de campo com os

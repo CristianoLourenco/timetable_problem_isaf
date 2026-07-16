@@ -1,5 +1,4 @@
-4. ANÁLISE, DESENVOLVIMENTO E DISCUSSÃO DOS
-RESULTADOS
+# 4. ANÁLISE, DESENVOLVIMENTO E DISCUSSÃO DOS RESULTADOS
 
 Este capítulo apresenta o percurso técnico e analítico do
 desenvolvimento do sistema, estruturado em seis secções que cobrem desde
@@ -8,7 +7,7 @@ obtidos. A sequência adoptada é coerente com a metodologia RUP descrita
 na Secção 3.9.2 e com os princípios de engenharia de requisitos
 estabelecidos na Secção 3.
 
-4.1 Levantamento de requisitos
+## **4.1 Levantamento de requisitos**
 
 O levantamento de requisitos constitui a etapa fundacional do
 desenvolvimento de qualquer sistema de software. Seguindo os critérios
@@ -33,7 +32,7 @@ comprometam a integridade e a verificabilidade dos horários produzidos.
 A especificação é documentada nas tabelas de requisitos funcionais e não
 funcionais que se seguem.
 
-4.1.1 Glossário técnico
+### **4.1.1 Glossário técnico**
 
 Seguindo a directriz de modificabilidade da norma IEEE 830, que
 recomenda a utilização de glossário para evitar ambiguidades e
@@ -88,7 +87,7 @@ definição formal dos termos técnicos utilizados neste capítulo (IEEE,
 
 *Tabela 1 --- Glossário técnico do sistema*
 
-4.1.2 Requisitos de negócio
+### **4.1.2 Requisitos de negócio**
 
 Segundo [@vazquezsimoes2016], Requisitos (ou necessidades) de negócio
 são declarações de mais alto nível de objetivos, metas ou necessidades
@@ -144,7 +143,7 @@ uma área busca alcançar.
 
 *Tabela 2 --- Requisitos de negócio*
 
-4.1.3 Requisitos funcionais
+### **4.1.3 Requisitos funcionais**
 
 Os requisitos funcionais (RF) definem os serviços, comportamentos e
 respostas que o sistema deve fornecer para satisfazer as necessidades
@@ -238,7 +237,7 @@ solução produzida.
 
 *Tabela 3 --- Requisitos Funcionais*
 
-4.1.4 Requisitos não funcionais
+### **4.1.4 Requisitos não funcionais**
 
 Os requisitos não funcionais (RNF) estabelecem as restrições e os
 atributos de qualidade que condicionam a forma como o sistema executa os
@@ -291,7 +290,7 @@ contexto institucional do ISAF.
 
 *Tabela 4 --- Requisitos Não Funcionais*
 
-**4.2 Modelagem do sistema**
+## **4.2 Modelagem do sistema**
 
 A modelagem do sistema foi realizada com recurso à Unified Modeling
 Language (UML), linguagem amplamente utilizada para especificar,
@@ -515,8 +514,6 @@ defesa em profundidade.
 ![](media/diagrama_er.png)
 
 Figura 4 --- Diagrama entidade-relacional
-
-## 
 
 ## **4.3 Arquitectura da solução**
 

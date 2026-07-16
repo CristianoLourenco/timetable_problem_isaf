@@ -1,6 +1,6 @@
-3. METODOLOGIA
+# 3. METODOLOGIA
 
-3.1 Conceito
+## 3.1 Conceito
 
 Segundo [@gil2017], a metodologia científica é um procedimento racional
 e sistemático que tem como objectivo fornecer respostas aos problemas
@@ -12,7 +12,7 @@ economia, permite alcançar o objectivo --- conhecimentos válidos e
 verdadeiros ---, traçando o caminho a ser seguido, detectando erros e
 auxiliando as decisões do investigador.
 
-3.2 Natureza da pesquisa
+## 3.2 Natureza da pesquisa
 
 @gil2017 classifica as pesquisas em duas grandes categorias quanto à
 sua finalidade:
@@ -31,7 +31,7 @@ O presente trabalho enquadra-se na categoria de pesquisa aplicada, dado
 que visa desenvolver um sistema concreto em resposta a um problema
 identificado.
 
-3.3 Abordagem da pesquisa
+## 3.3 Abordagem da pesquisa
 
 Segundo [@gil2017] e Tashakkori e Creswell (2007, apud Gil, 2017), as
 pesquisas distinguem-se metodologicamente pela natureza do tratamento e
@@ -58,7 +58,7 @@ O presente trabalho adopta uma abordagem **Mista**, privilegiando a
 rigorosidade de modelos matemáticos e a análise descritiva dos
 resultados encontrados pelo mesmo.
 
-3.4 Classificação quanto aos objectivos
+## 3.4 Classificação quanto aos objectivos
 
 Com base em [@gil2017], as pesquisas classificam-se em:
 
@@ -83,7 +83,7 @@ por aprofundar o conhecimento sobre o problema em análise; descritiva
 por caracterizar os processos, requisitos e funcionamento do sistema
 proposto.
 
-3.5 População e amostra
+## 3.5 População e amostra
 
 [@marconilakatos2017] e @gil2017 definem população ou universo como
 o conjunto total de seres, elementos ou factos que apresentam pelo menos
@@ -105,8 +105,7 @@ relevância para os objectivos do estudo. Esta escolha justifica-se pelo
 facto de a investigação não visar a generalização estatística, mas sim a
 resolução de um problema concreto e identificado num contexto real ([@gil2017]).
 
-3.5.1 Dados de referência para validação do
-motor de optimização
+### 3.5.1 Dados de referência para validação do motor de optimização
 
 Na fase de desenvolvimento e validação matemática do motor de
 optimização, e na ausência de dados institucionais formalmente
@@ -125,8 +124,7 @@ docentes). Esta estratégia é consistente com a abordagem adoptada por
 [@harshalatha2026] e [@elsakka2015] na validação dos seus
 respectivos sistemas.
 
-3.6 Técnicas e instrumentos de recolha de
-dados
+## 3.6 Técnicas e instrumentos de recolha de dados
 
 De acordo com [@marconilakatos2017] e [@gil2017], as técnicas de
 recolha de dados constituem os procedimentos sistemáticos utilizados
@@ -152,7 +150,7 @@ Para o presente trabalho foram adoptadas as seguintes técnicas:
     Restrições e no Google OR-Tools CP-SAT, conforme desenvolvido no
     Capítulo 2.
 
-3.7 Técnicas de análise de dados
+## 3.7 Técnicas de análise de dados
 
 O tratamento e a análise dos dados recolhidos seguiram duas abordagens
 complementares, adequadas à natureza Mista (Quantitativa e Qualitativa)
@@ -173,7 +171,7 @@ Constraints satisfeitas (nomeadamente a distribuição equilibrada de
 carga horária e o agrupamento pedagógico em blocos de 90 minutos). Esta
 abordagem é consistente com a metodologia adoptada por [@harshalatha2026] e [@elsakka2015].
 
-3.8 Considerações éticas
+## 3.8 Considerações éticas
 
 A condução desta investigação observou os princípios éticos fundamentais
 enunciados por [@gil2017], designadamente o respeito pela autonomia e
