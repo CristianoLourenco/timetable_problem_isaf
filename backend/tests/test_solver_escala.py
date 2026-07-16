@@ -2,6 +2,7 @@
 # antes de escalar para o tamanho real do ISAF (100+ professores, 60+ turmas).
 from collections import defaultdict
 
+from app.core.calendario import gerar_grelha_tempos
 from app.solver.dto import (
     HorarioInput,
     ProfessorDisciplinaDTO,
@@ -17,25 +18,20 @@ MAX_TIME_TESTE = 10.0
 
 N_DISCIPLINAS = 6
 N_TURMAS = 12
+TURNO_TESTE = "manha"  # concentra as 12 turmas num único turno — maior contenção que espalhar por 3
 
 
 def _construir_slots_reais() -> list[SlotDTO]:
-    """45 slots reais do ISAF (9 tempos x 5 dias) — ver Settings em app/core/config.py."""
-    slots = []
-    slot_id = 1
-    for dia in ["segunda", "terca", "quarta", "quinta", "sexta"]:
-        for tempo in range(1, 10):
-            slots.append(SlotDTO(id=slot_id, dia_semana=dia, tempo_ordem=tempo))
-            slot_id += 1
-    return slots
+    """Grelha real do ISAF (turno x período, ver app/core/config.py), um único turno."""
+    return [SlotDTO(dia_semana=g.dia_semana, turno=g.turno, periodo=g.periodo) for g in gerar_grelha_tempos() if g.turno == TURNO_TESTE]
 
 
 def _construir_cenario_em_escala() -> HorarioInput:
     """12 turmas x 2 disciplinas, 8 professores (6 especialistas + 2 flutuantes),
-    5 salas, 45 slots reais — uma ordem de grandeza acima do cenário mínimo da Fase 3."""
+    5 salas, grelha real de um turno — uma ordem de grandeza acima do cenário mínimo da Fase 3."""
     slots = _construir_slots_reais()
 
-    turmas = [TurmaDTO(id=i, numero_alunos=30) for i in range(1, N_TURMAS + 1)]
+    turmas = [TurmaDTO(id=i, numero_alunos=30, turno=TURNO_TESTE) for i in range(1, N_TURMAS + 1)]
     professores = [ProfessorDTO(id=p, classificacao=(p % 5) + 1, vinculo_casa=(p % 2 == 0)) for p in range(1, 9)]
     salas = [SalaDTO(id=s, capacidade=40) for s in range(1, 6)]
 
@@ -78,18 +74,21 @@ def test_cenario_em_escala_permanece_sem_conflitos():
     total_esperado = sum(td.carga_horaria_semanal for td in dados.turma_disciplinas)
     assert len(resultado.alocacoes) == total_esperado  # RN05
 
-    contagem_professor_slot: dict[tuple[int, int], int] = defaultdict(int)
-    contagem_turma_slot: dict[tuple[int, int], int] = defaultdict(int)
-    contagem_sala_slot: dict[tuple[int, int], int] = defaultdict(int)
+    def tempo_de(aloc):
+        return (aloc.dia_semana, aloc.turno, aloc.periodo)
+
+    contagem_professor_tempo: dict[tuple, int] = defaultdict(int)
+    contagem_turma_tempo: dict[tuple, int] = defaultdict(int)
+    contagem_sala_tempo: dict[tuple, int] = defaultdict(int)
     for aloc in resultado.alocacoes:
-        contagem_professor_slot[(aloc.professor_id, aloc.slot_id)] += 1
-        contagem_turma_slot[(aloc.turma_id, aloc.slot_id)] += 1
-        contagem_sala_slot[(aloc.sala_id, aloc.slot_id)] += 1
+        contagem_professor_tempo[(aloc.professor_id, *tempo_de(aloc))] += 1
+        contagem_turma_tempo[(aloc.turma_id, *tempo_de(aloc))] += 1
+        contagem_sala_tempo[(aloc.sala_id, *tempo_de(aloc))] += 1
 
     # RN01, RN02, RN03 — nenhum conflito, mesmo à escala maior
-    assert all(c <= 1 for c in contagem_professor_slot.values())
-    assert all(c <= 1 for c in contagem_turma_slot.values())
-    assert all(c <= 1 for c in contagem_sala_slot.values())
+    assert all(c <= 1 for c in contagem_professor_tempo.values())
+    assert all(c <= 1 for c in contagem_turma_tempo.values())
+    assert all(c <= 1 for c in contagem_sala_tempo.values())
 
 
 def test_tempo_insuficiente_nao_e_reportado_como_impossibilidade_estrutural():

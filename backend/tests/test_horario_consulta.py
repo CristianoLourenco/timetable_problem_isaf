@@ -1,6 +1,4 @@
-# Implementa: Fase 5 (RF11, RF12) — consulta de horário estruturada por dia/slot
-from datetime import time
-
+# Implementa: Fase 5 (RF11, RF12) — consulta de horário estruturada por dia/tempo
 import pytest
 from sqlmodel import Session, SQLModel, create_engine
 
@@ -11,7 +9,6 @@ from app.models.disciplina import Disciplina
 from app.models.professor import Professor
 from app.models.professor_disciplina import ProfessorDisciplina
 from app.models.sala import Sala
-from app.models.slot import Slot
 from app.models.turma import Turma
 from app.models.turma_disciplina import TurmaDisciplina
 from app.repositories.job_repository import JobRepository
@@ -43,11 +40,6 @@ def _semear_e_gerar(engine) -> tuple[int, int]:
         session.refresh(professor)
         session.refresh(disciplina)
 
-        for dia in ["segunda", "terca"]:
-            for tempo in range(1, 5):
-                session.add(Slot(dia_semana=dia, tempo_ordem=tempo, hora_inicio=time(7, 30), hora_fim=time(8, 15)))
-        session.commit()
-
         session.add(TurmaDisciplina(turma_id=turma.id, disciplina_id=disciplina.id, carga_horaria_semanal=2))
         session.add(ProfessorDisciplina(professor_id=professor.id, disciplina_id=disciplina.id))
         session.commit()
@@ -59,7 +51,7 @@ def _semear_e_gerar(engine) -> tuple[int, int]:
     return turma_id, professor_id
 
 
-def test_consultar_horario_por_turma_estruturado_por_dia_e_slot():
+def test_consultar_horario_por_turma_estruturado_por_dia_e_tempo():
     engine = _criar_engine_teste()
     turma_id, _ = _semear_e_gerar(engine)
 
@@ -73,7 +65,8 @@ def test_consultar_horario_por_turma_estruturado_por_dia_e_slot():
 
     tempos = dias_com_aula[0].tempos
     assert len(tempos) == 2
-    assert [t.tempo_ordem for t in tempos] == sorted(t.tempo_ordem for t in tempos)
+    assert all(t.turno == "manha" for t in tempos)
+    assert [t.periodo for t in tempos] == sorted(t.periodo for t in tempos)
     assert tempos[0].turma_nome == "Turma 1"
     assert tempos[0].disciplina_nome == "Matemática"
     assert tempos[0].professor_nome == "Prof A"
@@ -88,9 +81,10 @@ def test_consultar_horario_por_professor_espelha_a_mesma_alocacao():
         horario_turma = HorarioService(session).consultar_horario_turma(turma_id)
         horario_professor = HorarioService(session).consultar_horario_professor(professor_id)
 
-    slots_turma = {t.slot_id for d in horario_turma.dias for t in d.tempos}
-    slots_professor = {t.slot_id for d in horario_professor.dias for t in d.tempos}
-    assert slots_turma == slots_professor
+    def tempos_de(horario):
+        return {(t.dia_semana, t.turno, t.periodo) for d in horario.dias for t in d.tempos}
+
+    assert tempos_de(horario_turma) == tempos_de(horario_professor)
 
 
 def test_turma_inexistente_levanta_erro_404():

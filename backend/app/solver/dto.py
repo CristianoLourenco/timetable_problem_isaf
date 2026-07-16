@@ -1,5 +1,5 @@
 # Implementa: RN01-RN08 (UC08) — estruturas de entrada/saída do solver
-# ver docs/06_arquitetura_backend.md secção "Fase 3" e docs/analise_requisitos_v5.0.md secção 6.
+# ver docs/04_04_analise_desenvolvimento.md secção 4.3.3 e docs/04_04_analise_desenvolvimento.md secção 4.1.2 (RNs).
 #
 # Puras dataclasses — nunca SQLModel/Pydantic aqui. A service layer (fora de app/solver/)
 # é responsável por ler a BD e traduzir as entidades para estas estruturas simples.
@@ -8,15 +8,19 @@ from dataclasses import dataclass, field
 
 @dataclass(frozen=True)
 class SlotDTO:
-    id: int
+    """Um tempo letivo (dia_semana + turno + periodo) — sem hora, o solver não precisa
+    de horas reais, só de distinguir combinações. periodo reinicia em 1 a cada turno."""
+
     dia_semana: str
-    tempo_ordem: int
+    turno: str
+    periodo: int
 
 
 @dataclass(frozen=True)
 class TurmaDTO:
     id: int
     numero_alunos: int
+    turno: str  # a turma só pode ser alocada em tempos do seu próprio turno
 
 
 @dataclass(frozen=True)
@@ -48,7 +52,9 @@ class ProfessorDisciplinaDTO:
 @dataclass(frozen=True)
 class DisponibilidadeDTO:
     professor_id: int
-    slot_id: int
+    dia_semana: str
+    turno: str
+    periodo: int
 
 
 @dataclass(frozen=True)
@@ -68,7 +74,9 @@ class AlocacaoResult:
     disciplina_id: int
     professor_id: int
     sala_id: int
-    slot_id: int
+    dia_semana: str
+    turno: str
+    periodo: int
     penalizacao_aplicada: float = 0.0
 
 

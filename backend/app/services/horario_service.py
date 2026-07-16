@@ -1,12 +1,13 @@
-# Implementa: RF09, RF10, RF11, RF12 (UC08, UC10, UC11, UC12) — ver docs/analise_requisitos_v5.0.md
+# Implementa: RF09, RF10, RF11, RF12 (UC08, UC10, UC11, UC12) — ver docs/04_04_analise_desenvolvimento.md
 #
-# Passo 1 (Extração) do fluxo descrito em docs/06_arquitetura_backend.md secção 1:
+# Passo 1 (Extração) do fluxo descrito em docs/04_04_analise_desenvolvimento.md secção 4.1:
 # lê as entidades da BD e traduz para as dataclasses simples que o solver aceita.
 # O solver nunca vê a Session nem os models SQLModel diretamente.
 from collections import defaultdict
 
 from sqlmodel import Session, select
 
+from app.core.calendario import gerar_grelha_tempos
 from app.core.config import settings
 from app.core.exceptions import EntidadeNaoEncontradaError
 from app.models.alocacao import Alocacao
@@ -15,7 +16,6 @@ from app.models.job import Job
 from app.models.professor import Professor
 from app.models.professor_disciplina import ProfessorDisciplina
 from app.models.sala import Sala
-from app.models.slot import Slot
 from app.models.turma import Turma
 from app.models.turma_disciplina import TurmaDisciplina
 from app.repositories.alocacao_repository import AlocacaoRepository
@@ -23,7 +23,6 @@ from app.repositories.disciplina_repository import DisciplinaRepository
 from app.repositories.job_repository import JobRepository
 from app.repositories.professor_repository import ProfessorRepository
 from app.repositories.sala_repository import SalaRepository
-from app.repositories.slot_repository import SlotRepository
 from app.repositories.turma_repository import TurmaRepository
 from app.schemas.horario_schema import HorarioDiaSchema, HorarioItemSchema, HorarioResponseSchema
 from app.solver.dto import (
@@ -37,24 +36,26 @@ from app.solver.dto import (
     TurmaDTO,
 )
 
+# Ordem de exibição dos turnos num dia — não existe ordenação natural em string.
+_ORDEM_TURNOS = ["manha", "tarde", "noite"]
+
 
 def extrair_dados(session: Session) -> HorarioInput:
     """Lê todas as entidades relevantes da BD e monta o HorarioInput do solver."""
     turmas = session.exec(select(Turma)).all()
     professores = session.exec(select(Professor)).all()
     salas = session.exec(select(Sala)).all()
-    slots = session.exec(select(Slot)).all()
     turma_disciplinas = session.exec(select(TurmaDisciplina)).all()
     professor_disciplinas = session.exec(select(ProfessorDisciplina)).all()
     disponibilidades = session.exec(select(Disponibilidade)).all()
 
     return HorarioInput(
-        turmas=[TurmaDTO(id=t.id, numero_alunos=t.numero_alunos) for t in turmas],
+        turmas=[TurmaDTO(id=t.id, numero_alunos=t.numero_alunos, turno=t.turno) for t in turmas],
         professores=[
             ProfessorDTO(id=p.id, classificacao=p.classificacao, vinculo_casa=p.vinculo_casa) for p in professores
         ],
         salas=[SalaDTO(id=s.id, capacidade=s.capacidade) for s in salas],
-        slots=[SlotDTO(id=sl.id, dia_semana=sl.dia_semana, tempo_ordem=sl.tempo_ordem) for sl in slots],
+        slots=[SlotDTO(dia_semana=g.dia_semana, turno=g.turno, periodo=g.periodo) for g in gerar_grelha_tempos()],
         turma_disciplinas=[
             TurmaDisciplinaDTO(
                 turma_id=td.turma_id,
@@ -68,7 +69,8 @@ def extrair_dados(session: Session) -> HorarioInput:
             for pd in professor_disciplinas
         ],
         disponibilidades=[
-            DisponibilidadeDTO(professor_id=d.professor_id, slot_id=d.slot_id) for d in disponibilidades
+            DisponibilidadeDTO(professor_id=d.professor_id, dia_semana=d.dia_semana, turno=d.turno, periodo=d.periodo)
+            for d in disponibilidades
         ],
     )
 
@@ -83,7 +85,6 @@ class HorarioService:
         self.professor_repo = ProfessorRepository(session)
         self.disciplina_repo = DisciplinaRepository(session)
         self.sala_repo = SalaRepository(session)
-        self.slot_repo = SlotRepository(session)
 
     def disparar_geracao(self) -> Job:
         """RF09 — cria o Job em PENDING; o router dispara job_runner.executar em BackgroundTasks."""
@@ -121,23 +122,23 @@ class HorarioService:
         return job
 
     def _montar_resposta(self, job_id: str, alocacoes: list[Alocacao]) -> HorarioResponseSchema:
-        """Traduz linhas de Alocacao em JSON estruturado por dia/slot (nunca linhas soltas)."""
+        """Traduz linhas de Alocacao em JSON estruturado por dia/tempo (nunca linhas soltas)."""
         turmas = {t.id: t for t in self.turma_repo.list()}
         professores = {p.id: p for p in self.professor_repo.list()}
         disciplinas = {d.id: d for d in self.disciplina_repo.list()}
         salas = {s.id: s for s in self.sala_repo.list()}
-        slots = {sl.id: sl for sl in self.slot_repo.list()}
+        horas = {(g.dia_semana, g.turno, g.periodo): (g.hora_inicio, g.hora_fim) for g in gerar_grelha_tempos()}
 
         itens_por_dia: dict[str, list[HorarioItemSchema]] = defaultdict(list)
         for aloc in alocacoes:
-            slot = slots[aloc.slot_id]
-            itens_por_dia[slot.dia_semana].append(
+            hora_inicio, hora_fim = horas[(aloc.dia_semana, aloc.turno, aloc.periodo)]
+            itens_por_dia[aloc.dia_semana].append(
                 HorarioItemSchema(
-                    slot_id=slot.id,
-                    dia_semana=slot.dia_semana,
-                    tempo_ordem=slot.tempo_ordem,
-                    hora_inicio=slot.hora_inicio,
-                    hora_fim=slot.hora_fim,
+                    dia_semana=aloc.dia_semana,
+                    turno=aloc.turno,
+                    periodo=aloc.periodo,
+                    hora_inicio=hora_inicio,
+                    hora_fim=hora_fim,
                     turma_id=aloc.turma_id,
                     turma_nome=turmas[aloc.turma_id].nome,
                     disciplina_id=aloc.disciplina_id,
@@ -152,7 +153,10 @@ class HorarioService:
         dias = [
             HorarioDiaSchema(
                 dia_semana=dia,
-                tempos=sorted(itens_por_dia.get(dia, []), key=lambda item: item.tempo_ordem),
+                tempos=sorted(
+                    itens_por_dia.get(dia, []),
+                    key=lambda item: (_ORDEM_TURNOS.index(item.turno), item.periodo),
+                ),
             )
             for dia in settings.slot_dias_semana
         ]

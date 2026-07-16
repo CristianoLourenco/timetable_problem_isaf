@@ -1,6 +1,4 @@
 # Implementa: Fase 4 (RF09, RF10, RF13) — fluxo assíncrono ponta-a-ponta com BD em memória
-from datetime import time
-
 from sqlmodel import Session, SQLModel, create_engine
 
 import app.models  # noqa: F401 - garante que todos os modelos entram no metadata
@@ -10,7 +8,6 @@ from app.models.job import JobStatus
 from app.models.professor import Professor
 from app.models.professor_disciplina import ProfessorDisciplina
 from app.models.sala import Sala
-from app.models.slot import Slot
 from app.models.turma import Turma
 from app.models.turma_disciplina import TurmaDisciplina
 from app.repositories.alocacao_repository import AlocacaoRepository
@@ -22,13 +19,6 @@ def _criar_engine_teste():
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False})
     SQLModel.metadata.create_all(engine)
     return engine
-
-
-def _semear_slots(session: Session) -> None:
-    for dia in ["segunda", "terca"]:
-        for tempo in range(1, 5):
-            session.add(Slot(dia_semana=dia, tempo_ordem=tempo, hora_inicio=time(7, 30), hora_fim=time(8, 15)))
-    session.commit()
 
 
 def _semear_cenario_viavel(session: Session) -> None:
@@ -47,8 +37,6 @@ def _semear_cenario_viavel(session: Session) -> None:
     session.refresh(professor)
     session.refresh(disciplina)
     session.refresh(sala)
-
-    _semear_slots(session)
 
     session.add(TurmaDisciplina(turma_id=turma.id, disciplina_id=disciplina.id, carga_horaria_semanal=2))
     session.add(ProfessorDisciplina(professor_id=professor.id, disciplina_id=disciplina.id))
@@ -93,8 +81,6 @@ def test_job_runner_marca_infeasible_com_diagnostico():
         session.refresh(turma)
         session.refresh(professor)
         session.refresh(disciplina)
-
-        _semear_slots(session)
 
         session.add(TurmaDisciplina(turma_id=turma.id, disciplina_id=disciplina.id, carga_horaria_semanal=1))
         session.add(ProfessorDisciplina(professor_id=professor.id, disciplina_id=disciplina.id))

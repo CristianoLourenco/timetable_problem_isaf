@@ -1,9 +1,10 @@
-# Implementa: RF05 (UC05) — ver docs/analise_requisitos_v5.0.md
+# Implementa: RF05 (UC05) — ver docs/04_04_analise_desenvolvimento.md
 from sqlmodel import Session
 
 from app.core.exceptions import EntidadeNaoEncontradaError
 from app.repositories.disponibilidade_repository import DisponibilidadeRepository
 from app.repositories.professor_repository import ProfessorRepository
+from app.schemas.tempo_schema import TempoChave
 
 
 class DisponibilidadeService:
@@ -15,11 +16,11 @@ class DisponibilidadeService:
         if self.professor_repo.get(professor_id) is None:
             raise EntidadeNaoEncontradaError("Professor não encontrado.")
 
-    def obter(self, professor_id: int) -> list[int]:
+    def obter(self, professor_id: int) -> list[TempoChave]:
         self._validar_professor(professor_id)
-        return self.disponibilidade_repo.listar_slot_ids(professor_id)
+        return self.disponibilidade_repo.listar_tempos(professor_id)
 
-    def definir(self, professor_id: int, slot_ids: list[int]) -> list[int]:
+    def definir(self, professor_id: int, tempos: list[TempoChave]) -> list[TempoChave]:
         self._validar_professor(professor_id)
-        self.disponibilidade_repo.substituir(professor_id, slot_ids)
-        return slot_ids
+        self.disponibilidade_repo.substituir(professor_id, tempos)
+        return tempos

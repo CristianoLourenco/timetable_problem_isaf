@@ -1,4 +1,4 @@
-# Implementa: RF05 (UC05) — ver docs/analise_requisitos_v5.0.md
+# Implementa: RF05 (UC05) — ver docs/04_04_analise_desenvolvimento.md
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
@@ -24,10 +24,10 @@ def obter_disponibilidade(
     """RF05 — o próprio Professor gere a sua disponibilidade; Gestor/Superadmin têm acesso administrativo."""
     verificar_acesso_professor_proprio(user, professor_id)
     try:
-        slot_ids = service.obter(professor_id)
+        tempos = service.obter(professor_id)
     except EntidadeNaoEncontradaError as exc:
         raise HTTPException(404, str(exc)) from exc
-    return DisponibilidadeReadSchema(slot_ids=slot_ids)
+    return DisponibilidadeReadSchema(tempos=tempos)
 
 
 @router.post("/{professor_id}/disponibilidade", response_model=DisponibilidadeReadSchema)
@@ -39,7 +39,7 @@ def definir_disponibilidade(
 ):
     verificar_acesso_professor_proprio(user, professor_id)
     try:
-        slot_ids = service.definir(professor_id, payload.slot_ids)
+        tempos = service.definir(professor_id, payload.tempos)
     except EntidadeNaoEncontradaError as exc:
         raise HTTPException(404, str(exc)) from exc
-    return DisponibilidadeReadSchema(slot_ids=slot_ids)
+    return DisponibilidadeReadSchema(tempos=tempos)

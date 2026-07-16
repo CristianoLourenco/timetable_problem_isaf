@@ -1,8 +1,6 @@
 # Implementa: Fase 7 — teste de integração ponta-a-ponta do fluxo do Gestor
 # (RF01-RF04, RF06/RF07 grade curricular, RF09-RF12), via HTTP real com autenticação,
 # não apenas chamadas diretas à service layer (essas já estão cobertas nas Fases 3-6).
-from datetime import time
-
 from fastapi.testclient import TestClient
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
@@ -13,7 +11,6 @@ from app.api.v1.deps import get_session
 from app.core import security
 from app.core.config import settings
 from app.main import app as fastapi_app
-from app.models.slot import Slot
 from app.workers import job_runner
 
 EMAIL_GESTOR = "gestor.teste@isaf.co.ao"
@@ -23,14 +20,6 @@ CABECALHO_AUTH = {"Authorization": "Bearer qualquer"}
 def _cliente_autenticado_como_gestor(monkeypatch):
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     SQLModel.metadata.create_all(engine)
-
-    # Slot não tem endpoint de criação (é semeado por init_db.py, fora do âmbito do
-    # CRUD do Gestor) — semeia diretamente na BD de teste, como o init_db.py faria.
-    with Session(engine) as session:
-        for dia in ["segunda", "terca"]:
-            for tempo in range(1, 5):
-                session.add(Slot(dia_semana=dia, tempo_ordem=tempo, hora_inicio=time(7, 30), hora_fim=time(8, 15)))
-        session.commit()
 
     def _sobrepor_sessao():
         with Session(engine) as session:
@@ -119,6 +108,10 @@ def test_fluxo_completo_gestor_cria_dados_gera_e_consulta_horario(monkeypatch):
         horario_professor = client.get(f"/horarios/professor/{professor_id}", headers=CABECALHO_AUTH)
         assert horario_professor.status_code == 200
         tempos_professor = [t for dia in horario_professor.json()["dias"] for t in dia["tempos"]]
-        assert {t["slot_id"] for t in tempos_professor} == {t["slot_id"] for t in tempos_turma}
+
+        def chave(t):
+            return (t["dia_semana"], t["turno"], t["periodo"])
+
+        assert {chave(t) for t in tempos_professor} == {chave(t) for t in tempos_turma}
     finally:
         fastapi_app.dependency_overrides.clear()

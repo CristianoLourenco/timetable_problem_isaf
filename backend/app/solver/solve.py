@@ -1,5 +1,5 @@
 # Implementa: RF13 (UC09) — resolução do modelo CP-SAT e tratamento estruturado de INFEASIBLE (RNF03)
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 from ortools.sat.python import cp_model
 
@@ -83,7 +83,7 @@ def _diagnosticar_infeasible(dados: HorarioInput) -> str:
 
     turmas_por_id = {turma.id: turma for turma in dados.turmas}
     capacidade_maxima = max((sala.capacidade for sala in dados.salas), default=0)
-    total_slots_semana = len(dados.slots)
+    slots_por_turno = Counter(slot.turno for slot in dados.slots)
 
     for td in dados.turma_disciplinas:
         if not professores_por_disciplina.get(td.disciplina_id):
@@ -105,10 +105,12 @@ def _diagnosticar_infeasible(dados: HorarioInput) -> str:
                 "é incompatível com RN06 (bloco mínimo de 2 tempos contíguos)."
             )
 
-        if td.carga_horaria_semanal > total_slots_semana:
+        total_tempos_turno = slots_por_turno.get(turma.turno if turma else None, 0)
+        if td.carga_horaria_semanal > total_tempos_turno:
             problemas.append(
                 f"Turma {td.turma_id} / disciplina {td.disciplina_id}: carga_horaria_semanal "
-                f"({td.carga_horaria_semanal}) excede o total de slots da semana ({total_slots_semana})."
+                f"({td.carga_horaria_semanal}) excede o total de tempos semanais do turno "
+                f"'{turma.turno if turma else '?'}' ({total_tempos_turno})."
             )
 
     if not problemas:
