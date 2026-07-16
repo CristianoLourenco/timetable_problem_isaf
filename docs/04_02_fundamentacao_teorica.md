@@ -1,7 +1,6 @@
-2. FUNDAMENTAÇÃO TEÓRICA
+# 2. FUNDAMENTAÇÃO TEÓRICA
 
-2.1 O processo de elaboração de horários em
-instituições de ensino superior
+## 2.1 O processo de elaboração de horários em instituições de ensino superior
 
 A elaboração de horários em instituições de ensino superior constitui
 uma tarefa administrativa recorrente e de elevada complexidade. @oudevrielink2019 descrevem que as instituições de ensino superior
@@ -46,10 +45,9 @@ sistemas inteligentes de geração automática de horários, capazes de
 combinar a força algorítmica da investigação em optimização combinatória
 com as necessidades práticas das instituições de ensino.
 
-2.2 O Problema de Escalonamento de Horários
-(Timetabling Problem)
+## 2.2 O Problema de Escalonamento de Horários (Timetabling Problem)
 
-2.2.1 Definição formal do problema
+### 2.2.1 Definição formal do problema
 
 O problema de elaboração de horários insere-se numa classe mais ampla de
 problemas de escalonamento. @bashab2023 estabelecem a
@@ -86,8 +84,7 @@ Problem (UCTP) pode ser formalmente enunciado da seguinte forma
 estudantes) a R salas (com F características) e T períodos de tempo (ao
 longo de D dias) que minimize as violações de restrições.
 
-2.2.2 Classificação: School Timetabling vs.
-University Timetabling
+### 2.2.2 Classificação: School Timetabling vs. University Timetabling
 
 O domínio do educational timetabling divide-se em dois ramos principais:
 o escalonamento escolar (school timetabling) e o escalonamento
@@ -118,8 +115,7 @@ primeiro beneficiou de esforços de padronização através das
 International Timetabling Competitions (ITC), que permitiram a
 comparação de metodologias num conjunto de referência comum.
 
-2.2.3 Complexidade computacional: problemas
-NP-Hard
+### 2.2.3 Complexidade computacional: problemas NP-Hard
 
 O UCTP pertence à classe dos problemas de optimização combinatória (COP
 --- Combinatorial Optimization Problems), caracterizados por um espaço
@@ -145,7 +141,7 @@ exacta é apenas alcançável para instâncias modestas, sendo que a maioria
 das abordagens adopta algoritmos de aproximação que, não garantindo a
 solução óptima, procuram obter soluções suficientemente boas.
 
-2.2.4 Hard Constraints e Soft Constraints
+### 2.2.4 Hard Constraints e Soft Constraints
 
 As restrições envolvidas no UCTP classificam-se genericamente em dois
 tipos: restrições rígidas (Hard Constraints --- HC) e restrições
@@ -189,10 +185,9 @@ WSC × \|SC\| + WHC × \|HC\|, sendo que uma solução que viole qualquer
 restrição rígida é considerada inviável e, portanto, sem valor prático
 ([@abdipoor2023]).
 
-2.3 Inteligência Artificial para Optimização
-Combinatória
+## 2.3 Inteligência Artificial para Optimização Combinatória
 
-2.3.1 IA simbólica vs. IA subsimbólica
+### 2.3.1 IA simbólica vs. IA subsimbólica
 
 A Inteligência Artificial (IA) divide-se em dois grandes paradigmas com
 fundamentos e abordagens distintos. A IA simbólica --- também designada
@@ -217,8 +212,7 @@ horários sem conflitos nem oferecem mecanismos para ajustes em tempo
 real, reduzindo a sua adequação operacional para ambientes
 institucionais dinâmicos.
 
-2.3.2 Satisfação de Restrições (Constraint
-Satisfaction Problem --- CSP)
+### 2.3.2 Satisfação de Restrições (Constraint Satisfaction Problem --- CSP)
 
 O Problema de Satisfação de Restrições (CSP) é o formalismo matemático
 central da IA simbólica aplicada a problemas de escalonamento. Um CSP é
@@ -245,8 +239,7 @@ restrições rígidas e flexíveis descritas na secção 2.2.4 constituem o
 conjunto C. A resolução do problema consiste em encontrar uma atribuição
 completa e consistente para todas as variáveis ([@elsakka2015]).
 
-2.3.3 Programação por Restrições (Constraint
-Programming --- CP)
+### 2.3.3 Programação por Restrições (Constraint Programming --- CP)
 
 A Programação por Restrições (CP) é o paradigma computacional que
 operacionaliza a resolução de CSPs. Constitui uma área de investigação
@@ -273,8 +266,7 @@ universitária em tempo computacional de poucos segundos --- contra
 vários dias de trabalho manual que o mesmo processo exigia
 anteriormente.
 
-2.3.4 Revisão da literatura: algoritmos
-aplicados ao Timetabling Problem
+### 2.3.4 Revisão da literatura: algoritmos aplicados ao Timetabling Problem
 
 A literatura sobre o UCTP documenta a aplicação de um amplo espectro de
 abordagens algorítmicas ao longo das últimas décadas. @harshalatha2026 sintetizam as principais categorias e as suas limitações
@@ -305,9 +297,9 @@ garante a geração de horários sem conflitos, suporta actualizações em
 tempo real e oferece escalabilidade e optimalidade, constituindo a
 abordagem mais robusta para ambientes institucionais modernos.
 
-2.4 Google OR-Tools e o Solver CP-SAT
+## 2.4 Google OR-Tools e o Solver CP-SAT
 
-2.4.1 Definição
+### 2.4.1 Definição
 
 O Google OR-Tools é uma suite de optimização de código aberto
 desenvolvida pela equipa de Investigação Operacional da Google, que
@@ -317,7 +309,7 @@ satisfação de restrições ([@perron2023], citado em [@harshalatha2026]). A su
 CP-SAT o motor principal para problemas de Programação por Restrições
 com variáveis inteiras.
 
-2.4.2 Arquitectura interna do CP-SAT Solver
+### 2.4.2 Arquitectura interna do CP-SAT Solver
 
 O CP-SAT é descrito pelos seus autores como uma implementação de um
 solver de Programação por Restrições puramente integral, construído
@@ -352,8 +344,7 @@ escalonamento --- incluindo o fecho de muitos problemas em aberto --- e
 resultados competitivos com os melhores solvers MIP em problemas
 puramente inteiros.
 
-2.4.3 Modelagem esparsa vs. densa: impacto na
-escalabilidade
+### 2.4.3 Modelagem esparsa vs. densa: impacto na escalabilidade
 
 Uma decisão de modelagem com impacto directo na viabilidade
 computacional do sistema é a escolha entre representação densa e
@@ -375,8 +366,7 @@ abordagem permite ao sistema suportar cenários com até 9 turmas e 45
 disciplinas sem degradação de desempenho, com tempos de solução que
 escalam de forma polinomial com a dimensão do problema.
 
-2.4.4 Aplicação ao University Timetabling
-Problem
+### 2.4.4 Aplicação ao University Timetabling Problem
 
 A aplicação do OR-Tools CP-SAT ao problema de geração de horários
 universitários encontra suporte directo na literatura. @harshalatha2026 demonstram que o sistema baseado em CP-SAT alcança zero

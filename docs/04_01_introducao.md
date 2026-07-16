@@ -1,4 +1,4 @@
-1. INTRODUÇÃO
+# 1. INTRODUÇÃO
 
 A gestão de horários académicos constitui uma das tarefas operacionais
 mais complexas e críticas no funcionamento das instituições de ensino
@@ -28,7 +28,7 @@ Instituto Superior de Administração e Finanças (ISAF), com o objectivo
 de apoiar a gestão institucional, reduzir conflitos e optimizar a
 utilização dos recursos disponíveis.
 
-1.1 Contextualização do tema
+## 1.1 Contextualização do tema
 
 A geração de horários académicos constitui um problema central na gestão
 universitária, pois envolve a coordenação eficiente de recursos humanos,
@@ -43,7 +43,7 @@ apresenta-se como uma alternativa robusta para enfrentar a complexidade
 inerente ao problema e promover soluções mais rápidas, coerentes e
 ajustadas à realidade institucional.
 
-1.2 Justificativa
+## 1.2 Justificativa
 
 A pertinência deste trabalho articula-se em três dimensões
 complementares:
@@ -76,7 +76,7 @@ complementares:
     semelhantes, contribuindo para a modernização da gestão académica no
     ensino superior.
 
-1.3 Problema de investigação
+## 1.3 Problema de investigação
 
 O processo de elaboração de horários académicos no ISAF, à semelhança do
 que ocorre em muitas instituições de ensino superior angolanas, é
@@ -106,14 +106,14 @@ dimensão. Deste modo, coloca-se a necessidade de desenvolver uma solução
 capaz de automatizar este processo e produzir horários consistentes,
 viáveis e ajustados à realidade do ISAF.
 
-1.4 Pergunta de investigação
+## 1.4 Pergunta de investigação
 
 Em que medida um sistema inteligente baseado em Inteligência Artificial,
 desenvolvido com Flutter e FastAPI, é capaz de automatizar a geração de
 horários académicos no ISAF, eliminando conflitos de alocação e
 reduzindo o tempo e o esforço despendidos no processo manual?
 
-1.5 Hipóteses de investigação
+## 1.5 Hipóteses de investigação
 
 Parte-se da hipótese de que a utilização de um sistema inteligente
 (capaz de distribuir uniformemente os horários) baseado em técnicas de
@@ -126,16 +126,16 @@ integração entre tecnologias como **Flutter**, **FastAPI** e um
 solução tecnicamente viável, funcional e adaptada às necessidades
 institucionais do ISAF.
 
-1.6 Objectivos
+## 1.6 Objectivos
 
-1.6.1 Objectivo geral
+### 1.6.1 Objectivo geral
 
 Desenvolver, implementar e validar um sistema inteligente para a geração
 automática de horários académicos no ISAF, recorrendo a técnicas de
 optimização combinatória e a uma arquitectura tecnológica composta por
 Python/FastAPI no back-end e Flutter na interface de utilizador.
 
-1.6.2 Objectivos específicos
+### 1.6.2 Objectivos específicos
 
 1.  Realizar o levantamento e a análise dos requisitos funcionais e não
     funcionais do sistema, identificando e formalizando as restrições do
@@ -155,7 +155,7 @@ Python/FastAPI no back-end e Flutter na interface de utilizador.
 5.  Validar o sistema por meio de testes funcionais e de desempenho,
     comparando os resultados com o processo manual.
 
-1.7 Delimitação do estudo
+## 1.7 Delimitação do estudo
 
 O presente trabalho delimita-se ao contexto institucional do ISAF,
 focando-se na geração automática de horários semanais para o ensino
@@ -165,7 +165,7 @@ funcional com interface em Flutter, motor de optimização em Python e
 integração com a Google Calendar API para distribuição e sincronização
 dos horários gerados.
 
-1.8 Estrutura do trabalho
+## 1.8 Estrutura do trabalho
 
 O presente trabalho encontra-se estruturado em cinco capítulos
 principais. O primeiro capítulo apresenta a introdução, incluindo a

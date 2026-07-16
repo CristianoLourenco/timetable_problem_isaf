@@ -34,7 +34,7 @@ HORÁRIOS ACADÉMICOS**
 
 **Luanda, 2026**
 
-COMPROMISSO DO AUTOR
+# **COMPROMISSO DO AUTOR**
 
 Eu, Cristiano Francisco Lourenço, portador do documento de identidade
 007643798LA044 e estudante do curso de Licenciatura em Informática de
@@ -56,7 +56,7 @@ outros meios de divulgação electrónica da referida Instituição.
 
 > Assinatura:
 
-DECLARAÇÃO DE ORIGINALIDADE
+# **DECLARAÇÃO DE ORIGINALIDADE**
 
 Declaro, para os devidos efeitos, que o presente trabalho é resultado da
 minha investigação pessoal e autónoma, tendo sido elaborado com
@@ -65,7 +65,7 @@ fontes consultadas e utilizadas encontram-se devidamente citadas e
 referenciadas. Declaro ainda que este trabalho não foi apresentado, no
 todo ou em parte, para obtenção de qualquer outro grau académico.
 
-DEDICATÓRIA
+# **DEDICATÓRIA**
 
 Aos meus pais, pelo apoio incondicional em cada etapa deste percurso.
 
@@ -85,7 +85,7 @@ Agradeço igualmente à instituição, aos docentes, colegas, familiares e
 amigos pelo incentivo, compreensão e colaboração demonstrados durante
 esta caminhada académica.
 
-RESUMO
+# **RESUMO**
 
 Este trabalho aborda o desenvolvimento de um sistema inteligente para a
 geração automática de horários académicos no Instituto Superior de
@@ -110,7 +110,7 @@ docentes e gestores académicos.
 Palavras-chave: geração automática de horários académicos; inteligência
 artificial; optimização combinatória; ensino superior; ISAF.
 
-ABSTRACT
+# **ABSTRACT**
 
 This study addresses the development of an intelligent system for the
 automatic generation of academic timetables at the Instituto Superior de
@@ -135,7 +135,7 @@ managers.
 Keywords: automatic academic timetable generation; artificial
 intelligence; combinatorial optimization; higher education; ISAF.
 
-LISTA DE FIGURAS
+# **LISTA DE FIGURAS**
 
 -   Figura 1 --- Diagrama de Contexto
 
@@ -145,7 +145,7 @@ LISTA DE FIGURAS
 
 -   Figura 4 --- Diagrama Entidade-Relacional
 
-LISTA DE TABELAS
+# **LISTA DE TABELAS**
 
 -   Tabela 1 --- Glossário técnico do sistema
 
@@ -159,7 +159,7 @@ LISTA DE TABELAS
 
 -   Tabela 6 --- Cenários de Teste e Critérios de Aceitação
 
-LISTA DE ABREVIATURAS E SIGLAS
+# **LISTA DE ABREVIATURAS E SIGLAS**
 
 -   API --- Application Programming Interface
 

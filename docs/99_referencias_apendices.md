@@ -1,20 +1,18 @@
-REFERÊNCIAS
+# **REFERÊNCIAS**
 
 ::: {#refs}
 :::
 
-APÊNDICES
+# **APÊNDICES**
 
-Apêndice A --- Código-fonte do Motor de
-Optimização
+## Apêndice A --- Código-fonte do Motor de Optimização
 
 **\[PLACEHOLDER --- Inserir excertos comentados do módulo CP-SAT após
 conclusão da implementação do backend\]**
 
-Apêndice B --- Especificação Textual dos Casos
-de Uso
+## Apêndice B --- Especificação Textual dos Casos de Uso
 
-UC06 --- Importar Dados em Massa via Excel
+### UC06 --- Importar Dados em Massa via Excel
 
 **Ator Principal:** Gestor Académico/Secretaria
 
@@ -43,7 +41,7 @@ na base de dados.
 **Garantia Mínima:** Nenhum registo parcialmente importado --- operação
 transaccional.
 
-UC08 --- Disparar Geração de Horário
+### UC08 --- Disparar Geração de Horário
 
 **Ator Principal:** Gestor Académico/Secretaria
 
@@ -70,7 +68,7 @@ consulta (UC11, UC12).
 com o motivo registado --- o sistema nunca falha silenciosamente
 (RNF03).
 
-UC13 --- Autenticar-se
+### UC13 --- Autenticar-se
 
 **Atores:** Gestor Académico/Secretaria; Professor
 
@@ -97,13 +95,13 @@ novo login só é exigido se essa renovação falhar.
 **Garantia Mínima:** Nenhuma sessão é criada sem validação bem-sucedida
 da identidade.
 
-Apêndice C --- Capturas de Ecrã do Sistema
+## Apêndice C --- Capturas de Ecrã do Sistema
 
 **\[PLACEHOLDER --- Inserir capturas de ecrã da interface Flutter
 (autenticação, gestão de entidades, grelha de horário) e da documentação
 Swagger da API após conclusão do frontend\]**
 
-ANEXOS
+# **ANEXOS**
 
 **\[PLACEHOLDER --- Inserir, caso aplicável, documentos institucionais
 de suporte, como o modelo de horário manual actualmente em uso no
