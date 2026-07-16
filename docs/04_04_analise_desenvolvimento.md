@@ -451,10 +451,13 @@ ao Professor); Utilizador (identidade — liga, por email, uma conta
 Firebase Authentication a um Gestor ou, opcionalmente, a um Professor já
 registado, RF15/RN09/RN10); Job (a tarefa assíncrona do solver, RF09/RF10,
 com estado e motivo de falha); e Alocacao (a saída do solver, associando
-cada combinação turma-disciplina-professor a uma sala, dia, turno e
-período). Uma Turma segue sempre um único PlanoCurricular (RF02); o
-Professor liga-se à Turma indirectamente — leciona uma Disciplina que
-integra o PlanoCurricular dessa Turma (ProfessorDisciplina), e é entre os
+cada combinação turma-disciplina-professor a uma sala, dia e período —
+o turno não é atributo próprio de Alocacao, por ser sempre igual ao da
+Turma alocada, RN de normalização até à 3.ª Forma Normal). Uma Turma
+segue sempre um único PlanoCurricular (RF02), do qual herda curso e ano
+(também não repetidos em Turma pela mesma razão); o Professor liga-se à
+Turma indirectamente — leciona uma Disciplina que integra o
+PlanoCurricular dessa Turma (ProfessorDisciplina), e é entre os
 professores assim qualificados e disponíveis que o solver escolhe quem
 lecciona cada turma (RNF01).
 
