@@ -2,11 +2,12 @@
 !pragma layout smetana
 !theme plain
 skinparam backgroundColor white
-skinparam actor {
+skinparam rectangle {
   BorderColor #6366F1
   BackgroundColor #EEF2FF
+  FontColor #1E1B4B
 }
-skinparam rectangle {
+skinparam usecase {
   BorderColor #6366F1
   BackgroundColor #EEF2FF
   FontColor #1E1B4B
@@ -15,9 +16,9 @@ skinparam ArrowColor #4338CA
 skinparam nodesep 90
 skinparam ranksep 90
 
-actor "Gestor Académico\n/ Secretaria" as Gestor
-actor "Professor" as Professor
-rectangle "Sistema Inteligente de\nGeração de Horários (ISAF)" as Sistema
+rectangle "Gestor Académico\n/ Secretaria" as Gestor
+rectangle "Professor" as Professor
+usecase "Sistema Inteligente de\nGeração de Horários (ISAF)" as Sistema
 rectangle "Firebase\nAuthentication" as Firebase
 
 Gestor -right-> Sistema : dados mestre, Excel,\ncomando de geração
@@ -30,6 +31,5 @@ Sistema -down-> Firebase : login / refresh /\nrecuperação de password
 Firebase -up-> Sistema : Token
 
 Gestor -[hidden]down- Professor
-
 
 @enduml
