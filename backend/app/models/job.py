@@ -19,9 +19,14 @@ class Job(SQLModel, table=True):
     criado_em: datetime = Field(default_factory=datetime.utcnow)
     concluido_em: datetime | None = Field(default=None)
     diagnostico: str | None = Field(default=None)  # relatório de conflitos quando INFEASIBLE (RF13)
-    # Âmbito da geração — cada Job cobre sempre um único (ano_letivo, semestre): as
-    # turmas desse par são geradas de uma só vez (ver services/horario_service.py).
-    # Sem isto não é possível distinguir turmas de anos/semestres diferentes, nem
-    # saber qual Job responde por qual turma em RF11/RF12.
+    # Âmbito da geração — cada Job cobre sempre um único (curso, ano_letivo, semestre):
+    # as turmas desse âmbito são geradas de uma só vez (ver services/horario_service.py).
+    # curso_id é obrigatório desde que se confirmou, à escala real do ISAF, que gerar
+    # vários cursos em simultâneo pode ser genuinamente INFEASIBLE mesmo sem nenhum erro
+    # de modelagem — coortes pequenas com corpo docente muito reduzido/partilhado entre
+    # turmas paralelas tornam impossível encaixar as agendas de cursos não relacionados
+    # ao mesmo tempo (não faz sentido otimizá-los em conjunto de qualquer forma, já que
+    # não partilham turmas/salas/grade curricular entre si).
+    curso_id: int = Field(foreign_key="curso.id")
     ano_letivo: int
     semestre: str  # "1" | "2"

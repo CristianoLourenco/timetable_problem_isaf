@@ -99,7 +99,9 @@ def test_fluxo_completo_gestor_cria_dados_gera_e_consulta_horario(monkeypatch):
         # BackgroundTasks corre de forma síncrona dentro do próprio ciclo do TestClient —
         # ao devolver a resposta, o job_runner já terminou.
         disparo = client.post(
-            "/gerar-horario", json={"ano_letivo": 2026, "semestre": "1"}, headers=CABECALHO_AUTH
+            "/gerar-horario",
+            json={"curso_id": curso_id, "ano_letivo": 2026, "semestre": "1"},
+            headers=CABECALHO_AUTH,
         )
         assert disparo.status_code == 202, disparo.text
         job_id = disparo.json()["job_id"]

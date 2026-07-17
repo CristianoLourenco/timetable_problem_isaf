@@ -66,7 +66,8 @@ def test_job_runner_gera_alocacoes_para_cenario_viavel():
 
     with Session(engine) as session:
         _semear_cenario_viavel(session)
-        job_id = JobRepository(session).criar(ano_letivo=2026, semestre="1").id
+        curso_id = session.exec(select(PlanoCurricular)).first().curso_id
+        job_id = JobRepository(session).criar(curso_id=curso_id, ano_letivo=2026, semestre="1").id
 
     executar(job_id, engine=engine)
 
@@ -118,7 +119,7 @@ def test_extrair_dados_ignora_turmas_de_outro_ano_letivo_ou_semestre():
         session.add_all([turma_alvo, turma_ano_passado, turma_outro_semestre, turma_anual])
         session.commit()
 
-        dados = extrair_dados(session, ano_letivo=2026, semestre="1")
+        dados = extrair_dados(session, curso_id=curso.id, ano_letivo=2026, semestre="1")
         codigos = {t.id for t in dados.turmas}
         session.refresh(turma_alvo)
         session.refresh(turma_anual)
@@ -139,14 +140,15 @@ def test_consultar_horario_turma_usa_o_job_do_ano_letivo_da_propria_turma():
     with Session(engine) as session:
         _semear_cenario_viavel(session)
         turma_id = session.exec(select(Turma)).first().id
-        job_sem1_id = JobRepository(session).criar(ano_letivo=2026, semestre="1").id
+        curso_id = session.exec(select(PlanoCurricular)).first().curso_id
+        job_sem1_id = JobRepository(session).criar(curso_id=curso_id, ano_letivo=2026, semestre="1").id
 
     executar(job_sem1_id, engine=engine)
 
     with Session(engine) as session:
         # Uma segunda geração, para um semestre diferente, sem nenhuma turma —
         # simula "o Job mais recente" pertencer a outro âmbito.
-        job_sem2 = JobRepository(session).criar(ano_letivo=2026, semestre="2")
+        job_sem2 = JobRepository(session).criar(curso_id=curso_id, ano_letivo=2026, semestre="2")
         JobRepository(session).atualizar_status(job_sem2, JobStatus.DONE, concluido_em=datetime.utcnow())
 
     with Session(engine) as session:
@@ -190,7 +192,7 @@ def test_job_runner_marca_infeasible_com_diagnostico():
         session.add(ProfessorDisciplina(professor_id=professor.id, disciplina_id=disciplina.id))
         session.commit()
 
-        job_id = JobRepository(session).criar(ano_letivo=2026, semestre="1").id
+        job_id = JobRepository(session).criar(curso_id=plano.curso_id, ano_letivo=2026, semestre="1").id
 
     executar(job_id, engine=engine)
 

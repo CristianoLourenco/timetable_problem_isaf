@@ -31,7 +31,7 @@ def executar(job_id: str, *, engine=_engine_producao) -> None:
 
         job_repo.atualizar_status(job, JobStatus.RUNNING)
 
-        dados = extrair_dados(session, job.ano_letivo, job.semestre)
+        dados = extrair_dados(session, job.curso_id, job.ano_letivo, job.semestre)
         resultado = resolver_horario(
             dados,
             max_time_in_seconds=settings.solver_max_time_seconds,
