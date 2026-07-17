@@ -11,14 +11,10 @@ class HorarioRemoteImpl implements IHorarioRemote {
   final IHttpMethods _http;
 
   @override
-  Future<DataState<String>> triggerGeneration({
-    required String cursoId,
-    required int anoLetivo,
-    required String semestre,
-  }) async {
+  Future<DataState<String>> triggerGeneration({required int anoLetivo, required String semestre}) async {
     final response = await _http.post<dynamic>(
       '/gerar-horario',
-      data: {'curso_id': int.parse(cursoId), 'ano_letivo': anoLetivo, 'semestre': semestre},
+      data: {'ano_letivo': anoLetivo, 'semestre': semestre},
     );
     if (!response.success || response.data == null) {
       return DataState<String>(success: false, error: response.error, statusCode: response.statusCode);

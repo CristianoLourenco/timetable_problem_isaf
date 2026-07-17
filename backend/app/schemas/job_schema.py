@@ -9,12 +9,8 @@ from app.models.job import JobStatus
 
 class GerarHorarioRequest(SQLModel):
     """RF09 — âmbito da geração: um Job gera sempre o horário completo de todas as
-    turmas de um único (curso, ano_letivo, semestre) de uma só vez. curso_id é
-    obrigatório — gerar vários cursos em simultâneo pode ser genuinamente INFEASIBLE
-    por coortes pequenas partilharem corpo docente entre turmas paralelas, além de não
-    fazer sentido otimizar em conjunto cursos que não partilham turmas/grade curricular."""
+    turmas de um único (ano_letivo, semestre) de uma só vez."""
 
-    curso_id: int
     ano_letivo: int
     semestre: Literal["1", "2"]
 
@@ -30,6 +26,5 @@ class JobRead(SQLModel):
     criado_em: datetime
     concluido_em: datetime | None
     diagnostico: str | None
-    curso_id: int
     ano_letivo: int
     semestre: str
