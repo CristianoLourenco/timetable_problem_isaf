@@ -17,9 +17,24 @@ class Settings(BaseSettings):
     # Sem isto, o CP-SAT usa por omissão todos os cores da máquina (portfolio de
     # workers, ver docs/04_02_fundamentacao_teorica.md secção 2.4.2) durante todo
     # o solver_max_time_seconds — mesmo correndo em BackgroundTasks (thread à
-    # parte), satura a máquina inteira. Valor por omissão deixa alguns cores
-    # livres para o resto do sistema; ajustar ao hardware real em produção.
-    solver_num_search_workers: int = 4
+    # parte), satura a máquina inteira. O portfolio interno de sub-solvers do
+    # CP-SAT só ativa estratégias focadas em encontrar a PRIMEIRA solução viável
+    # a partir de 5 workers (documentação do CP-SAT) — com o valor antigo (4)
+    # ficávamos mesmo abaixo desse limiar, exatamente quando "encontrar alguma
+    # solução" (não otimizar) é o problema real medido à escala do ISAF. 8 é um
+    # ponto de partida para desenvolvimento; ajustar ao nº de núcleos reais do
+    # hardware de produção (mais núcleos = pode subir mais, até aos 12/16/32
+    # onde o CP-SAT ativa progressivamente mais sub-solvers).
+    solver_num_search_workers: int = 8
+    # Aceita uma solução dentro deste gap do bound provado em vez de exigir
+    # otimalidade — a função objetivo é uma soma de penalizações soft (RN04,
+    # RN08, equidade), nunca uma correção binária, logo uma solução "boa o
+    # suficiente" encontrada depressa vale mais em produção do que uma
+    # marginalmente melhor encontrada muito mais tarde (ou nunca, dentro do
+    # solver_max_time_seconds). Medido nesta sessão: à escala real, o CP-SAT
+    # frequentemente gasta a maior parte do orçamento a tentar provar
+    # otimalidade em vez de a procurar a primeira solução viável.
+    solver_relative_gap_limit: float = 0.10
     # Limite de salas candidatas por turma na geração esparsa de variáveis (RN08 é soft
     # — "capacidade mínima viável" — mas incluir TODAS as salas com capacidade suficiente
     # como candidatas cria simetria severa entre salas de capacidade semelhante e infla o
