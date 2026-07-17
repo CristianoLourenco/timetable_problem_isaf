@@ -39,17 +39,24 @@ class HorarioProvider extends ChangeNotifier {
   String? _currentJobId;
   String? get currentJobId => _currentJobId;
 
-  /// Triggers the solver run, polls `GET /jobs/{job_id}` until it leaves
-  /// PENDING/RUNNING, then — if DONE — fetches [turmaId]'s resulting grid.
-  /// INFEASIBLE surfaces the backend's diagnostic (RF13/RNF03), never a bare
-  /// failure.
-  Future<void> generateTimetable(String turmaId) async {
+  /// Triggers the solver run for every turma of [anoLetivo]/[semestre] (RF09
+  /// — sempre o horário completo desse âmbito, de uma vez), polls
+  /// `GET /jobs/{job_id}` until it leaves PENDING/RUNNING, then — if DONE —
+  /// fetches [turmaId]'s resulting grid. INFEASIBLE surfaces the backend's
+  /// diagnostic (RF13/RNF03), never a bare failure.
+  Future<void> generateTimetable(
+    String turmaId, {
+    required int anoLetivo,
+    required String semestre,
+  }) async {
     _isGenerating = true;
     _errorMessage = null;
     _slots = const <HorarioSlot>[];
     notifyListeners();
 
-    final triggerResult = await _gerarHorarioUseCase(null);
+    final triggerResult = await _gerarHorarioUseCase(
+      GerarHorarioParams(anoLetivo: anoLetivo, semestre: semestre),
+    );
     if (!triggerResult.success || triggerResult.data == null) {
       _errorMessage = triggerResult.message;
       _isGenerating = false;

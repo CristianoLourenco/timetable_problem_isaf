@@ -12,8 +12,8 @@ class HorarioRepositoryImpl implements IHorarioRepository {
   final IHorarioRemote remoteDatasource;
 
   @override
-  Future<DataState<String>> triggerGeneration() {
-    return remoteDatasource.triggerGeneration();
+  Future<DataState<String>> triggerGeneration({required int anoLetivo, required String semestre}) {
+    return remoteDatasource.triggerGeneration(anoLetivo: anoLetivo, semestre: semestre);
   }
 
   @override

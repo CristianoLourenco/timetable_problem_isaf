@@ -4,7 +4,9 @@ import 'package:ghorario/features/feature_horario/domain/entities/job_resultado.
 
 /// Abstract remote datasource interface for Horario.
 abstract class IHorarioRemote {
-  Future<DataState<String>> triggerGeneration();
+  /// `POST /gerar-horario` — gera de uma vez o horário completo de todas as
+  /// turmas do [anoLetivo]/[semestre] pedido.
+  Future<DataState<String>> triggerGeneration({required int anoLetivo, required String semestre});
 
   /// `GET /jobs/{job_id}`.
   Future<DataState<JobResultado>> checkStatus(String jobId);

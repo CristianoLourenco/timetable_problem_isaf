@@ -28,6 +28,8 @@ class HorarioScreen extends StatefulWidget {
 class _HorarioScreenState extends State<HorarioScreen> {
   late final HorarioController _controller;
   String? _selectedTurmaId;
+  late int _anoLetivo = DateTime.now().year;
+  String _semestre = '1';
 
   @override
   void initState() {
@@ -98,36 +100,53 @@ class _HorarioScreenState extends State<HorarioScreen> {
                         ),
                       ],
                     ),
-                    ElevatedButton.icon(
-                      onPressed: (state.isGenerating || _selectedTurmaId == null)
-                          ? null
-                          : () => _controller.generateTimetable(_selectedTurmaId!),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.blackBlue,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _AnoLetivoESemestreSeletor(
+                          anoLetivo: _anoLetivo,
+                          semestre: _semestre,
+                          enabled: !state.isGenerating,
+                          onAnoLetivoChanged: (value) => setState(() => _anoLetivo = value),
+                          onSemestreChanged: (value) => setState(() => _semestre = value),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                        elevation: 0,
-                      ),
-                      icon: state.isGenerating
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.flash_on, size: 16),
-                      label: Text(
-                        state.isGenerating ? 'A gerar...' : 'Gerar Horário',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Poppins',
+                        const SizedBox(width: 16),
+                        ElevatedButton.icon(
+                          onPressed: (state.isGenerating || _selectedTurmaId == null)
+                              ? null
+                              : () => _controller.generateTimetable(
+                                    _selectedTurmaId!,
+                                    anoLetivo: _anoLetivo,
+                                    semestre: _semestre,
+                                  ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.blackBlue,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                            elevation: 0,
+                          ),
+                          icon: state.isGenerating
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.flash_on, size: 16),
+                          label: Text(
+                            state.isGenerating ? 'A gerar...' : 'Gerar Horário',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'Poppins',
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),
@@ -265,6 +284,94 @@ class _HorarioScreenState extends State<HorarioScreen> {
           );
         },
       ),
+    );
+  }
+}
+
+/// Lets the Gestor pick the (ano_letivo, semestre) scope for RF09 — a
+/// geração é sempre o horário completo de todas as turmas desse par, de
+/// uma vez (nunca todos os anos/semestres misturados).
+class _AnoLetivoESemestreSeletor extends StatelessWidget {
+  const _AnoLetivoESemestreSeletor({
+    required this.anoLetivo,
+    required this.semestre,
+    required this.enabled,
+    required this.onAnoLetivoChanged,
+    required this.onSemestreChanged,
+  });
+
+  final int anoLetivo;
+  final String semestre;
+  final bool enabled;
+  final ValueChanged<int> onAnoLetivoChanged;
+  final ValueChanged<String> onSemestreChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final anoAtual = DateTime.now().year;
+    final anos = [for (var a = anoAtual - 1; a <= anoAtual + 1; a++) a];
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _SeletorContainer(
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<int>(
+              value: anoLetivo,
+              icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF64748B)),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.blackBlue,
+                fontFamily: 'Poppins',
+              ),
+              items: anos
+                  .map((ano) => DropdownMenuItem(value: ano, child: Text('Ano lectivo: $ano')))
+                  .toList(),
+              onChanged: enabled ? (value) => value != null ? onAnoLetivoChanged(value) : null : null,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        _SeletorContainer(
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: semestre,
+              icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF64748B)),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.blackBlue,
+                fontFamily: 'Poppins',
+              ),
+              items: const [
+                DropdownMenuItem(value: '1', child: Text('1º Semestre')),
+                DropdownMenuItem(value: '2', child: Text('2º Semestre')),
+              ],
+              onChanged: enabled ? (value) => value != null ? onSemestreChanged(value) : null : null,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SeletorContainer extends StatelessWidget {
+  const _SeletorContainer({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+      ),
+      child: child,
     );
   }
 }
