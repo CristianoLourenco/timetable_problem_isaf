@@ -5,12 +5,19 @@
 # professor×sala×tempo disponíveis, escolhendo greedily um professor+sala e
 # preenchendo blocos contíguos de >=2 tempos (RN06) nos primeiros tempos livres.
 #
-# Isto NUNCA lança exceção nem garante uma solução completa — devolve um hint
-# PARCIAL (o CP-SAT aceita hints parciais via model.AddHint, ver solve.py) que
-# serve só para arrancar a procura perto de uma atribuição plausível em vez de
-# vazia. Se a heurística ficar bloqueada a meio (ex: não sobra nenhum tempo
-# livre para um par difícil), simplesmente salta esse par — as variáveis
-# correspondentes ficam sem hint e o CP-SAT decide-as livremente.
+# Múltiplas tentativas com ordens diferentes (dias/combos embaralhados) — uma
+# única passagem gulosa em ordem fixa tende a "gastar" cedo os tempos mais
+# convenientes em pares fáceis, deixando pares difíceis sem hipótese mais
+# tarde; repetir com ordens diferentes e ficar com a tentativa mais completa
+# aproxima-se do padrão "construir uma solução completa, depois o CP-SAT só
+# repara/otimiza localmente" usado por sistemas reais de timetabling (UniTime)
+# em vez de "hint parcial + procura do zero".
+#
+# Isto NUNCA lança exceção nem garante uma solução completa — devolve o melhor
+# hint conseguido (o CP-SAT aceita hints parciais via model.AddHint, ver
+# solve.py). Pares que nenhuma tentativa consegue encaixar ficam sem hint —
+# as variáveis correspondentes ficam livres para o CP-SAT decidir.
+import random
 from collections import defaultdict
 
 from app.solver.builder import ChaveVar, VariaveisModelo
@@ -18,20 +25,37 @@ from app.solver.dto import HorarioInput
 
 TempoChave = tuple[str, str, int]
 
+_NUM_TENTATIVAS = 6
+_SEMENTE_BASE = 42
+
 
 def gerar_hint_inicial(dados: HorarioInput, variaveis: VariaveisModelo) -> dict[ChaveVar, int]:
     """Devolve {chave: 0|1} para um subconjunto das variáveis de `variaveis.x` —
     só as escolhidas ativamente pela heurística (1); as demais ficam sem entrada
-    (nem 0 nem 1), deixando o CP-SAT livre para as decidir."""
+    (nem 0 nem 1), deixando o CP-SAT livre para as decidir. Corre várias
+    tentativas com ordens diferentes e devolve a mais completa (menos pares
+    turma-disciplina por colocar)."""
     try:
-        return _construir(dados, variaveis)
+        melhor_hint: dict[ChaveVar, int] = {}
+        melhor_pares_cobertos = -1
+        for tentativa in range(_NUM_TENTATIVAS):
+            rng = random.Random(_SEMENTE_BASE + tentativa)
+            hint, pares_cobertos = _construir(dados, variaveis, rng)
+            if pares_cobertos > melhor_pares_cobertos:
+                melhor_hint = hint
+                melhor_pares_cobertos = pares_cobertos
+            if pares_cobertos == len(dados.turma_disciplinas):
+                break  # já conseguiu colocar tudo, não vale a pena continuar a tentar
+        return melhor_hint
     except Exception:
         # Bug na heurística não pode nunca impedir o solve real — sem hint,
         # o CP-SAT simplesmente procura do zero como fazia antes desta mudança.
         return {}
 
 
-def _construir(dados: HorarioInput, variaveis: VariaveisModelo) -> dict[ChaveVar, int]:
+def _construir(
+    dados: HorarioInput, variaveis: VariaveisModelo, rng: random.Random
+) -> tuple[dict[ChaveVar, int], int]:
     turmas_por_id = {turma.id: turma for turma in dados.turmas}
 
     slots_por_turno_dia: dict[tuple[str, str], list[int]] = defaultdict(list)
@@ -39,18 +63,24 @@ def _construir(dados: HorarioInput, variaveis: VariaveisModelo) -> dict[ChaveVar
         slots_por_turno_dia[(slot.turno, slot.dia_semana)].append(slot.periodo)
     for periodos in slots_por_turno_dia.values():
         periodos.sort()
-    dias_ordenados = sorted({slot.dia_semana for slot in dados.slots})
+    dias_base = sorted({slot.dia_semana for slot in dados.slots})
 
-    # Mais restrito primeiro: menos combinações (professor,sala,tempo) disponíveis = mais prioritário.
+    # Mais restrito primeiro (chave primária) — desempate aleatório por tentativa,
+    # para que tentativas diferentes explorem ordens de colocação diferentes em
+    # vez de repetirem sempre o mesmo caminho guloso.
     pares_ordenados = sorted(
         dados.turma_disciplinas,
-        key=lambda td: len(variaveis.por_turma_disciplina.get((td.turma_id, td.disciplina_id), [])),
+        key=lambda td: (
+            len(variaveis.por_turma_disciplina.get((td.turma_id, td.disciplina_id), [])),
+            rng.random(),
+        ),
     )
 
     ocupado_professor: set[tuple[int, str, str, int]] = set()
     ocupado_sala: set[tuple[int, str, str, int]] = set()
     ocupado_turma: set[tuple[int, str, str, int]] = set()
     hint: dict[ChaveVar, int] = {}
+    pares_cobertos = 0
 
     for td in pares_ordenados:
         turma = turmas_por_id.get(td.turma_id)
@@ -63,6 +93,10 @@ def _construir(dados: HorarioInput, variaveis: VariaveisModelo) -> dict[ChaveVar
         combos = _combos_professor_sala(variaveis, td.turma_id, td.disciplina_id)
         if not combos:
             continue
+        rng.shuffle(combos)
+
+        dias_tentativa = list(dias_base)
+        rng.shuffle(dias_tentativa)
 
         for professor_id, sala_id in combos:
             chaves_do_par = _tentar_alocar_par(
@@ -72,7 +106,7 @@ def _construir(dados: HorarioInput, variaveis: VariaveisModelo) -> dict[ChaveVar
                 professor_id=professor_id,
                 sala_id=sala_id,
                 blocos=blocos,
-                dias_ordenados=dias_ordenados,
+                dias_ordenados=dias_tentativa,
                 slots_por_turno_dia=slots_por_turno_dia,
                 ocupado_professor=ocupado_professor,
                 ocupado_sala=ocupado_sala,
@@ -84,9 +118,10 @@ def _construir(dados: HorarioInput, variaveis: VariaveisModelo) -> dict[ChaveVar
                     ocupado_professor.add((chave[2], chave[4], chave[5], chave[6]))
                     ocupado_sala.add((chave[3], chave[4], chave[5], chave[6]))
                     ocupado_turma.add((chave[0], chave[4], chave[5], chave[6]))
+                pares_cobertos += 1
                 break  # este par de (turma,disciplina) já está resolvido, passa ao próximo
 
-    return hint
+    return hint, pares_cobertos
 
 
 def _decompor_em_blocos(carga: int) -> list[int]:
