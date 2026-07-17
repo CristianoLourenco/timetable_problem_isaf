@@ -87,7 +87,7 @@ CURRICULO = {
                     ("Comunicação Pessoal e Empresarial", 4, ["MSc. Artur Santos", "MSc. Youran Mandonga", "MSc. Mateus Halaiwa"]),
                     ("Matemática I", 6, ["Dr. Benedito Pinheiro", "MSc. Jaime Jerónimo"]),
                     ("Fundamentos de Sistemas de Informação", 6, ["MSc. Bernardo António", "Eng. Luís Henriques Fernandes", "MSc. Euclides Catumbela"]),
-                    ("Língua Inglesa I", 4, ["MSc. António Vueba", "Dr. Manuel Pedro", "Dr. Ava Pinto", "Dr. Anibal Pululo"]),
+                    ("Língua Inglesa I", 4, ["MSc. António Vueba", "Dr. Manuel Pedro", "Dr. Ava Pinto", "Dr. Aníbal Pululo"]),
                     ("Métodos de Investigação Científica", 4, ["Professora Doutora Martha Nyanungo", "Doutor Dácia Joaquim", "Doutor Alice Costa"]),
                 ],
             },
@@ -98,7 +98,7 @@ CURRICULO = {
                     ("Arquitetura de Computadores", 4, ["Eng. Odeir Fortunato", "Eng. Eduardo Chiquete"]),
                     ("Contabilidade Geral I", 6, ["MSc. Cláudio Voza", "MSc. Joaquim Baltazar", "Dr. Isabel Almeida"]),
                     ("Matemática II", 6, ["Dr. Benedito Pinheiro", "MSc. Jaime Jerónimo"]),
-                    ("Língua Inglesa II", 4, ["MSc. António Vueba", "Dr. Manuel Pedro", "Dr. Francisco Cachivalela", "Dr. Anibal Pululo"]),
+                    ("Língua Inglesa II", 4, ["MSc. António Vueba", "Dr. Manuel Pedro", "Dr. Francisco Cachivalela", "Dr. Aníbal Pululo"]),
                 ],
             },
         },
@@ -107,7 +107,7 @@ CURRICULO = {
                 "turmas": ["N1", "T1", "T2"],
                 "disciplinas": [
                     ("Cálculo e Operações Financeiras", 4, ["Dr. Vander Nascimento", "MSc. Deolinda Cahando", "Dr. Flávio Mendes"]),
-                    ("Introdução à Economia", 4, ["MSc. Miguel Troco"]),
+                    ("Introdução à Economia", 4, ["MSc. Miguel Troco", "Dr. Álvaro Castelo"]),
                     ("Sistemas Digitais", 4, ["Eng. Odeir Fortunato", "Dr. Wilson Paiva"]),
                     ("Programação I", 6, ["Dr. Edson Tomás", "Dr. Lukau Garcia"]),
                     ("Contabilidade Geral II", 6, ["MSc. Cláudio Voza", "Dr. Isabel Almeida", "MSc. Catarina Júlio"]),
@@ -116,8 +116,8 @@ CURRICULO = {
             "2": {
                 "turmas": ["N1", "T1"],
                 "disciplinas": [
-                    ("Probabilidades e Estatística", 4, ["MSc. Singa Mateus"]),
-                    ("Base de Dados I", 4, ["MSc. Lírio Ramalheira"]),
+                    ("Probabilidades e Estatística", 4, ["MSc. Singa Mateus", "MSc. António Oliveira"]),
+                    ("Base de Dados I", 4, ["MSc. Lírio Ramalheira", "MSc. Nanitamo Pedro António"]),
                     ("Programação II", 6, ["Dr. Edson Tomás", "Engª. Bernardo Dala"]),
                     ("Comportamento Organizacional", 4, ["Dr. Érica Viegas", "MSc. Dominicana Monteiro"]),
                     ("Contabilidade Analítica", 6, ["Dr. António Francisco", "Dr. Israel Abias"]),
@@ -128,18 +128,18 @@ CURRICULO = {
             "1": {
                 "turmas": ["N1", "T1"],
                 "disciplinas": [
-                    ("Redes de Computadores", 6, ["Eng. Joaquim de Almeida"]),
+                    ("Redes de Computadores", 6, ["Eng. Joaquim de Almeida", "Eng. Silvano Rosa"]),
                     ("Finanças Empresariais", 4, ["Dr. Manuel Martins", "MSc. Manuel Castó"]),
-                    ("Sistemas Operativos I", 4, ["Eng. Joaquim de Almeida"]),
-                    ("Base de Dados II", 4, ["MSc. Lírio Ramalheira"]),
-                    ("Metodologias de Desenvolvimento de Sistemas de Informação", 6, ["MSc. Bernardo António"]),
+                    ("Sistemas Operativos I", 4, ["Eng. Joaquim de Almeida", "Eng. Silvano Rosa"]),
+                    ("Base de Dados II", 4, ["MSc. Lírio Ramalheira", "MSc. Nanitamo Pedro António"]),
+                    ("Metodologias de Desenvolvimento de Sistemas de Informação", 6, ["MSc. Bernardo António", "Dr. Edson Tomás"]),
                 ],
             },
             "2": {
                 "turmas": ["N1", "T1"],
                 "disciplinas": [
                     ("Qualidade de Sistemas de Informação", 4, ["Eng. Odeir Fortunato", "MSc. Bernardo António"]),
-                    ("Gestão de Redes Informáticas", 4, ["Eng. Silvano Rosa"]),
+                    ("Gestão de Redes Informáticas", 4, ["Eng. Silvano Rosa", "Eng. Joaquim de Almeida"]),
                     ("Linguagens e Tecnologias Web", 6, ["MSc. Nanitamo Pedro António", "Engª. Bernardo Dala"]),
                     ("Sistemas Operativos II", 4, ["Eng. Silvano Rosa", "MSc. Lírio Ramalheira"]),
                     ("Desenvolvimento de Software", 6, ["Dr. Edson Tomás", "MSc. Nanitamo Pedro António"]),
@@ -173,7 +173,7 @@ CURRICULO = {
                 "turmas": ["N1", "T1", "T2", "T3", "T4", "T5", "T6"],
                 "disciplinas": [
                     ("Métodos de Investigação Científica", 4, ["Doutor Dácia Joaquim", "Dra. Luísa David", "Doutor João Jovita", "Doutor Alice Costa"]),
-                    ("Língua Inglesa I", 4, ["MSc. António Vueba", "Dr. Nuno Alves", "Dr. Anibal Pululo", "Dr. Manuel Pedro", "Dr. Ava Pinto"]),
+                    ("Língua Inglesa I", 4, ["MSc. António Vueba", "Dr. Nuno Alves", "Dr. Aníbal Pululo", "Dr. Manuel Pedro", "Dr. Ava Pinto"]),
                     ("Comunicação Pessoal e Empresarial", 4, ["MSc. Artur Santos", "MSc. Eliseu Ernesto", "MSc. Mateus Halaiwa"]),
                     ("Introdução à Informática", 6, ["Dr. Divaldo Sousa", "Eng. Eduardo Chiquete", "Dr. Bernardo Dala", "Eng. Luciano Gonçalves"]),
                     ("Matemática I", 6, ["Dr. Benedito Pinheiro", "MSc. Augusto Carlos Sanson", "MSc. Humberto Filipe", "MSc. Singa Mateus"]),
@@ -263,7 +263,7 @@ CURRICULO = {
                     ("Introdução à Informática", 6, ["Dr. Divaldo Sousa", "Dr. Joaquim Piedade", "Eng. Luciano Gonçalves", "MSc. Euclides Catumbela"]),
                     ("Matemática I", 6, ["Dr. Benedito Pinheiro", "MSc. Margarida Covilhã", "MSc. Augusto Carlos Sanson"]),
                     ("Comunicação Pessoal e Empresarial", 4, ["MSc. Artur Santos", "MSc. Eliseu Ernesto", "MSc. Mateus Halaiwa", "MSc. Youran Mandonga"]),
-                    ("Língua Inglesa I", 4, ["MSc. António Vueba", "Dr. Anibal Pululo", "Dr. Ava Pinto"]),
+                    ("Língua Inglesa I", 4, ["MSc. António Vueba", "Dr. Aníbal Pululo", "Dr. Ava Pinto"]),
                     ("Métodos de Investigação Científica", 4, ["Doutor Dácia Joaquim", "Professora Doutora Martha Nyanungo", "Dra. Luísa David", "Doutor Alice Costa"]),
                 ],
             },
@@ -274,7 +274,7 @@ CURRICULO = {
                     ("Contabilidade Geral I", 6, ["MSc. Cláudio Voza", "MSc. Catarina Júlio", "MSc. Sandra da Costa"]),
                     ("Introdução às Organizações e à Gestão", 4, ["MSc. Kavungo João", "MSc. Laurinda Sacala"]),
                     ("Comunicação Pessoal e Empresarial", 4, ["MSc. Artur Santos", "MSc. Eliseu Ernesto", "MSc. Mateus Halaiwa", "MSc. Youran Mandonga"]),
-                    ("Língua Inglesa II", 4, ["MSc. António Vueba", "Dr. Anibal Pululo", "Dr. Francisco Cachivalela"]),
+                    ("Língua Inglesa II", 4, ["MSc. António Vueba", "Dr. Aníbal Pululo", "Dr. Francisco Cachivalela"]),
                 ],
             },
         },
@@ -328,8 +328,8 @@ CURRICULO = {
                 "disciplinas": [
                     ("Gestão de Recursos Humanos", 6, ["MSc. Ana da Silva", "Dra. Teresa Vunge"]),
                     ("Seguros de Propriedade e Não-Vida", 6, ["Dr. Júlio Matias", "Dr. Silva e Rocha"]),
-                    ("Economia Angolana e Internacional", 4, ["MSc. João Pinho"]),
-                    ("Operações e Prática Seguradora", 4, ["Dr. Passos Reis"]),
+                    ("Economia Angolana e Internacional", 4, ["MSc. João Pinho", "MSc. Miguel Troco"]),
+                    ("Operações e Prática Seguradora", 4, ["Dr. Passos Reis", "Dr. Júlio Matias"]),
                 ],
             },
             "2": {
@@ -337,7 +337,7 @@ CURRICULO = {
                 "disciplinas": [
                     ("Gestão de Activos, Passivos e Fundos de Pensões", 6, ["MSc. Carlos Almeida", "Dr. Lídia Pierre"]),
                     ("Auditoria Financeira Banca e Seguros", 6, ["Dr. Nelson Marcos", "MSc. Marthe Kimfumu"]),
-                    ("Marketing de Serviços Financeiros", 4, ["Dr. Osmerivaldo Ramos"]),
+                    ("Marketing de Serviços Financeiros", 4, ["Dr. Osmerivaldo Ramos", "MSc. Adão Chitxiami"]),
                     ("Sistemas de Controlo de Gestão", 4, ["Doutor Carla Negrão"]),
                 ],
             },
