@@ -18,7 +18,9 @@ from app.solver.result_mapper import mapear_resultado
 _STATUS_VIAVEL = {cp_model.OPTIMAL: "OPTIMAL", cp_model.FEASIBLE: "FEASIBLE"}
 
 
-def resolver_horario(dados: HorarioInput, max_time_in_seconds: float) -> SolverResult:
+def resolver_horario(
+    dados: HorarioInput, max_time_in_seconds: float, num_search_workers: int = 4
+) -> SolverResult:
     """Monta o modelo completo, resolve com limite de tempo e nunca deixa INFEASIBLE
     propagar como exceção — devolve sempre um SolverResult estruturado (RNF03)."""
     model = cp_model.CpModel()
@@ -34,6 +36,11 @@ def resolver_horario(dados: HorarioInput, max_time_in_seconds: float) -> SolverR
 
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = max_time_in_seconds
+    # Sem isto, o CP-SAT satura todos os cores da máquina (ver core/config.py) —
+    # limitar aqui é o que torna a geração viável em paralelo com o resto do
+    # sistema, já que corre numa thread à parte (BackgroundTasks) mas continua a
+    # competir por CPU com o event loop e com o utilizador.
+    solver.parameters.num_search_workers = num_search_workers
     status = solver.Solve(model)
 
     status_nome = _STATUS_VIAVEL.get(status)

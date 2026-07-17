@@ -1,5 +1,7 @@
 # Implementa: Fase 4 (RF09, RF10, RF13) — fluxo assíncrono ponta-a-ponta com BD em memória
-from sqlmodel import Session, SQLModel, create_engine
+from datetime import datetime
+
+from sqlmodel import Session, SQLModel, create_engine, select
 
 import app.models  # noqa: F401 - garante que todos os modelos entram no metadata
 from app.models.curso import Curso
@@ -13,6 +15,7 @@ from app.models.sala import Sala
 from app.models.turma import Turma
 from app.repositories.alocacao_repository import AlocacaoRepository
 from app.repositories.job_repository import JobRepository
+from app.services.horario_service import extrair_dados
 from app.workers.job_runner import executar
 
 
@@ -63,7 +66,7 @@ def test_job_runner_gera_alocacoes_para_cenario_viavel():
 
     with Session(engine) as session:
         _semear_cenario_viavel(session)
-        job_id = JobRepository(session).criar().id
+        job_id = JobRepository(session).criar(ano_letivo=2026, semestre="1").id
 
     executar(job_id, engine=engine)
 
@@ -75,6 +78,84 @@ def test_job_runner_gera_alocacoes_para_cenario_viavel():
 
         alocacoes = AlocacaoRepository(session).listar_por_job(job_id)
         assert len(alocacoes) == 2
+
+
+def test_extrair_dados_ignora_turmas_de_outro_ano_letivo_ou_semestre():
+    """Uma geração para (2026, "1") nunca deve puxar turmas de outro ano lectivo ou
+    semestre — cada Job cobre sempre um único âmbito, gerado de uma só vez."""
+    engine = _criar_engine_teste()
+
+    with Session(engine) as session:
+        curso = Curso(codigo="INF", nome="Informática")
+        session.add(curso)
+        session.commit()
+        session.refresh(curso)
+
+        plano_alvo = PlanoCurricular(curso_id=curso.id, ano=1, semestre="1")
+        plano_outro_semestre = PlanoCurricular(curso_id=curso.id, ano=1, semestre="2")
+        plano_anual = PlanoCurricular(curso_id=curso.id, ano=2, semestre="Anual")
+        session.add_all([plano_alvo, plano_outro_semestre, plano_anual])
+        session.commit()
+        for p in (plano_alvo, plano_outro_semestre, plano_anual):
+            session.refresh(p)
+
+        turma_alvo = Turma(
+            codigo="ALVO", nome="Turma alvo", ano_letivo=2026, turno="manha",
+            numero_alunos=20, plano_curricular_id=plano_alvo.id,
+        )
+        turma_ano_passado = Turma(
+            codigo="PASSADO", nome="Turma do ano passado", ano_letivo=2025, turno="manha",
+            numero_alunos=20, plano_curricular_id=plano_alvo.id,
+        )
+        turma_outro_semestre = Turma(
+            codigo="OUTRO-SEM", nome="Turma de outro semestre", ano_letivo=2026, turno="manha",
+            numero_alunos=20, plano_curricular_id=plano_outro_semestre.id,
+        )
+        turma_anual = Turma(
+            codigo="ANUAL", nome="Turma anual", ano_letivo=2026, turno="manha",
+            numero_alunos=20, plano_curricular_id=plano_anual.id,
+        )
+        session.add_all([turma_alvo, turma_ano_passado, turma_outro_semestre, turma_anual])
+        session.commit()
+
+        dados = extrair_dados(session, ano_letivo=2026, semestre="1")
+        codigos = {t.id for t in dados.turmas}
+        session.refresh(turma_alvo)
+        session.refresh(turma_anual)
+        session.refresh(turma_ano_passado)
+        session.refresh(turma_outro_semestre)
+
+        assert turma_alvo.id in codigos
+        assert turma_anual.id in codigos  # "Anual" entra em ambos os semestres
+        assert turma_ano_passado.id not in codigos
+        assert turma_outro_semestre.id not in codigos
+
+
+def test_consultar_horario_turma_usa_o_job_do_ano_letivo_da_propria_turma():
+    """Gerar (2026, "2") depois de (2026, "1") não pode fazer uma turma de "1"
+    passar a devolver (incorretamente) o horário mais recente de "2"."""
+    engine = _criar_engine_teste()
+
+    with Session(engine) as session:
+        _semear_cenario_viavel(session)
+        turma_id = session.exec(select(Turma)).first().id
+        job_sem1_id = JobRepository(session).criar(ano_letivo=2026, semestre="1").id
+
+    executar(job_sem1_id, engine=engine)
+
+    with Session(engine) as session:
+        # Uma segunda geração, para um semestre diferente, sem nenhuma turma —
+        # simula "o Job mais recente" pertencer a outro âmbito.
+        job_sem2 = JobRepository(session).criar(ano_letivo=2026, semestre="2")
+        JobRepository(session).atualizar_status(job_sem2, JobStatus.DONE, concluido_em=datetime.utcnow())
+
+    with Session(engine) as session:
+        from app.services.horario_service import HorarioService
+
+        resposta = HorarioService(session).consultar_horario_turma(turma_id)
+        dias_com_aula = [d for d in resposta.dias if d.tempos]
+        assert len(dias_com_aula) == 1
+        assert resposta.job_id == job_sem1_id
 
 
 def test_job_runner_marca_infeasible_com_diagnostico():
@@ -109,7 +190,7 @@ def test_job_runner_marca_infeasible_com_diagnostico():
         session.add(ProfessorDisciplina(professor_id=professor.id, disciplina_id=disciplina.id))
         session.commit()
 
-        job_id = JobRepository(session).criar().id
+        job_id = JobRepository(session).criar(ano_letivo=2026, semestre="1").id
 
     executar(job_id, engine=engine)
 

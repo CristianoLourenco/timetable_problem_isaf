@@ -279,8 +279,14 @@ def seed() -> None:
             try:
                 firebase_rest.criar_conta_com_password(email, SENHA_TESTE)
             except firebase_rest.FirebaseAuthError as exc:
-                print(f"AVISO: não foi possível criar a conta Firebase de {email}: {exc}")
-                continue
+                if exc.codigo != "EMAIL_EXISTS":
+                    print(f"AVISO: não foi possível criar a conta Firebase de {email}: {exc}")
+                    continue
+                # Conta Firebase já existe de uma seed anterior (a BD local foi
+                # recriada, mas o Firebase Authentication é externo e não é
+                # afetado) — a senha continua a ser SENHA_TESTE; só falta
+                # recriar a linha Utilizador correspondente.
+                print(f"Conta Firebase já existe, a recriar apenas a linha Utilizador: {email}")
             professor_id = professores_por_email[professor_email].id if professor_email else None
             session.add(
                 Utilizador(
