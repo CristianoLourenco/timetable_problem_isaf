@@ -20,7 +20,7 @@ description: Use ao escrever ou alterar qualquer código dentro de backend/app/s
 1. `TurmaDisciplina` → só pares (turma, disciplina) que existem na grade curricular (conjunto `E` da definição formal UCTP).
 2. `ProfessorDisciplina` → só professores qualificados para aquela disciplina.
 3. `Disponibilidade` do professor **OU** RN07 (sem registo = totalmente disponível) → só slots válidos por professor.
-4. `Sala` com `capacidade >= turma.numero_alunos` — RN08 é soft (não elimina a variável, apenas penaliza depois; não filtrar aqui, só ordenar por preferência).
+4. `Sala` com `capacidade >= turma.numero_alunos`, **limitada às `settings.solver_max_salas_candidatas` salas de excesso de capacidade mais baixo** (desempate por hash `(turma.id, sala.id)`, nunca por `sala.id` sozinho — turmas de tamanho parecido não podem convergir todas para o mesmo subconjunto fixo de salas, isso criaria contenção artificial). RN08 é soft e não deixa de ser respeitado por este corte: a regra já define a alocação preferencial como "capacidade mínima viável", logo uma sala fora do top-K nunca seria escolhida numa solução ótima a não ser por conflito — e o top-K deixa folga para isso. **Não remover este limite** — sem ele, a maioria das salas qualifica para a maioria das turmas, o que mede ~5-10x mais `BoolVar` e cria simetria severa entre salas parecidas (medido em benchmark à escala real do ISAF: ~20-30s só de construção do modelo em Python, antes do CP-SAT começar a procurar).
 
 Cada `BoolVar` só existe se sobreviveu a todos os filtros acima. Nomear as variáveis de forma rastreável, ex: `x[turma_id, disciplina_id, professor_id, sala_id, slot_id]`, guardadas num dict esparso — não uma matriz N-dimensional densa.
 

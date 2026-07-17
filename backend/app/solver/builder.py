@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 
 from ortools.sat.python import cp_model
 
+from app.core.config import settings
 from app.solver.dto import HorarioInput
 
 # chave esparsa: (turma_id, disciplina_id, professor_id, sala_id, dia_semana, turno, periodo)
@@ -41,8 +42,16 @@ def build_variables(model: cp_model.CpModel, dados: HorarioInput) -> VariaveisMo
       1. TurmaDisciplina -> só pares (turma, disciplina) da grade curricular (conjunto E).
       2. ProfessorDisciplina -> só professores qualificados para a disciplina.
       3. Só tempos do turno da turma (uma turma nunca é alocada fora do seu turno).
-      4. Sala com capacidade >= numero_alunos da turma (necessidade física; a
-         proximidade "ideal" de capacidade, RN08, é soft e tratada no objetivo).
+      4. Sala com capacidade >= numero_alunos da turma, limitada às
+         `settings.solver_max_salas_candidatas` salas com o excesso de capacidade mais
+         baixo (necessidade física; a proximidade "ideal" de capacidade, RN08, é soft e
+         tratada no objetivo — mas RN08 já define "capacidade mínima viável" como a
+         alocação preferencial, logo as salas fora do top-K nunca seriam escolhidas numa
+         solução ótima a não ser por conflito, e o top-K deixa folga suficiente para
+         isso). Sem este limite, todas as salas com capacidade suficiente entram como
+         candidatas — a maioria qualifica, criando simetria severa entre salas
+         semelhantes e inflando o nº de BoolVar em ~5-10x sem ganho real (medido em
+         benchmark à escala real do ISAF).
 
     Disponibilidade (RN04) não filtra aqui — é soft, ver nota de modelagem acima.
     """
@@ -52,9 +61,18 @@ def build_variables(model: cp_model.CpModel, dados: HorarioInput) -> VariaveisMo
 
     salas_com_capacidade: dict[int, list[int]] = defaultdict(list)
     for turma in dados.turmas:
-        for sala in dados.salas:
-            if sala.capacidade >= turma.numero_alunos:
-                salas_com_capacidade[turma.id].append(sala.id)
+        # Desempate por hash(turma, sala) em vez de sala.id: turmas de tamanho
+        # semelhante têm o mesmo grupo de salas empatadas em excesso de capacidade —
+        # sem isto, um desempate fixo faria TODAS convergirem para as mesmas K salas
+        # (contenção artificial de sala nunca implicada por RN08, que só pede
+        # capacidade mínima viável, não uma sala específica).
+        candidatas = sorted(
+            (sala for sala in dados.salas if sala.capacidade >= turma.numero_alunos),
+            key=lambda sala: (sala.capacidade - turma.numero_alunos, hash((turma.id, sala.id))),
+        )
+        salas_com_capacidade[turma.id] = [
+            sala.id for sala in candidatas[: settings.solver_max_salas_candidatas]
+        ]
 
     slots_por_turno: dict[str, list] = defaultdict(list)
     for slot in dados.slots:
