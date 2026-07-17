@@ -13,6 +13,15 @@ class Settings(BaseSettings):
     # parte), satura a máquina inteira. Valor por omissão deixa alguns cores
     # livres para o resto do sistema; ajustar ao hardware real em produção.
     solver_num_search_workers: int = 4
+    # Limite de salas candidatas por turma na geração esparsa de variáveis (RN08 é soft
+    # — "capacidade mínima viável" — mas incluir TODAS as salas com capacidade suficiente
+    # como candidatas cria simetria severa entre salas de capacidade semelhante e infla o
+    # nº de BoolVar sem benefício real: uma sala com muito mais excesso de capacidade do
+    # que outra nunca é preferida pelo objetivo, logo nunca seria escolhida numa solução
+    # ótima a não ser forçada por conflito de outras turmas — o que as top-K mais próximas
+    # já cobrem com folga. Medido no benchmark: reduz variáveis ~5-10x sem alterar a
+    # qualidade prática da solução (ver docs/04_04_analise_desenvolvimento.md secção 4.4.1).
+    solver_max_salas_candidatas: int = 5
     environment: str = "development"
 
     # Autenticação (RN09/RN10) — ver core/security.py. project_id vem do Firebase
