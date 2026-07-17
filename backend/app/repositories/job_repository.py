@@ -10,8 +10,8 @@ class JobRepository:
     def __init__(self, session: Session):
         self.session = session
 
-    def criar(self) -> Job:
-        job = Job()
+    def criar(self, ano_letivo: int, semestre: str) -> Job:
+        job = Job(ano_letivo=ano_letivo, semestre=semestre)
         self.session.add(job)
         self.session.commit()
         self.session.refresh(job)
@@ -21,9 +21,26 @@ class JobRepository:
         return self.session.get(Job, job_id)
 
     def obter_ultimo_concluido(self) -> Job | None:
-        """RF11/RF12 — o horário "atual" é sempre o resultado do Job DONE mais recente."""
+        """RF12 — horário "atual" de um Professor: o Job DONE mais recente entre
+        todos os âmbitos (um professor não está preso a um único ano/semestre)."""
         return self.session.exec(
             select(Job).where(Job.status == JobStatus.DONE).order_by(Job.concluido_em.desc())
+        ).first()
+
+    def obter_ultimo_concluido_para(self, ano_letivo: int, semestres: list[str]) -> Job | None:
+        """RF11 — horário de uma Turma: o Job DONE mais recente do (ano_letivo,
+        semestre) exato dessa turma, nunca "o mais recente entre todos" (que
+        poderia pertencer a um âmbito diferente e simplesmente não conter a turma
+        pedida). `semestres` recebe mais do que um valor apenas para turmas de
+        um PlanoCurricular "Anual" — o Job pode ter sido gerado como "1" ou "2"."""
+        return self.session.exec(
+            select(Job)
+            .where(
+                Job.status == JobStatus.DONE,
+                Job.ano_letivo == ano_letivo,
+                Job.semestre.in_(semestres),
+            )
+            .order_by(Job.concluido_em.desc())
         ).first()
 
     def atualizar_status(

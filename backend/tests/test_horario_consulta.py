@@ -54,7 +54,7 @@ def _semear_e_gerar(engine) -> tuple[int, int]:
         session.add(ProfessorDisciplina(professor_id=professor.id, disciplina_id=disciplina.id))
         session.commit()
 
-        job_id = JobRepository(session).criar().id
+        job_id = JobRepository(session).criar(ano_letivo=2026, semestre="1").id
         turma_id, professor_id = turma.id, professor.id
 
     executar(job_id, engine=engine)

@@ -31,8 +31,12 @@ def executar(job_id: str, *, engine=_engine_producao) -> None:
 
         job_repo.atualizar_status(job, JobStatus.RUNNING)
 
-        dados = extrair_dados(session)
-        resultado = resolver_horario(dados, max_time_in_seconds=settings.solver_max_time_seconds)
+        dados = extrair_dados(session, job.ano_letivo, job.semestre)
+        resultado = resolver_horario(
+            dados,
+            max_time_in_seconds=settings.solver_max_time_seconds,
+            num_search_workers=settings.solver_num_search_workers,
+        )
 
         if resultado.status == "INFEASIBLE":
             job_repo.atualizar_status(
