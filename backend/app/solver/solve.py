@@ -13,6 +13,7 @@ from app.solver.constraints_hard import (
     add_turma_sem_dupla_disciplina,
 )
 from app.solver.constraints_soft import build_objective
+from app.solver.diagnostico import formatar_diagnostico_nucleo, isolar_nucleo_infeasible
 from app.solver.dto import HorarioInput, SolverResult
 from app.solver.heuristica_inicial import gerar_hint_inicial
 from app.solver.result_mapper import mapear_resultado
@@ -166,6 +167,13 @@ def _diagnosticar_infeasible(dados: HorarioInput) -> str:
             )
 
     if not problemas:
+        # Nenhuma causa óbvia e barata — tenta isolar um núcleo combinatório concreto
+        # por bisecção (ver app/solver/diagnostico.py) antes de desistir. Isto é o
+        # caso que apanha, por exemplo, duas turmas a partilhar o único professor
+        # qualificado para uma disciplina — confirmado real à escala do ISAF.
+        nucleo = isolar_nucleo_infeasible(dados)
+        if nucleo:
+            return formatar_diagnostico_nucleo(nucleo, dados)
         return (
             "INFEASIBLE sem causa estrutural identificada nas verificações automáticas — "
             "possível conflito combinatório entre RN01-RN06 (ex: disponibilidade insuficiente "

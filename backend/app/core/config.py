@@ -35,6 +35,20 @@ class Settings(BaseSettings):
     # frequentemente gasta a maior parte do orçamento a tentar provar
     # otimalidade em vez de a procurar a primeira solução viável.
     solver_relative_gap_limit: float = 0.10
+    # Bisecção de diagnóstico (app/solver/diagnostico.py) — só corre quando o CP-SAT já
+    # provou INFEASIBLE no solve principal (nunca para decidir UNKNOWN vs INFEASIBLE) e
+    # as verificações baratas não encontraram nenhuma causa óbvia. Tempo limitado por
+    # tentativa e no total para nunca virar nova fonte de lentidão — se o orçamento
+    # esgotar sem confirmar nada, mantém-se a mensagem genérica em vez de arriscar um
+    # falso positivo (ver isolar_nucleo_infeasible).
+    solver_diagnostico_timeout_por_tentativa: float = 5.0
+    solver_diagnostico_orcamento_total: float = 60.0
+    # Cada tentativa da bisecção reconstrói o modelo do zero — a escala real do ISAF
+    # isso sozinho pode demorar mais do que o orçamento total, fazendo a bisecção
+    # esgotar o tempo a meio de uma ronda e devolver um núcleo grande (quase o
+    # conjunto original) em vez de pequeno e acionável. Um núcleo maior do que isto
+    # não vale a pena mostrar ao Gestor — mantém-se a mensagem genérica nesse caso.
+    solver_diagnostico_tamanho_maximo_util: int = 12
     # Limite de salas candidatas por turma na geração esparsa de variáveis (RN08 é soft
     # — "capacidade mínima viável" — mas incluir TODAS as salas com capacidade suficiente
     # como candidatas cria simetria severa entre salas de capacidade semelhante e infla o
