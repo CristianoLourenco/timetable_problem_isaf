@@ -24,8 +24,9 @@ def gerar_horario(
     service: HorarioService = Depends(_get_service),
 ):
     """RF09 (UC08) — gera de uma vez o horário completo de todas as turmas do
-    (ano_letivo, semestre) pedido; dispara em background e devolve o job_id de imediato."""
-    job = service.disparar_geracao(payload.ano_letivo, payload.semestre)
+    (curso, ano_letivo, semestre) pedido; dispara em background e devolve o job_id de
+    imediato. curso_id é obrigatório (ver nota em services/horario_service.py)."""
+    job = service.disparar_geracao(payload.curso_id, payload.ano_letivo, payload.semestre)
     background_tasks.add_task(executar, job.id)
     return GerarHorarioResponse(job_id=job.id, status=job.status)
 
