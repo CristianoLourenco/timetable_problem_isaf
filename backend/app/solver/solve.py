@@ -3,6 +3,7 @@ from collections import Counter, defaultdict
 
 from ortools.sat.python import cp_model
 
+from app.core.config import settings
 from app.solver.builder import build_variables
 from app.solver.constraints_hard import (
     add_agrupamento_em_blocos,
@@ -13,13 +14,17 @@ from app.solver.constraints_hard import (
 )
 from app.solver.constraints_soft import build_objective
 from app.solver.dto import HorarioInput, SolverResult
+from app.solver.heuristica_inicial import gerar_hint_inicial
 from app.solver.result_mapper import mapear_resultado
 
 _STATUS_VIAVEL = {cp_model.OPTIMAL: "OPTIMAL", cp_model.FEASIBLE: "FEASIBLE"}
 
 
 def resolver_horario(
-    dados: HorarioInput, max_time_in_seconds: float, num_search_workers: int = 4
+    dados: HorarioInput,
+    max_time_in_seconds: float,
+    num_search_workers: int = 8,
+    relative_gap_limit: float | None = None,
 ) -> SolverResult:
     """Monta o modelo completo, resolve com limite de tempo e nunca deixa INFEASIBLE
     propagar como exceção — devolve sempre um SolverResult estruturado (RNF03)."""
@@ -34,13 +39,35 @@ def resolver_horario(
 
     model.Minimize(build_objective(model, variaveis, dados))
 
+    # Warm-start: uma atribuição gulosa rápida ("mais restrito primeiro") dá ao
+    # CP-SAT um ponto de partida perto de uma solução válida em vez de procurar
+    # do zero — hints parciais são aceites pelo CP-SAT, por isso um resultado
+    # incompleto da heurística (nunca lança exceção) ainda ajuda. Ver
+    # app/solver/heuristica_inicial.py para a estratégia e o porquê.
+    hint = gerar_hint_inicial(dados, variaveis)
+    for chave, valor in hint.items():
+        # Defesa extra (a heurística já só produz chaves reais de variaveis.x,
+        # por construção — ver heuristica_inicial.py) — um hint nunca deve poder
+        # rebentar o solve real por si só.
+        var = variaveis.x.get(chave)
+        if var is not None:
+            model.AddHint(var, valor)
+
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = max_time_in_seconds
     # Sem isto, o CP-SAT satura todos os cores da máquina (ver core/config.py) —
     # limitar aqui é o que torna a geração viável em paralelo com o resto do
     # sistema, já que corre numa thread à parte (BackgroundTasks) mas continua a
-    # competir por CPU com o event loop e com o utilizador.
+    # competir por CPU com o event loop e com o utilizador. O portfolio de
+    # sub-solvers focados em encontrar a primeira solução só ativa a partir de
+    # 5 workers — ver comentário em core/config.py.
     solver.parameters.num_search_workers = num_search_workers
+    # Aceitar uma solução dentro do gap (não exigir otimalidade provada) — a
+    # função objetivo é uma soma de penalizações soft, "boa e rápida" vale mais
+    # do que "marginalmente melhor e lenta" em produção. Ver core/config.py.
+    solver.parameters.relative_gap_limit = (
+        relative_gap_limit if relative_gap_limit is not None else settings.solver_relative_gap_limit
+    )
     status = solver.Solve(model)
 
     status_nome = _STATUS_VIAVEL.get(status)
