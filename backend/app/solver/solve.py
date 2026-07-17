@@ -120,6 +120,24 @@ def _diagnosticar_infeasible(dados: HorarioInput) -> str:
                 f"'{turma.turno if turma else '?'}' ({total_tempos_turno})."
             )
 
+    # Verificação agregada — a de cima só compara UMA disciplina contra o turno; uma turma
+    # com várias disciplinas de carga individualmente válida pode ainda assim exigir, no
+    # total, mais tempos do que o turno tem disponíveis (ex: 5 disciplinas somando 26h
+    # numa turma de turno noite com só 25 tempos/semana) — impossível independentemente de
+    # professores/salas, e sem isto cai silenciosamente na mensagem genérica de baixo.
+    carga_total_por_turma: dict[int, int] = defaultdict(int)
+    for td in dados.turma_disciplinas:
+        carga_total_por_turma[td.turma_id] += td.carga_horaria_semanal
+    for turma_id, carga_total in carga_total_por_turma.items():
+        turma = turmas_por_id.get(turma_id)
+        total_tempos_turno = slots_por_turno.get(turma.turno if turma else None, 0)
+        if carga_total > total_tempos_turno:
+            problemas.append(
+                f"Turma {turma_id}: soma da carga_horaria_semanal de todas as disciplinas "
+                f"({carga_total}) excede o total de tempos semanais do turno "
+                f"'{turma.turno if turma else '?'}' ({total_tempos_turno})."
+            )
+
     if not problemas:
         return (
             "INFEASIBLE sem causa estrutural identificada nas verificações automáticas — "
