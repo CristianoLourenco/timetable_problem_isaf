@@ -42,8 +42,8 @@ class HorarioController extends ValueNotifier<HorarioState> {
     );
   }
 
-  Future<void> generateTimetable(String turmaId) async {
-    await _provider.generateTimetable(turmaId);
+  Future<void> generateTimetable(String turmaId, {required int anoLetivo, required String semestre}) async {
+    await _provider.generateTimetable(turmaId, anoLetivo: anoLetivo, semestre: semestre);
   }
 
   Future<void> fetchTimetableByTurma(String turmaId) async {

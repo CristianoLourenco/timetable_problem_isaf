@@ -4,7 +4,7 @@ import 'package:ghorario/features/feature_horario/domain/entities/job_resultado.
 
 /// Abstract repository interface for Horario.
 abstract class IHorarioRepository {
-  Future<DataState<String>> triggerGeneration();
+  Future<DataState<String>> triggerGeneration({required int anoLetivo, required String semestre});
   Future<DataState<JobResultado>> checkStatus(String jobId);
   Future<DataState<List<HorarioSlot>>> getTimetableByTurma(String turmaId);
   Future<DataState<List<HorarioSlot>>> getTimetableByProfessor(String professorId);
