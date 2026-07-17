@@ -7,6 +7,12 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://isaf:isaf@localhost:5432/isaf_horarios"
     firebase_credentials_path: str = "./firebase-service-account.json"
     solver_max_time_seconds: int = 60
+    # Sem isto, o CP-SAT usa por omissão todos os cores da máquina (portfolio de
+    # workers, ver docs/04_02_fundamentacao_teorica.md secção 2.4.2) durante todo
+    # o solver_max_time_seconds — mesmo correndo em BackgroundTasks (thread à
+    # parte), satura a máquina inteira. Valor por omissão deixa alguns cores
+    # livres para o resto do sistema; ajustar ao hardware real em produção.
+    solver_num_search_workers: int = 4
     environment: str = "development"
 
     # Autenticação (RN09/RN10) — ver core/security.py. project_id vem do Firebase

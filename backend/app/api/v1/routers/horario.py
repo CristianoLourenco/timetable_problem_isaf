@@ -6,7 +6,7 @@ from app.api.v1.deps import get_session
 from app.core.exceptions import EntidadeNaoEncontradaError
 from app.core.security import UtilizadorAutenticado, get_current_user, require_gestor, verificar_acesso_professor_proprio
 from app.schemas.horario_schema import HorarioResponseSchema
-from app.schemas.job_schema import GerarHorarioResponse, JobRead
+from app.schemas.job_schema import GerarHorarioRequest, GerarHorarioResponse, JobRead
 from app.services.horario_service import HorarioService
 from app.workers.job_runner import executar
 
@@ -18,9 +18,14 @@ def _get_service(session: Session = Depends(get_session)) -> HorarioService:
 
 
 @router.post("/gerar-horario", response_model=GerarHorarioResponse, status_code=202, dependencies=[Depends(require_gestor)])
-def gerar_horario(background_tasks: BackgroundTasks, service: HorarioService = Depends(_get_service)):
-    """RF09 (UC08) — dispara a geração em background e devolve o job_id de imediato."""
-    job = service.disparar_geracao()
+def gerar_horario(
+    payload: GerarHorarioRequest,
+    background_tasks: BackgroundTasks,
+    service: HorarioService = Depends(_get_service),
+):
+    """RF09 (UC08) — gera de uma vez o horário completo de todas as turmas do
+    (ano_letivo, semestre) pedido; dispara em background e devolve o job_id de imediato."""
+    job = service.disparar_geracao(payload.ano_letivo, payload.semestre)
     background_tasks.add_task(executar, job.id)
     return GerarHorarioResponse(job_id=job.id, status=job.status)
 
