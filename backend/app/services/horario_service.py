@@ -42,16 +42,12 @@ from app.solver.dto import (
 _ORDEM_TURNOS = ["manha", "tarde", "noite"]
 
 
-def extrair_dados(session: Session, curso_id: int, ano_letivo: int, semestre: str) -> HorarioInput:
+def extrair_dados(session: Session, ano_letivo: int, semestre: str) -> HorarioInput:
     """Lê as entidades relevantes da BD e monta o HorarioInput do solver, restrito às
-    turmas de um único (curso, ano_letivo, semestre) — um Job gera sempre o horário
-    completo desse âmbito de uma só vez (RF09), nunca turmas de cursos diferentes
-    misturadas. Restringir por curso, além de ano_letivo/semestre, não é só uma questão
-    de tamanho do problema: à escala real do ISAF confirmou-se que gerar vários cursos
-    em simultâneo pode ser genuinamente INFEASIBLE (coortes pequenas com corpo docente
-    muito reduzido/partilhado entre turmas paralelas do mesmo curso) mesmo sem nenhum
-    erro de modelagem — e cursos diferentes não partilham turmas/salas/grade curricular
-    entre si, logo não há benefício em otimizá-los juntos.
+    turmas de um único (ano_letivo, semestre) — um Job gera sempre o horário completo
+    desse âmbito de uma só vez (RF09), nunca todas as turmas de todos os anos
+    misturadas (inflaciona o problema do solver sem sentido e mistura turmas que não
+    deviam ser otimizadas em conjunto).
 
     Um PlanoCurricular com semestre="Anual" entra em ambos os âmbitos ("1" e "2"),
     já que as suas disciplinas decorrem ao longo do ano inteiro.
@@ -64,11 +60,7 @@ def extrair_dados(session: Session, curso_id: int, ano_letivo: int, semestre: st
     turmas = session.exec(
         select(Turma)
         .join(PlanoCurricular, Turma.plano_curricular_id == PlanoCurricular.id)
-        .where(
-            PlanoCurricular.curso_id == curso_id,
-            Turma.ano_letivo == ano_letivo,
-            PlanoCurricular.semestre.in_([semestre, "Anual"]),
-        )
+        .where(Turma.ano_letivo == ano_letivo, PlanoCurricular.semestre.in_([semestre, "Anual"]))
     ).all()
     professores = session.exec(select(Professor)).all()
     salas = session.exec(select(Sala)).all()
@@ -121,10 +113,10 @@ class HorarioService:
         self.sala_repo = SalaRepository(session)
         self.plano_curricular_repo = PlanoCurricularRepository(session)
 
-    def disparar_geracao(self, curso_id: int, ano_letivo: int, semestre: str) -> Job:
-        """RF09 — cria o Job em PENDING para o âmbito (curso, ano_letivo, semestre); o
-        router dispara job_runner.executar em BackgroundTasks."""
-        return self.job_repo.criar(curso_id=curso_id, ano_letivo=ano_letivo, semestre=semestre)
+    def disparar_geracao(self, ano_letivo: int, semestre: str) -> Job:
+        """RF09 — cria o Job em PENDING para o âmbito (ano_letivo, semestre); o router
+        dispara job_runner.executar em BackgroundTasks."""
+        return self.job_repo.criar(ano_letivo=ano_letivo, semestre=semestre)
 
     def consultar_job(self, job_id: str) -> Job:
         """RF10 — consulta de estado de processamento."""
@@ -135,19 +127,17 @@ class HorarioService:
 
     def consultar_horario_turma(self, turma_id: int) -> HorarioResponseSchema:
         """RF11 (UC11) — horário da turma, a partir do Job DONE mais recente do
-        (curso, ano_letivo, semestre) exato desta turma — nunca "o Job mais recente
-        entre todos", que poderia ser de outro curso/ano/semestre e simplesmente não
-        conter nenhuma alocação desta turma."""
+        (ano_letivo, semestre) exato desta turma — nunca "o Job mais recente entre
+        todos", que poderia ser de outro ano/semestre e simplesmente não conter
+        nenhuma alocação desta turma."""
         turma = self.turma_repo.get(turma_id)
         if turma is None:
             raise EntidadeNaoEncontradaError("Turma não encontrada.")
 
         plano = self.plano_curricular_repo.get(turma.plano_curricular_id)
-        if plano is None:
-            raise EntidadeNaoEncontradaError("Plano curricular da turma não encontrado.")
-        semestres = ["1", "2"] if plano.semestre == "Anual" else [plano.semestre]
+        semestres = ["1", "2"] if plano is None or plano.semestre == "Anual" else [plano.semestre]
 
-        job = self.job_repo.obter_ultimo_concluido_para(plano.curso_id, turma.ano_letivo, semestres)
+        job = self.job_repo.obter_ultimo_concluido_para(turma.ano_letivo, semestres)
         if job is None:
             raise EntidadeNaoEncontradaError(
                 f"Ainda não existe horário gerado para o ano letivo {turma.ano_letivo}, "
