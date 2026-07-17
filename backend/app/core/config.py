@@ -6,7 +6,14 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+psycopg://isaf:isaf@localhost:5432/isaf_horarios"
     firebase_credentials_path: str = "./firebase-service-account.json"
-    solver_max_time_seconds: int = 60
+    # 60s era demasiado curto à escala real do ISAF — medido: mesmo um único curso
+    # completo (todos os 4 anos curriculares, 9-22 turmas) frequentemente não encontra
+    # NENHUMA solução em 60s (UNKNOWN, não INFEASIBLE — o espaço de procura é genuinamente
+    # grande, não impossível). RF09 já é assíncrono (BackgroundTasks) — esperar mais tempo
+    # não bloqueia o pedido HTTP, só atrasa quando o Gestor vê o resultado. 300s (5min) dá
+    # ao CP-SAT margem real para encontrar uma primeira solução viável nos cenários mais
+    # densos; ajustar novamente se a escala real do ISAF continuar a precisar de mais.
+    solver_max_time_seconds: int = 300
     # Sem isto, o CP-SAT usa por omissão todos os cores da máquina (portfolio de
     # workers, ver docs/04_02_fundamentacao_teorica.md secção 2.4.2) durante todo
     # o solver_max_time_seconds — mesmo correndo em BackgroundTasks (thread à
