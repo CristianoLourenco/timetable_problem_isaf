@@ -5,7 +5,9 @@ import 'package:ghorario/features/feature_horario/domain/entities/horario_slot.d
 import 'package:ghorario/features/feature_horario/presentation/controller/horario_controller.dart';
 import 'package:ghorario/features/feature_horario/presentation/provider/horario_provider.dart';
 import 'package:ghorario/features/feature_horario/presentation/states/horario_state.dart';
+import 'package:ghorario/features/feature_turmas/domain/entities/curso.dart';
 import 'package:ghorario/features/feature_turmas/domain/entities/turma.dart';
+import 'package:ghorario/features/feature_turmas/presentation/provider/cursos_provider.dart';
 import 'package:ghorario/features/feature_turmas/presentation/provider/turmas_provider.dart';
 
 const List<String> _weekdayLabels = [
@@ -28,6 +30,7 @@ class HorarioScreen extends StatefulWidget {
 class _HorarioScreenState extends State<HorarioScreen> {
   late final HorarioController _controller;
   String? _selectedTurmaId;
+  String? _selectedCursoId;
   late int _anoLetivo = DateTime.now().year;
   String _semestre = '1';
 
@@ -36,14 +39,21 @@ class _HorarioScreenState extends State<HorarioScreen> {
     super.initState();
     _controller = HorarioController(provider: context.read<HorarioProvider>());
     final turmasProvider = context.read<TurmasProvider>();
+    final cursosProvider = context.read<CursosProvider>();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (turmasProvider.turmas.isEmpty) {
         await turmasProvider.loadTurmas();
+      }
+      if (cursosProvider.cursos.isEmpty) {
+        await cursosProvider.loadCursos();
       }
       if (!mounted) return;
       if (turmasProvider.turmas.isNotEmpty) {
         setState(() => _selectedTurmaId = turmasProvider.turmas.first.id);
         _controller.fetchTimetableByTurma(_selectedTurmaId!);
+      }
+      if (cursosProvider.cursos.isNotEmpty) {
+        setState(() => _selectedCursoId = cursosProvider.cursos.first.id);
       }
     });
   }
@@ -62,6 +72,7 @@ class _HorarioScreenState extends State<HorarioScreen> {
   @override
   Widget build(BuildContext context) {
     final turmas = context.watch<TurmasProvider>().turmas;
+    final cursos = context.watch<CursosProvider>().cursos;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -103,6 +114,13 @@ class _HorarioScreenState extends State<HorarioScreen> {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        _CursoSeletor(
+                          cursos: cursos,
+                          cursoId: _selectedCursoId,
+                          enabled: !state.isGenerating,
+                          onChanged: (value) => setState(() => _selectedCursoId = value),
+                        ),
+                        const SizedBox(width: 8),
                         _AnoLetivoESemestreSeletor(
                           anoLetivo: _anoLetivo,
                           semestre: _semestre,
@@ -112,10 +130,11 @@ class _HorarioScreenState extends State<HorarioScreen> {
                         ),
                         const SizedBox(width: 16),
                         ElevatedButton.icon(
-                          onPressed: (state.isGenerating || _selectedTurmaId == null)
+                          onPressed: (state.isGenerating || _selectedTurmaId == null || _selectedCursoId == null)
                               ? null
                               : () => _controller.generateTimetable(
                                     _selectedTurmaId!,
+                                    cursoId: _selectedCursoId!,
                                     anoLetivo: _anoLetivo,
                                     semestre: _semestre,
                                   ),
@@ -283,6 +302,50 @@ class _HorarioScreenState extends State<HorarioScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Lets the Gestor pick the curso scope for RF09 — curso_id é obrigatório
+/// desde que se confirmou, à escala real, que gerar vários cursos em
+/// simultâneo pode ser genuinamente INFEASIBLE (coortes pequenas partilham
+/// corpo docente entre turmas paralelas do mesmo curso), além de não fazer
+/// sentido otimizar juntos cursos que não partilham grade curricular.
+class _CursoSeletor extends StatelessWidget {
+  const _CursoSeletor({
+    required this.cursos,
+    required this.cursoId,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final List<Curso> cursos;
+  final String? cursoId;
+  final bool enabled;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    if (cursos.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return _SeletorContainer(
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: cursoId,
+          icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF64748B)),
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.blackBlue,
+            fontFamily: 'Poppins',
+          ),
+          items: cursos
+              .map((Curso c) => DropdownMenuItem(value: c.id, child: Text('Curso: ${c.codigo}')))
+              .toList(),
+          onChanged: enabled ? (value) => value != null ? onChanged(value) : null : null,
+        ),
       ),
     );
   }
