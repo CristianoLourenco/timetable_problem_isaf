@@ -21,8 +21,8 @@ class HorarioProvider extends ChangeNotifier {
   final GetHorarioUseCase _getHorarioUseCase;
   final CheckJobStatusUseCase _checkJobStatusUseCase;
 
-  static const _pollInterval = Duration(seconds: 2);
-  static const _maxPollAttempts = 60; // ~2min — backend caps the solver at 60s (config.py)
+  static const _pollInterval = Duration(seconds: 3);
+  static const _maxPollAttempts = 110; // ~5.5min — backend caps the solver at 300s (config.py) + margin
 
   List<HorarioSlot> _slots = const <HorarioSlot>[];
   List<HorarioSlot> get slots => _slots;
