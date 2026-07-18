@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.v1.routers import (
+    alocacao_manual,
     auth,
     curso,
     disciplina,
@@ -56,6 +57,7 @@ app.include_router(plano_curricular.itens_router)
 app.include_router(professor_disciplina.router)
 app.include_router(importacao.router)
 app.include_router(horario.router)
+app.include_router(alocacao_manual.router)
 
 
 @app.get("/health")
