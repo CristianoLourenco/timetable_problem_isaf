@@ -115,6 +115,7 @@ class AlocacaoManualService:
         dia_semana: str,
         turno: str,
         periodo: int,
+        ignorar_id: int | None = None,
     ) -> None:
         existentes = self.session.exec(
             select(Alocacao).where(
@@ -124,6 +125,8 @@ class AlocacaoManualService:
             )
         ).all()
         for aloc in existentes:
+            if aloc.id == ignorar_id:
+                continue
             if aloc.professor_id == professor_id:
                 raise IntegridadeVioladaError(
                     f"RN01: professor {professor_id} já tem alocação em {dia_semana}/{turno}/{periodo}."
@@ -198,3 +201,59 @@ class AlocacaoManualService:
         if inicio_atual is not None:
             blocos.append((inicio_atual, anterior - inicio_atual + 1))
         return blocos
+
+    def remover(self, alocacao_id: int) -> None:
+        """RF13 — remove uma alocação; se isso reabre défice nessa (turma,
+        disciplina), recria a Pendencia com razão genérica (não isola causa —
+        foi o próprio Gestor que removeu, não um conflito automático)."""
+        alocacao = self.alocacao_repo.get(alocacao_id)
+        if alocacao is None:
+            raise EntidadeNaoEncontradaError(f"Alocação {alocacao_id} não encontrada.")
+
+        job_id, turma_id, disciplina_id = alocacao.job_id, alocacao.turma_id, alocacao.disciplina_id
+        self.alocacao_repo.remover(alocacao)
+
+        ja_pendente = any(
+            p.disciplina_id == disciplina_id
+            for p in self.pendencia_repo.listar_por_job_e_turma(job_id, turma_id)
+        )
+        if not ja_pendente:
+            # tempos_em_falta=1: só se sabe que ESTE período reabriu; o défice
+            # exato (carga_horaria_semanal - alocações restantes) fica para uma
+            # versão futura que reconsulte PlanoCurricularDisciplina aqui.
+            self.pendencia_repo.criar_em_lote(
+                job_id,
+                [
+                    {
+                        "turma_id": turma_id,
+                        "disciplina_id": disciplina_id,
+                        "tempos_em_falta": 1,
+                        "razao": "Removido manualmente pelo Gestor.",
+                        "professores_conflitantes": (),
+                        "turmas_conflitantes": (),
+                    }
+                ],
+            )
+
+    def mover(self, alocacao_id: int, *, dia_semana: str, periodo: int) -> Alocacao:
+        """RF13 — move um único período de uma alocação existente para outro slot,
+        reaplicando RN01-RN03 contra o novo valor (nunca edita o bloco inteiro de
+        uma vez — o Gestor move período a período)."""
+        alocacao = self.alocacao_repo.get(alocacao_id)
+        if alocacao is None:
+            raise EntidadeNaoEncontradaError(f"Alocação {alocacao_id} não encontrada.")
+
+        turma = self.turma_repo.get(alocacao.turma_id)
+        turno = turma.turno if turma is not None else ""
+
+        self._validar_sem_conflito(
+            job_id=alocacao.job_id,
+            turma_id=alocacao.turma_id,
+            professor_id=alocacao.professor_id,
+            sala_id=alocacao.sala_id,
+            dia_semana=dia_semana,
+            turno=turno,
+            periodo=periodo,
+            ignorar_id=alocacao.id,
+        )
+        return self.alocacao_repo.atualizar(alocacao, {"dia_semana": dia_semana, "periodo": periodo})
