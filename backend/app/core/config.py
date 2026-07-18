@@ -58,6 +58,15 @@ class Settings(BaseSettings):
     # já cobrem com folga. Medido no benchmark: reduz variáveis ~5-10x sem alterar a
     # qualidade prática da solução (ver docs/04_04_analise_desenvolvimento.md secção 4.4.1).
     solver_max_salas_candidatas: int = 5
+    # Decomposição por turno (Manhã→Tarde→Noite, ver app/solver/orquestrador_turnos.py)
+    # — reduz o tamanho de cada modelo CP-SAT individual em vez de resolver o
+    # semestre inteiro num único modelo monolítico, tornando viável encontrar uma
+    # solução completa dentro do orçamento de tempo à escala real do ISAF (RNF01).
+    # Mantém-se o caminho monolítico vivo por trás da flag (não removido) — rollback
+    # imediato e ponto de comparação para a discussão de RNF01 na tese.
+    solver_usar_decomposicao_turno: bool = True
+    # 3 fases × 100s = 300s, o mesmo teto já justificado de solver_max_time_seconds.
+    solver_max_time_seconds_por_turno: int = 100
     environment: str = "development"
 
     # Autenticação (RN09/RN10) — ver core/security.py. project_id vem do Firebase
@@ -85,6 +94,12 @@ class Settings(BaseSettings):
     solver_peso_rn04_disponibilidade: int = 10
     solver_peso_rn08_capacidade: int = 20
     solver_peso_equidade_diaria: int = 1
+    # RF13 — défice de RN05 (carga horária não cumprida). Peso muito acima de
+    # qualquer combinação plausível de RN04×prioridade (peso 10, multiplicador
+    # até 2.0) + RN08 (peso 20) + equidade (peso 1) — o solver só aceita
+    # défice quando preencher tudo é genuinamente impossível, nunca como troca
+    # vantajosa face a uma otimização menor.
+    solver_peso_deficit_rn05: int = 1000
 
     # Calendário letivo — nunca hardcoded fora daqui (ver CLAUDE.md, proibições gerais).
     # Valores por omissão servem apenas de bootstrap para ambiente local/dev.
