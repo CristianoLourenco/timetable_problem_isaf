@@ -120,7 +120,11 @@ def formatar_diagnostico_nucleo(nucleo: list[int], dados: HorarioInput) -> str:
 
 
 def gerar_razao_pendencia(
-    turma_id: int, disciplina_id: int, tempos_em_falta: int, dados: HorarioInput
+    turma_id: int,
+    disciplina_id: int,
+    tempos_em_falta: int,
+    dados: HorarioInput,
+    nucleo_compartilhado: list[int] | None = None,
 ) -> PendenciaDTO:
     """RF13 — traduz uma pendência de défice (turma, disciplina) numa razão
     acionável para o Gestor, verificando causas prováveis em ordem barata -> cara:
@@ -131,6 +135,15 @@ def gerar_razao_pendencia(
          tempos por outra turma (via bisecção, app/solver/isolar_nucleo_infeasible,
          mesmo orçamento de tempo já existente);
       4. fallback — nenhuma causa automática identificada.
+
+    `nucleo_compartilhado`: quando o chamador (`_extrair_pendencias_deficit` em
+    solve.py) já tem várias pendências no mesmo cenário, a bisecção da causa #3
+    seria idêntica para todas — calcular uma vez por chamada e passar aqui em vez
+    de repetir isolar_nucleo_infeasible(dados) por pendência evita um custo de até
+    N × orçamento_total (confirmado >15min de CPU num cenário real do ISAF com 86
+    turmas). Se omitido (None), mantém o comportamento antigo — chama
+    isolar_nucleo_infeasible(dados) aqui mesmo, para retrocompatibilidade de quem
+    invoca esta função diretamente (ex: testes).
 
     Nunca lança exceção: se a bisecção (causa 3) não convergir dentro do
     orçamento, cai no fallback genérico em vez de travar o relatório final."""
@@ -173,7 +186,7 @@ def gerar_razao_pendencia(
             turmas_conflitantes=(turma_id,),
         )
 
-    nucleo = isolar_nucleo_infeasible(dados)
+    nucleo = nucleo_compartilhado if nucleo_compartilhado is not None else isolar_nucleo_infeasible(dados)
     if nucleo and turma_id in nucleo:
         disciplinas_por_turma: dict[int, set[int]] = defaultdict(set)
         for td in dados.turma_disciplinas:
