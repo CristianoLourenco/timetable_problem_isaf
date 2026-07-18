@@ -93,6 +93,33 @@ Com RN05 sempre satisfazível (via défice), o CP-SAT só pode devolver:
 normal. Mantém-se apenas como valor teoricamente possível do enum de status —
 não é removido do tipo, só nunca mais é o caminho esperado.
 
+## Tempo de procura configurável pelo Gestor (RF09/UC08)
+
+`UNKNOWN` (tempo esgotado sem solução) continua a existir depois desta mudança
+— só deixa de significar "impossível" e passa a significar sempre "precisa de
+mais tempo de procura". Isto dá ao Gestor uma ação concreta a tomar quando
+acontece, por isso o tempo máximo de procura deixa de ser só uma constante de
+config e passa a ser escolhido por pedido:
+
+- `POST /gerar-horario` (`GerarHorarioRequest`, `schemas/job_schema.py`) ganha
+  um campo `tempo_maximo_minutos: Literal[1, 5, 10]`, default `5` (mantém o
+  comportamento próximo do atual `solver_max_time_seconds_por_turno=100s`×3
+  fases ≈ 5 min).
+- `HorarioService.disparar_geracao` passa a receber e persistir esse valor no
+  `Job` (nova coluna `tempo_maximo_minutos: int`), para `job_runner.py` o usar
+  ao chamar `resolver_horario_por_turnos`/`resolver_horario` em vez do valor
+  fixo de `settings`.
+- Frontend (`feature_horario`): o ecrã de "gerar horário" ganha um seletor com
+  as 3 opções (1 min, 5 min, 10 min) — nunca um campo livre, para não permitir
+  valores fora do intervalo testado. Fica fora do âmbito deste sub-projeto
+  detalhar a UI (cai naturalmente dentro do sub-projeto 3, que já mexe no
+  ecrã de horário), mas o contrato da API (campo novo, 3 valores válidos) é
+  definido aqui porque faz parte do mesmo ciclo de "o que significa UNKNOWN
+  agora".
+- Quando `UNKNOWN`, a mensagem de diagnóstico (`_diagnosticar_tempo_esgotado`)
+  passa a sugerir explicitamente tentar novamente com um tempo maior (próximo
+  da lista de 3 opções), em vez da redação genérica atual.
+
 ## Diagnóstico de pendências — reaproveita `diagnostico.py`
 
 Em vez de descartar `_diagnosticar_infeasible`/`isolar_nucleo_infeasible`
@@ -140,8 +167,12 @@ class PendenciaDTO:
 - `app/solver/diagnostico.py` — funções adaptadas para gerar razão por pendência em vez de provar impossibilidade total.
 - `app/solver/result_mapper.py` — sem mudança de contrato (continua só a mapear `x`); pendências vêm de função nova em `solve.py`/`diagnostico.py`.
 - `app/core/config.py` — `solver_peso_deficit_rn05: int = 1000`.
-- `app/solver/orquestrador_turnos.py` — precisa de agregar `pendencias` de cada fase (Manhã/Tarde/Noite) no resultado final.
-- Testes: `test_solver.py`, `test_diagnostico.py`, `test_preprocessamento.py`, `test_orquestrador_turnos.py`, `test_heuristica_inicial.py` (hints não podem colidir com a nova variável de défice).
+- `app/solver/orquestrador_turnos.py` — precisa de agregar `pendencias` de cada fase (Manhã/Tarde/Noite) no resultado final; passa a receber o tempo máximo por fase derivado de `tempo_maximo_minutos`.
+- `app/schemas/job_schema.py` — `GerarHorarioRequest.tempo_maximo_minutos: Literal[1, 5, 10] = 5`.
+- `app/models/job.py` — `Job.tempo_maximo_minutos: int`.
+- `app/services/horario_service.py` — `disparar_geracao` recebe e persiste o novo campo.
+- `app/workers/job_runner.py` — usa `job.tempo_maximo_minutos` em vez de `settings.solver_max_time_seconds`/`solver_max_time_seconds_por_turno`.
+- Testes: `test_solver.py`, `test_diagnostico.py`, `test_preprocessamento.py`, `test_orquestrador_turnos.py`, `test_heuristica_inicial.py` (hints não podem colidir com a nova variável de défice), `test_horario_service.py` (novo campo).
 
 ## Fora de âmbito (fica para os sub-projetos 2 e 3)
 
@@ -162,3 +193,8 @@ class PendenciaDTO:
 - Reprodução em escala real (seed real via Docker/Postgres, ano 2026 semestre 1)
   — job deve terminar com status ≠ INFEASIBLE e uma lista de pendências
   reportável.
+- `GerarHorarioRequest` com `tempo_maximo_minutos` fora de `{1, 5, 10}` — 422
+  de validação Pydantic, nenhum Job chega a ser criado.
+- `job_runner` respeita `tempo_maximo_minutos` do Job (não o valor fixo de
+  `settings`) ao chamar o solver, incluindo no caminho de decomposição por
+  turno (tempo total dividido pelas 3 fases).
