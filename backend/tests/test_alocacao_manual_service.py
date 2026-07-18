@@ -296,3 +296,112 @@ def test_listar_slots_vagos_exclui_periodos_ja_alocados_e_so_devolve_blocos_vali
 
         # nenhum bloco de tamanho 1 é devolvido em nenhum dia
         assert all(len(b["periodos"]) >= 2 for b in blocos)
+
+
+def test_remover_alocacao_recria_pendencia():
+    engine = _criar_engine_teste()
+    with Session(engine) as session:
+        job, turma, professor, disciplina, sala = _semear_cenario(session)
+        service = AlocacaoManualService(session)
+        alocacoes = service.criar(
+            job_id=job.id,
+            turma_id=turma.id,
+            disciplina_id=disciplina.id,
+            professor_id=professor.id,
+            sala_id=sala.id,
+            dia_semana="segunda",
+            turno="manha",
+            periodos=[1, 2],
+        )
+
+        service.remover(alocacoes[0].id)
+
+        persistidas = AlocacaoRepository(session).listar_por_job(job.id)
+        assert len(persistidas) == 1
+
+        pendencias = PendenciaRepository(session).listar_por_job_e_turma(job.id, turma.id)
+        assert len(pendencias) == 1
+        assert pendencias[0].disciplina_id == disciplina.id
+        assert "manualmente" in pendencias[0].razao.lower()
+
+
+def test_remover_alocacao_inexistente_e_404():
+    engine = _criar_engine_teste()
+    with Session(engine) as session:
+        job, turma, professor, disciplina, sala = _semear_cenario(session)
+        service = AlocacaoManualService(session)
+
+        try:
+            service.remover(999)
+            assert False, "devia ter lançado EntidadeNaoEncontradaError"
+        except EntidadeNaoEncontradaError:
+            pass
+
+
+def test_mover_alocacao_para_novo_slot_valido():
+    engine = _criar_engine_teste()
+    with Session(engine) as session:
+        job, turma, professor, disciplina, sala = _semear_cenario(session)
+        service = AlocacaoManualService(session)
+        alocacoes = service.criar(
+            job_id=job.id,
+            turma_id=turma.id,
+            disciplina_id=disciplina.id,
+            professor_id=professor.id,
+            sala_id=sala.id,
+            dia_semana="segunda",
+            turno="manha",
+            periodos=[1, 2],
+        )
+
+        movida = service.mover(alocacoes[1].id, dia_semana="terca", periodo=1)
+
+        assert movida.dia_semana == "terca"
+        assert movida.periodo == 1
+
+
+def test_mover_alocacao_para_slot_ja_ocupado_e_rejeitado():
+    """RN01 — mover para um slot onde o mesmo professor já está alocado."""
+    engine = _criar_engine_teste()
+    with Session(engine) as session:
+        job, turma, professor, disciplina, sala = _semear_cenario(session)
+        service = AlocacaoManualService(session)
+        alocacoes = service.criar(
+            job_id=job.id,
+            turma_id=turma.id,
+            disciplina_id=disciplina.id,
+            professor_id=professor.id,
+            sala_id=sala.id,
+            dia_semana="segunda",
+            turno="manha",
+            periodos=[1, 2],
+        )
+
+        outra_turma = Turma(
+            codigo="T2",
+            nome="Turma 2",
+            ano_letivo=2026,
+            turno="manha",
+            numero_alunos=20,
+            plano_curricular_id=turma.plano_curricular_id,
+        )
+        session.add(outra_turma)
+        session.commit()
+        session.refresh(outra_turma)
+
+        outra = service.criar(
+            job_id=job.id,
+            turma_id=outra_turma.id,
+            disciplina_id=disciplina.id,
+            professor_id=professor.id,
+            sala_id=sala.id,
+            dia_semana="terca",
+            turno="manha",
+            periodos=[3, 4],
+        )
+
+        try:
+            service.mover(outra[0].id, dia_semana="segunda", periodo=1)
+            assert False, "devia ter lançado IntegridadeVioladaError"
+        except IntegridadeVioladaError as exc:
+            assert "RN01" in str(exc) or "professor" in str(exc).lower()
