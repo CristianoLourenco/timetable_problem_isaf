@@ -144,7 +144,7 @@ class HorarioService:
                 f"semestre {'/'.join(semestres)}, desta turma."
             )
         alocacoes = self.alocacao_repo.listar_por_job_e_turma(job.id, turma_id)
-        return self._montar_resposta(job.id, alocacoes)
+        return self.montar_resposta(job.id, alocacoes)
 
     def consultar_horario_professor(self, professor_id: int) -> HorarioResponseSchema:
         """RF12 (UC12) — horário do professor, a partir do Job DONE mais recente."""
@@ -153,7 +153,7 @@ class HorarioService:
 
         job = self._obter_ultimo_job_concluido()
         alocacoes = self.alocacao_repo.listar_por_job_e_professor(job.id, professor_id)
-        return self._montar_resposta(job.id, alocacoes)
+        return self.montar_resposta(job.id, alocacoes)
 
     def _obter_ultimo_job_concluido(self) -> Job:
         job = self.job_repo.obter_ultimo_concluido()
@@ -161,7 +161,7 @@ class HorarioService:
             raise EntidadeNaoEncontradaError("Ainda não existe nenhum horário gerado com sucesso.")
         return job
 
-    def _montar_resposta(self, job_id: str, alocacoes: list[Alocacao]) -> HorarioResponseSchema:
+    def montar_resposta(self, job_id: str, alocacoes: list[Alocacao]) -> HorarioResponseSchema:
         """Traduz linhas de Alocacao em JSON estruturado por dia/tempo (nunca linhas soltas).
 
         Alocacao não guarda turno (é sempre o da Turma alocada, RN de normalização até
