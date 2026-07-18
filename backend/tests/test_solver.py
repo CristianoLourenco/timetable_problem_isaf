@@ -117,3 +117,49 @@ def test_carga_impar_de_um_tempo_ja_nao_e_infeasible_fica_pendente():
     assert resultado.pendencias[0].disciplina_id == 1
     assert resultado.pendencias[0].tempos_em_falta == 1
 
+
+def test_rn12_prioridade_protege_professor_de_maior_prioridade_em_trade_off():
+    """1 turma, 1 único bloco de tempo possível, 2 professores igualmente
+    qualificados — ambos têm disponibilidade registada, mas nenhuma delas coincide
+    com o único bloco disponível, logo qualquer que seja o professor escolhido vai
+    violar RN04 (nada mais no cenário distingue os dois: mesma sala, mesma
+    disciplina, mesmo custo de RN08/equidade). A solução ótima deve preferir violar
+    a disponibilidade do professor de baixa prioridade, já que isso custa menos ao
+    objetivo (peso_rn04 * (1 + prioridade))."""
+    slots = _construir_slots(["segunda"], periodos_por_dia=2)  # único bloco possível (RN06: 2 tempos)
+
+    dados = HorarioInput(
+        turmas=[TurmaDTO(id=1, numero_alunos=20, turno=TURNO_TESTE)],
+        professores=[
+            ProfessorDTO(id=1, classificacao=5, vinculo_casa=True),  # alta prioridade
+            ProfessorDTO(id=2, classificacao=1, vinculo_casa=False),  # baixa prioridade
+        ],
+        salas=[SalaDTO(id=1, capacidade=30)],
+        slots=slots,
+        turma_disciplinas=[TurmaDisciplinaDTO(turma_id=1, disciplina_id=1, carga_horaria_semanal=2)],
+        professor_disciplinas=[
+            ProfessorDisciplinaDTO(professor_id=1, disciplina_id=1),
+            ProfessorDisciplinaDTO(professor_id=2, disciplina_id=1),
+        ],
+        # Nenhum dos dois está registado disponível no único bloco real (segunda,
+        # periodos 1-2) — ambos têm ALGUM registo (não caem no fallback RN07), mas
+        # nenhum coincide, logo qualquer escolha viola RN04 exatamente uma vez.
+        disponibilidades=[
+            DisponibilidadeDTO(professor_id=1, dia_semana="terca", turno=TURNO_TESTE, periodo=1),
+            DisponibilidadeDTO(professor_id=2, dia_semana="quarta", turno=TURNO_TESTE, periodo=1),
+        ],
+    )
+
+    # relative_gap_limit=0.0 força prova de otimalidade exata — com o gap de produção
+    # (10%, ver settings.solver_relative_gap_limit) a diferença de custo entre violar
+    # o professor de alta e de baixa prioridade neste cenário minúsculo (~3.8%) cai
+    # dentro da tolerância, e o warm-start (que tenta o professor de maior prioridade
+    # primeiro, RN12) pode fazer o CP-SAT aceitar essa solução sub-ótima como "boa o
+    # suficiente" e parar. Isto testa que o TERMO do objetivo está correto — a
+    # interação com o gap de produção é uma limitação conhecida, não um bug aqui.
+    resultado = resolver_horario(dados, max_time_in_seconds=MAX_TIME_TESTE, relative_gap_limit=0.0)
+    assert resultado.status in ("OPTIMAL", "FEASIBLE")
+    assert len(resultado.alocacoes) == 2
+
+    professor_escolhido = {a.professor_id for a in resultado.alocacoes}
+    assert professor_escolhido == {2}, "o solver devia preferir violar RN04 do professor de baixa prioridade"
