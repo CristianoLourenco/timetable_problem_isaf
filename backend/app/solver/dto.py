@@ -81,7 +81,22 @@ class AlocacaoResult:
 
 
 @dataclass(frozen=True)
+class PendenciaDTO:
+    """RF13/UC09 — um (turma, disciplina) que ficou com tempos por preencher depois
+    do solve (RN05 relaxada para soft-com-défice, ver constraints_hard.py). `razao`
+    é texto pronto para o Gestor, gerado por app/solver/diagnostico.py."""
+
+    turma_id: int
+    disciplina_id: int
+    tempos_em_falta: int
+    razao: str
+    professores_conflitantes: tuple[int, ...] = ()
+    turmas_conflitantes: tuple[int, ...] = ()
+
+
+@dataclass(frozen=True)
 class SolverResult:
     status: str  # "OPTIMAL" | "FEASIBLE" | "INFEASIBLE"
     alocacoes: list[AlocacaoResult] = field(default_factory=list)
-    diagnostico: str | None = None  # RF13/UC09 — preenchido apenas quando INFEASIBLE
+    diagnostico: str | None = None  # RF13/UC09 — preenchido apenas quando INFEASIBLE (UNKNOWN por tempo)
+    pendencias: list[PendenciaDTO] = field(default_factory=list)  # RF13 — défice de RN05 após o solve
