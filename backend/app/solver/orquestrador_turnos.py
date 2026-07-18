@@ -42,10 +42,13 @@ def resolver_horario_por_turnos(
     ordem_turnos: tuple[str, ...] = _ORDEM_TURNOS_PADRAO,
 ) -> SolverResult:
     """Resolve cada turno em sequência, com as alocações de professores de fases
-    anteriores fixadas (nunca reatribuídas) na fase seguinte. Todo-ou-nada: se
-    qualquer fase for INFEASIBLE, nenhuma alocação é devolvida — persistência
-    parcial exigiria um novo JobStatus e forma de comunicar "Manhã pronta,
-    Tarde/Noite não", fora do âmbito atual (Job tem um único par status/diagnostico).
+    anteriores fixadas (nunca reatribuídas) na fase seguinte. Se uma fase posterior
+    der INFEASIBLE (UNKNOWN por tempo esgotado — ver nota abaixo), o `SolverResult`
+    devolvido preserva as alocações/pendências já resolvidas das fases anteriores
+    em vez de as descartar, para o Gestor não perder o trabalho já feito só porque
+    uma fase seguinte precisou de mais tempo do que o orçamento permitia — mesmo
+    assim `status="INFEASIBLE"` sinaliza que o resultado está incompleto (Job tem
+    um único par status/diagnostico, sem um estado "parcialmente pronto" dedicado).
 
     `prioridades` (RN12) é calculada uma única vez sobre `dados` completo (semana
     toda, não filtrado por turno) — a escassez de disponibilidade tem de refletir
@@ -76,7 +79,15 @@ def resolver_horario_por_turnos(
         if resultado.status == "INFEASIBLE":
             # Só resta UNKNOWN por tempo esgotado (RF13 — RN05 nunca mais bloqueia
             # por escassez) — identifica a fase que não teve tempo, cumpre RNF03.
-            return SolverResult(status="INFEASIBLE", alocacoes=[], diagnostico=f"[Turno {turno}] {resultado.diagnostico}")
+            # Preserva alocações/pendências já resolvidas de fases anteriores em vez
+            # de as descartar: o Gestor não perde o trabalho já feito só porque uma
+            # fase seguinte precisou de mais tempo do que o orçamento permitia.
+            return SolverResult(
+                status="INFEASIBLE",
+                alocacoes=todas_alocacoes,
+                diagnostico=f"[Turno {turno}] {resultado.diagnostico}",
+                pendencias=todas_pendencias,
+            )
 
         if resultado.status == "FEASIBLE":
             alguma_fase_feasible = True

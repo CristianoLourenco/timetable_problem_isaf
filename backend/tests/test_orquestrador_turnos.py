@@ -1,5 +1,6 @@
 # Implementa: RF09/RF13 — testes da decomposição por turno, ver app/solver/orquestrador_turnos.py
 from collections import defaultdict
+from unittest.mock import patch
 
 from app.solver.dto import (
     DisponibilidadeDTO,
@@ -8,10 +9,12 @@ from app.solver.dto import (
     ProfessorDTO,
     SalaDTO,
     SlotDTO,
+    SolverResult,
     TurmaDisciplinaDTO,
     TurmaDTO,
 )
 from app.solver.orquestrador_turnos import resolver_horario_por_turnos
+from app.solver.solve import resolver_horario
 
 MAX_TIME_TESTE = 5.0
 
@@ -138,3 +141,30 @@ def test_fase_sem_turmas_e_ignorada():
     assert resultado.status in ("OPTIMAL", "FEASIBLE")
     assert len(resultado.alocacoes) == 2
     assert all(a.turno == "manha" for a in resultado.alocacoes)
+
+
+def test_timeout_em_fase_posterior_preserva_alocacoes_e_pendencias_de_fases_anteriores():
+    """Finding (revisão final): manhã resolve com sucesso (>=1 alocação); tarde
+    simula timeout (UNKNOWN mapeado para INFEASIBLE por resolver_horario). O
+    resultado final deve continuar INFEASIBLE (o Gestor sabe que falta a Tarde),
+    mas sem descartar o que a manhã já produziu."""
+    dados = _cenario_dois_turnos()
+
+    resultado_manha_real = None
+    chamadas = {"n": 0}
+
+    def resolver_horario_fake(*args, **kwargs):
+        chamadas["n"] += 1
+        if chamadas["n"] == 1:
+            nonlocal resultado_manha_real
+            resultado_manha_real = resolver_horario(*args, **kwargs)
+            return resultado_manha_real
+        return SolverResult(status="INFEASIBLE", alocacoes=[], diagnostico="timeout simulado", pendencias=[])
+
+    with patch("app.solver.orquestrador_turnos.resolver_horario", side_effect=resolver_horario_fake):
+        resultado = resolver_horario_por_turnos(dados, max_time_in_seconds_por_turno=MAX_TIME_TESTE)
+
+    assert resultado.status == "INFEASIBLE"
+    assert "[Turno tarde]" in resultado.diagnostico
+    assert len(resultado.alocacoes) == len(resultado_manha_real.alocacoes) > 0
+    assert resultado.pendencias == resultado_manha_real.pendencias
