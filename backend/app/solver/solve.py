@@ -126,13 +126,12 @@ def _extrair_pendencias_deficit(
 def _diagnosticar_tempo_esgotado(max_time_in_seconds: float) -> str:
     """UNKNOWN — o solver esgotou o tempo sem encontrar nenhuma solução (viável ou não).
 
-    Não confundir com INFEASIBLE: isto não prova impossibilidade estrutural, só que o
-    espaço de procura não foi explorado o suficiente no tempo dado (RNF01/RNF03).
-    """
+    Não confundir com impossibilidade estrutural (RF13 — RN05 é soft-com-défice,
+    nunca mais é essa a causa): isto só prova que o espaço de procura não foi
+    explorado o suficiente no tempo dado (RNF01/RNF03)."""
     return (
         f"O solver não encontrou nenhuma solução dentro do limite de tempo "
-        f"({max_time_in_seconds:.0f}s) — isto não prova que o cenário seja "
-        "estruturalmente impossível, apenas que o espaço de procura é grande "
-        "demais para o tempo disponível. Aumente solver_max_time_seconds ou "
-        "reduza o âmbito do pedido."
+        f"({max_time_in_seconds:.0f}s) — isto não significa que o cenário seja "
+        "impossível, apenas que precisa de mais tempo de procura. Tente novamente "
+        "escolhendo um tempo máximo maior (1, 5 ou 10 min)."
     )

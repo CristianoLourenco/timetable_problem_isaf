@@ -113,10 +113,11 @@ class HorarioService:
         self.sala_repo = SalaRepository(session)
         self.plano_curricular_repo = PlanoCurricularRepository(session)
 
-    def disparar_geracao(self, ano_letivo: int, semestre: str) -> Job:
+    def disparar_geracao(self, ano_letivo: int, semestre: str, tempo_maximo_minutos: int = 5) -> Job:
         """RF09 — cria o Job em PENDING para o âmbito (ano_letivo, semestre); o router
-        dispara job_runner.executar em BackgroundTasks."""
-        return self.job_repo.criar(ano_letivo=ano_letivo, semestre=semestre)
+        dispara a execução em BackgroundTasks logo a seguir. `tempo_maximo_minutos`
+        (RF13) é escolhido pelo Gestor por pedido — ver GerarHorarioRequest."""
+        return self.job_repo.criar(ano_letivo=ano_letivo, semestre=semestre, tempo_maximo_minutos=tempo_maximo_minutos)
 
     def consultar_job(self, job_id: str) -> Job:
         """RF10 — consulta de estado de processamento."""

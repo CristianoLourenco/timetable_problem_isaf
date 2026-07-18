@@ -10,8 +10,8 @@ class JobRepository:
     def __init__(self, session: Session):
         self.session = session
 
-    def criar(self, ano_letivo: int, semestre: str) -> Job:
-        job = Job(ano_letivo=ano_letivo, semestre=semestre)
+    def criar(self, ano_letivo: int, semestre: str, tempo_maximo_minutos: int = 5) -> Job:
+        job = Job(ano_letivo=ano_letivo, semestre=semestre, tempo_maximo_minutos=tempo_maximo_minutos)
         self.session.add(job)
         self.session.commit()
         self.session.refresh(job)

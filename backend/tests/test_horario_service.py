@@ -158,6 +158,24 @@ def test_consultar_horario_turma_usa_o_job_do_ano_letivo_da_propria_turma():
         assert resposta.job_id == job_sem1_id
 
 
+def test_job_runner_respeita_tempo_maximo_escolhido_pelo_gestor():
+    """RF09 — o Gestor escolhe 1/5/10 min por pedido; job_runner deve passar esse
+    valor ao solver em vez do teto fixo de settings."""
+    engine = _criar_engine_teste()
+
+    with Session(engine) as session:
+        _semear_cenario_viavel(session)
+        job = JobRepository(session).criar(ano_letivo=2026, semestre="1", tempo_maximo_minutos=1)
+        job_id = job.id
+        assert job.tempo_maximo_minutos == 1
+
+    executar(job_id, engine=engine)
+
+    with Session(engine) as session:
+        job = JobRepository(session).obter(job_id)
+        assert job.status == JobStatus.DONE
+
+
 def test_job_runner_conclui_com_pendencia_quando_rn06_e_impossivel():
     """RF13 — RN06 proíbe carga_horaria_semanal=1 (tempo isolado), mas RN05 agora
     aceita défice (ver app/solver/constraints_hard.py): o Job termina DONE, sem
