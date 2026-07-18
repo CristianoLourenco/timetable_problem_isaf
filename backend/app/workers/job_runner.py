@@ -13,7 +13,9 @@ from app.models.alocacao import Alocacao
 from app.models.job import JobStatus
 from app.repositories.alocacao_repository import AlocacaoRepository
 from app.repositories.job_repository import JobRepository
+from app.services.disponibilidade_geracao_service import gerar_disponibilidade_sintetica
 from app.services.horario_service import extrair_dados
+from app.solver.orquestrador_turnos import resolver_horario_por_turnos
 from app.solver.solve import resolver_horario
 
 
@@ -31,12 +33,27 @@ def executar(job_id: str, *, engine=_engine_producao) -> None:
 
         job_repo.atualizar_status(job, JobStatus.RUNNING)
 
+        # RF05/RN07 — quando o Job corre, turmas+grade+qualificações já têm de
+        # existir (não há como gerar horário sem elas), logo é o primeiro ponto do
+        # pipeline com sinal completo para fundamentar disponibilidade sintética em
+        # professores reais importados via Excel (RF06/RF07 não tem caminho de
+        # importação para Disponibilidade — ver app/services/disponibilidade_geracao_service.py).
+        # Nunca sobrescreve um registo já existente (RF05 real ou geração anterior).
+        gerar_disponibilidade_sintetica(session)
+
         dados = extrair_dados(session, job.ano_letivo, job.semestre)
-        resultado = resolver_horario(
-            dados,
-            max_time_in_seconds=settings.solver_max_time_seconds,
-            num_search_workers=settings.solver_num_search_workers,
-        )
+        if settings.solver_usar_decomposicao_turno:
+            resultado = resolver_horario_por_turnos(
+                dados,
+                max_time_in_seconds_por_turno=settings.solver_max_time_seconds_por_turno,
+                num_search_workers=settings.solver_num_search_workers,
+            )
+        else:
+            resultado = resolver_horario(
+                dados,
+                max_time_in_seconds=settings.solver_max_time_seconds,
+                num_search_workers=settings.solver_num_search_workers,
+            )
 
         if resultado.status == "INFEASIBLE":
             job_repo.atualizar_status(
