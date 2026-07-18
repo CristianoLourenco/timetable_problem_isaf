@@ -11,7 +11,7 @@ from app.solver.constraints_hard import (
     add_turma_sem_dupla_disciplina,
 )
 from app.solver.constraints_soft import build_objective
-from app.solver.diagnostico import gerar_razao_pendencia
+from app.solver.diagnostico import gerar_razao_pendencia, isolar_nucleo_infeasible
 from app.solver.dto import HorarioInput, PendenciaDTO, SolverResult
 from app.solver.heuristica_inicial import gerar_hint_inicial
 from app.solver.preprocessamento import podar_dominio
@@ -114,13 +114,28 @@ def _extrair_pendencias_deficit(
 ) -> list[PendenciaDTO]:
     """Lê o valor resolvido de cada IntVar de défice (RN05 soft) e gera a
     PendenciaDTO correspondente para as que ficaram > 0, com a razão explicada
-    por app/solver/diagnostico.py (RF13)."""
-    pendencias = []
-    for (turma_id, disciplina_id), var in deficits.items():
-        tempos_em_falta = solver.Value(var)
-        if tempos_em_falta > 0:
-            pendencias.append(gerar_razao_pendencia(turma_id, disciplina_id, tempos_em_falta, dados))
-    return pendencias
+    por app/solver/diagnostico.py (RF13).
+
+    `isolar_nucleo_infeasible(dados)` é calculado UMA ÚNICA VEZ aqui (não uma vez
+    por pendência) e reaproveitado para todas — duas pendências diferentes no
+    mesmo cenário caem no mesmo núcleo de conflito (ex: turmas partilhando o
+    mesmo professor escasso), logo a bisecção seria idêntica para ambas. Sem
+    isto, N pendências sem causa barata custariam até N × orçamento_total (o
+    orçamento default de bisecção) — confirmado >15min de CPU num cenário real
+    do ISAF com 86 turmas, obrigando a terminar o processo manualmente."""
+    pendencias_com_deficit = [
+        (turma_id, disciplina_id, solver.Value(var))
+        for (turma_id, disciplina_id), var in deficits.items()
+        if solver.Value(var) > 0
+    ]
+    if not pendencias_com_deficit:
+        return []
+
+    nucleo_compartilhado = isolar_nucleo_infeasible(dados)
+    return [
+        gerar_razao_pendencia(turma_id, disciplina_id, tempos_em_falta, dados, nucleo_compartilhado)
+        for turma_id, disciplina_id, tempos_em_falta in pendencias_com_deficit
+    ]
 
 
 def _diagnosticar_tempo_esgotado(max_time_in_seconds: float) -> str:

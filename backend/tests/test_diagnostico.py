@@ -1,4 +1,6 @@
 # Implementa: RF13 (UC09) — geração de razão por pendência (app/solver/diagnostico.py)
+from unittest.mock import patch
+
 from app.solver.diagnostico import formatar_diagnostico_nucleo, gerar_razao_pendencia, isolar_nucleo_infeasible
 from app.solver.dto import (
     HorarioInput,
@@ -81,6 +83,51 @@ def test_resolver_horario_reporta_pendencia_com_professor_partilhado_de_ponta_a_
     turmas_pendentes = {p.turma_id for p in resultado.pendencias}
     assert turmas_pendentes & {1, 2}
     assert any("professor" in p.razao.lower() for p in resultado.pendencias)
+
+
+def _cenario_tres_turmas_professor_escasso() -> HorarioInput:
+    """3 turmas partilham o ÚNICO professor qualificado para a sua disciplina,
+    turno com apenas 3 tempos no total — nenhuma das 3 turmas passa pelas causas
+    baratas #1/#2 (carga de 2 <= 3 tempos do turno), então as 3 caem na causa #3
+    (bisecção). Usado para provar que isolar_nucleo_infeasible é chamado NO
+    MÁXIMO 1 vez por chamada a _extrair_pendencias_deficit, não uma vez por
+    pendência (finding da revisão final)."""
+    slots = [SlotDTO(dia_semana="segunda", turno=TURNO_TESTE, periodo=p) for p in range(1, 4)]
+    return HorarioInput(
+        turmas=[
+            TurmaDTO(id=1, numero_alunos=20, turno=TURNO_TESTE),
+            TurmaDTO(id=2, numero_alunos=20, turno=TURNO_TESTE),
+            TurmaDTO(id=3, numero_alunos=20, turno=TURNO_TESTE),
+        ],
+        professores=[ProfessorDTO(id=1, classificacao=5, vinculo_casa=True)],
+        salas=[SalaDTO(id=1, capacidade=30)],
+        slots=slots,
+        turma_disciplinas=[
+            TurmaDisciplinaDTO(turma_id=1, disciplina_id=1, carga_horaria_semanal=2),
+            TurmaDisciplinaDTO(turma_id=2, disciplina_id=1, carga_horaria_semanal=2),
+            TurmaDisciplinaDTO(turma_id=3, disciplina_id=1, carga_horaria_semanal=2),
+        ],
+        professor_disciplinas=[ProfessorDisciplinaDTO(professor_id=1, disciplina_id=1)],
+        disponibilidades=[],
+    )
+
+
+def test_isolar_nucleo_infeasible_e_chamado_no_maximo_uma_vez_por_chamada_ao_solver():
+    """Finding (revisão final): antes, gerar_razao_pendencia chamava
+    isolar_nucleo_infeasible(dados) internamente para CADA pendência sem causa
+    barata — com N pendências no mesmo cenário isso custava até N x orçamento de
+    bisecção. Agora _extrair_pendencias_deficit (solve.py) calcula o núcleo uma
+    única vez e reutiliza para todas as pendências do mesmo cenário."""
+    dados = _cenario_tres_turmas_professor_escasso()
+
+    with patch(
+        "app.solver.solve.isolar_nucleo_infeasible", wraps=isolar_nucleo_infeasible
+    ) as nucleo_mock:
+        resultado = resolver_horario(dados, max_time_in_seconds=20.0, num_search_workers=4)
+
+    assert resultado.status in ("OPTIMAL", "FEASIBLE")
+    assert len(resultado.pendencias) >= 2  # múltiplas pendências sem causa barata no mesmo cenário
+    assert nucleo_mock.call_count <= 1
 
 
 def test_gerar_razao_pendencia_disciplina_excede_tempos_do_turno():
