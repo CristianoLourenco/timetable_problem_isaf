@@ -3,6 +3,7 @@
 from collections import defaultdict
 
 from app.solver.dto import (
+    DisponibilidadeDTO,
     HorarioInput,
     ProfessorDisciplinaDTO,
     ProfessorDTO,
@@ -92,8 +93,9 @@ def test_cenario_pequeno_e_viavel_sem_conflitos():
         assert segundo.periodo - primeiro.periodo == 1
 
 
-def test_carga_impar_de_um_tempo_e_infeasible_com_diagnostico():
-    """RN06 proíbe tempo isolado — carga_horaria_semanal=1 nunca pode formar bloco >=2."""
+def test_carga_impar_de_um_tempo_ja_nao_e_infeasible_fica_pendente():
+    """RN06 continua a proibir tempo isolado, mas RN05 agora aceita défice — em vez
+    de INFEASIBLE, a disciplina fica com 1 tempo em falta reportado como pendência."""
     slots = _construir_slots(["segunda"], periodos_por_dia=4)
 
     dados = HorarioInput(
@@ -108,6 +110,10 @@ def test_carga_impar_de_um_tempo_e_infeasible_com_diagnostico():
 
     resultado = resolver_horario(dados, max_time_in_seconds=MAX_TIME_TESTE)
 
-    assert resultado.status == "INFEASIBLE"
+    assert resultado.status in ("OPTIMAL", "FEASIBLE")
     assert resultado.alocacoes == []
-    assert "carga_horaria_semanal=1" in resultado.diagnostico
+    assert len(resultado.pendencias) == 1
+    assert resultado.pendencias[0].turma_id == 1
+    assert resultado.pendencias[0].disciplina_id == 1
+    assert resultado.pendencias[0].tempos_em_falta == 1
+

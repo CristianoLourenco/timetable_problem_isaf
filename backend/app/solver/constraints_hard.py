@@ -34,11 +34,27 @@ def add_sala_sem_dupla_turma(model: cp_model.CpModel, variaveis: VariaveisModelo
                 model.Add(sum(variaveis.x[c] for c in chaves) <= 1)
 
 
-def add_carga_horaria_cumprida(model: cp_model.CpModel, variaveis: VariaveisModelo, dados: HorarioInput) -> None:
-    """RN05 — carga horária semanal da disciplina cumprida integralmente."""
+def add_carga_horaria_cumprida(
+    model: cp_model.CpModel, variaveis: VariaveisModelo, dados: HorarioInput
+) -> dict[tuple[int, int], cp_model.IntVar]:
+    """RN05 — carga horária semanal da disciplina, soft-com-défice: o solver
+    NUNCA mais fica INFEASIBLE por escassez de professor/tempo (RF13) — em vez
+    disso, os tempos que não conseguir alocar ficam registados numa IntVar de
+    défice por (turma, disciplina), fortemente penalizada no objetivo
+    (constraints_soft.build_objective) para que o solver só aceite défice
+    quando for genuinamente impossível preencher tudo. Quando `chaves` está
+    vazio (sem professor qualificado / sem sala válida, já detectado por
+    preprocessamento.podar_dominio), o défice fica automaticamente no valor
+    máximo sem envolver nenhuma variável de alocação."""
+    deficits: dict[tuple[int, int], cp_model.IntVar] = {}
     for td in dados.turma_disciplinas:
         chaves = variaveis.por_turma_disciplina.get((td.turma_id, td.disciplina_id), [])
-        model.Add(sum(variaveis.x[c] for c in chaves) == td.carga_horaria_semanal)
+        deficit = model.NewIntVar(
+            0, td.carga_horaria_semanal, f"deficit_t{td.turma_id}_d{td.disciplina_id}"
+        )
+        model.Add(sum(variaveis.x[c] for c in chaves) + deficit == td.carga_horaria_semanal)
+        deficits[(td.turma_id, td.disciplina_id)] = deficit
+    return deficits
 
 
 def add_agrupamento_em_blocos(model: cp_model.CpModel, variaveis: VariaveisModelo, dados: HorarioInput) -> None:
