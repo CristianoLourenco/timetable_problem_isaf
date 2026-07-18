@@ -13,6 +13,10 @@ class GerarHorarioRequest(SQLModel):
 
     ano_letivo: int
     semestre: Literal["1", "2"]
+    # RF13 — UNKNOWN por tempo esgotado é sempre "precisa de mais tempo", nunca
+    # impossibilidade estrutural; o Gestor escolhe entre 3 opções, nunca um valor
+    # livre (evita tempos de procura fora do que foi testado/documentado).
+    tempo_maximo_minutos: Literal[1, 5, 10] = 5
 
 
 class GerarHorarioResponse(SQLModel):
@@ -28,3 +32,4 @@ class JobRead(SQLModel):
     diagnostico: str | None
     ano_letivo: int
     semestre: str
+    tempo_maximo_minutos: int

@@ -42,16 +42,20 @@ def executar(job_id: str, *, engine=_engine_producao) -> None:
         gerar_disponibilidade_sintetica(session)
 
         dados = extrair_dados(session, job.ano_letivo, job.semestre)
+        tempo_total_segundos = job.tempo_maximo_minutos * 60
         if settings.solver_usar_decomposicao_turno:
             resultado = resolver_horario_por_turnos(
                 dados,
-                max_time_in_seconds_por_turno=settings.solver_max_time_seconds_por_turno,
+                # 3 fases (Manhã/Tarde/Noite) dividem o orçamento total escolhido pelo
+                # Gestor — mantém a mesma proporção que settings.solver_max_time_seconds_por_turno
+                # já usava (100s de 300s totais = 1/3 por fase).
+                max_time_in_seconds_por_turno=tempo_total_segundos / 3,
                 num_search_workers=settings.solver_num_search_workers,
             )
         else:
             resultado = resolver_horario(
                 dados,
-                max_time_in_seconds=settings.solver_max_time_seconds,
+                max_time_in_seconds=tempo_total_segundos,
                 num_search_workers=settings.solver_num_search_workers,
             )
 

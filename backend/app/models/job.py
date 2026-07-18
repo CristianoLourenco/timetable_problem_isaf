@@ -25,3 +25,9 @@ class Job(SQLModel, table=True):
     # saber qual Job responde por qual turma em RF11/RF12.
     ano_letivo: int
     semestre: str  # "1" | "2"
+    # RF09 — tempo máximo de procura do CP-SAT escolhido pelo Gestor por pedido
+    # (1, 5 ou 10 min; ver GerarHorarioRequest). UNKNOWN por tempo esgotado nunca
+    # mais significa "impossível" (RF13 — RN05 é soft-com-défice), só "precisa de
+    # mais tempo" — este campo dá ao Gestor a ação concreta de tentar de novo com
+    # um valor maior.
+    tempo_maximo_minutos: int = Field(default=5)
