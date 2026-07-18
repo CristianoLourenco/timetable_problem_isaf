@@ -13,6 +13,7 @@ from app.models.alocacao import Alocacao
 from app.models.job import JobStatus
 from app.repositories.alocacao_repository import AlocacaoRepository
 from app.repositories.job_repository import JobRepository
+from app.repositories.pendencia_repository import PendenciaDict, PendenciaRepository
 from app.services.disponibilidade_geracao_service import gerar_disponibilidade_sintetica
 from app.services.horario_service import extrair_dados
 from app.solver.orquestrador_turnos import resolver_horario_por_turnos
@@ -59,18 +60,15 @@ def executar(job_id: str, *, engine=_engine_producao) -> None:
                 num_search_workers=settings.solver_num_search_workers,
             )
 
-        if resultado.status == "INFEASIBLE":
-            job_repo.atualizar_status(
-                job,
-                JobStatus.INFEASIBLE,
-                diagnostico=resultado.diagnostico,
-                concluido_em=datetime.utcnow(),
-            )
-            return
-
         # turno não é gravado em Alocacao — é sempre o da Turma alocada (3FN), o
         # solver ainda usa turno internamente (a.turno) para gerar/validar as
         # variáveis, só não persiste porque seria dependência transitiva.
+        #
+        # Persistido em AMBOS os ramos (DONE e INFEASIBLE-por-timeout): desde o
+        # sub-projeto "solver nunca INFEASIBLE", um timeout parcial na decomposição
+        # por turno preserva as alocações/pendências de fases já resolvidas (ver
+        # app/solver/orquestrador_turnos.py) — nunca descartar esse trabalho já
+        # feito só porque uma fase seguinte precisou de mais tempo.
         alocacoes = [
             Alocacao(
                 job_id=job_id,
@@ -85,4 +83,27 @@ def executar(job_id: str, *, engine=_engine_producao) -> None:
             for a in resultado.alocacoes
         ]
         AlocacaoRepository(session).criar_em_lote(alocacoes)
+
+        pendencias: list[PendenciaDict] = [
+            {
+                "turma_id": p.turma_id,
+                "disciplina_id": p.disciplina_id,
+                "tempos_em_falta": p.tempos_em_falta,
+                "razao": p.razao,
+                "professores_conflitantes": p.professores_conflitantes,
+                "turmas_conflitantes": p.turmas_conflitantes,
+            }
+            for p in resultado.pendencias
+        ]
+        PendenciaRepository(session).criar_em_lote(job_id, pendencias)
+
+        if resultado.status == "INFEASIBLE":
+            job_repo.atualizar_status(
+                job,
+                JobStatus.INFEASIBLE,
+                diagnostico=resultado.diagnostico,
+                concluido_em=datetime.utcnow(),
+            )
+            return
+
         job_repo.atualizar_status(job, JobStatus.DONE, concluido_em=datetime.utcnow())

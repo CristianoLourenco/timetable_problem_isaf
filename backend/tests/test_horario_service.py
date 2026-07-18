@@ -15,6 +15,7 @@ from app.models.sala import Sala
 from app.models.turma import Turma
 from app.repositories.alocacao_repository import AlocacaoRepository
 from app.repositories.job_repository import JobRepository
+from app.repositories.pendencia_repository import PendenciaRepository
 from app.services.horario_service import extrair_dados
 from app.workers.job_runner import executar
 
@@ -179,10 +180,9 @@ def test_job_runner_respeita_tempo_maximo_escolhido_pelo_gestor():
 def test_job_runner_conclui_com_pendencia_quando_rn06_e_impossivel():
     """RF13 — RN06 proíbe carga_horaria_semanal=1 (tempo isolado), mas RN05 agora
     aceita défice (ver app/solver/constraints_hard.py): o Job termina DONE, sem
-    nenhuma alocação para esta disciplina, em vez de INFEASIBLE. A pendência em si
-    (razão, tempos em falta) não é persistida em Job ainda — isso é um sub-projeto
-    à parte (alocação manual); aqui só confirmamos que o job_runner nunca mais
-    bloqueia este cenário."""
+    nenhuma alocação para esta disciplina, em vez de INFEASIBLE. A pendência fica
+    persistida em Pendencia (RF13/sub-projeto alocação manual) para o Gestor
+    resolver depois."""
     engine = _criar_engine_teste()
 
     with Session(engine) as session:
@@ -213,6 +213,8 @@ def test_job_runner_conclui_com_pendencia_quando_rn06_e_impossivel():
         session.add(ProfessorDisciplina(professor_id=professor.id, disciplina_id=disciplina.id))
         session.commit()
 
+        turma_id = turma.id
+        disciplina_id = disciplina.id
         job_id = JobRepository(session).criar(ano_letivo=2026, semestre="1").id
 
     executar(job_id, engine=engine)
@@ -222,3 +224,9 @@ def test_job_runner_conclui_com_pendencia_quando_rn06_e_impossivel():
         assert job.status == JobStatus.DONE
         assert job.diagnostico is None
         assert AlocacaoRepository(session).listar_por_job(job_id) == []
+
+        pendencias = PendenciaRepository(session).listar_por_job(job_id)
+        assert len(pendencias) == 1
+        assert pendencias[0].turma_id == turma_id
+        assert pendencias[0].disciplina_id == disciplina_id
+        assert pendencias[0].tempos_em_falta == 1
