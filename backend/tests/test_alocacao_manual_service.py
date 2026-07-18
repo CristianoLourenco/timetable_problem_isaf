@@ -251,3 +251,48 @@ def test_criar_alocacao_manual_turma_inexistente_e_404():
             assert False, "devia ter lançado EntidadeNaoEncontradaError"
         except EntidadeNaoEncontradaError:
             pass
+
+
+def test_listar_professores_qualificados():
+    engine = _criar_engine_teste()
+    with Session(engine) as session:
+        job, turma, professor, disciplina, sala = _semear_cenario(session)
+
+        outro_professor = Professor(nome="Prof B", email="profb@isaf.co.ao", classificacao=3, vinculo_casa=False)
+        session.add(outro_professor)
+        session.commit()
+        session.refresh(outro_professor)
+        # outro_professor não tem ProfessorDisciplina para esta disciplina
+
+        service = AlocacaoManualService(session)
+        qualificados = service.listar_professores_qualificados(disciplina.id)
+
+        assert {p.id for p in qualificados} == {professor.id}
+
+
+def test_listar_slots_vagos_exclui_periodos_ja_alocados_e_so_devolve_blocos_validos():
+    engine = _criar_engine_teste()
+    with Session(engine) as session:
+        job, turma, professor, disciplina, sala = _semear_cenario(session)
+
+        service = AlocacaoManualService(session)
+        service.criar(
+            job_id=job.id,
+            turma_id=turma.id,
+            disciplina_id=disciplina.id,
+            professor_id=professor.id,
+            sala_id=sala.id,
+            dia_semana="segunda",
+            turno="manha",
+            periodos=[1, 2],
+        )
+
+        # turno "manha" tem 6 periodos (ver settings.turno_periodos) — 1 e 2 já
+        # ocupados nesta turma em "segunda"; sobra o bloco contíguo [3,4,5,6].
+        blocos = service.listar_slots_vagos(turma.id, job.id)
+
+        bloco_segunda = next(b for b in blocos if b["dia_semana"] == "segunda")
+        assert bloco_segunda["periodos"] == [3, 4, 5, 6]
+
+        # nenhum bloco de tamanho 1 é devolvido em nenhum dia
+        assert all(len(b["periodos"]) >= 2 for b in blocos)
