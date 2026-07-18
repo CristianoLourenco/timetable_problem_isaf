@@ -14,6 +14,13 @@ class ProfessorDisciplinaRepository:
         )
         return list(rows)
 
+    def listar_por_disciplina(self, disciplina_id: int) -> list[int]:
+        """RF13 — dropdown de alocação manual: só professores qualificados."""
+        rows = self.session.exec(
+            select(ProfessorDisciplina.professor_id).where(ProfessorDisciplina.disciplina_id == disciplina_id)
+        )
+        return list(rows)
+
     def listar_todas(self) -> list[ProfessorDisciplina]:
         return list(self.session.exec(select(ProfessorDisciplina)))
 

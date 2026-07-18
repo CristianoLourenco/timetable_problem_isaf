@@ -1,13 +1,19 @@
 # Implementa: RF13 (UC09) — alocação manual do Gestor, reaproveita RN01-RN06 como
 # validação imperativa (nunca CP-SAT) sobre Alocacao já persistidas.
+from collections import defaultdict
+
+from sqlmodel import Session, select
+
+from app.core.calendario import gerar_grelha_tempos
 from app.core.exceptions import EntidadeNaoEncontradaError, IntegridadeVioladaError
 from app.models.alocacao import Alocacao
+from app.models.professor import Professor
 from app.repositories.alocacao_repository import AlocacaoRepository
 from app.repositories.pendencia_repository import PendenciaRepository
 from app.repositories.professor_disciplina_repository import ProfessorDisciplinaRepository
+from app.repositories.professor_repository import ProfessorRepository
 from app.repositories.sala_repository import SalaRepository
 from app.repositories.turma_repository import TurmaRepository
-from sqlmodel import Session, select
 
 
 class AlocacaoManualService:
@@ -25,6 +31,7 @@ class AlocacaoManualService:
         self.pendencia_repo = PendenciaRepository(session)
         self.turma_repo = TurmaRepository(session)
         self.sala_repo = SalaRepository(session)
+        self.professor_repo = ProfessorRepository(session)
         self.professor_disciplina_repo = ProfessorDisciplinaRepository(session)
 
     def criar(
@@ -129,3 +136,65 @@ class AlocacaoManualService:
                 raise IntegridadeVioladaError(
                     f"RN03: sala {sala_id} já está ocupada em {dia_semana}/{turno}/{periodo}."
                 )
+
+    def listar_professores_qualificados(self, disciplina_id: int) -> list[Professor]:
+        """RF13 — dropdown 1: só professores com ProfessorDisciplina para a disciplina."""
+        ids = self.professor_disciplina_repo.listar_por_disciplina(disciplina_id)
+        return [p for p in (self.professor_repo.get(i) for i in ids) if p is not None]
+
+    def listar_slots_vagos(self, turma_id: int, job_id: str) -> list[dict]:
+        """RF13 — dropdown 2: slots do turno da turma sem Alocacao(job_id, turma_id),
+        agrupados em blocos contíguos >=2 por dia (RN06) — nunca um período isolado."""
+        turma = self.turma_repo.get(turma_id)
+        if turma is None:
+            raise EntidadeNaoEncontradaError(f"Turma {turma_id} não encontrada.")
+
+        ocupados = {
+            (a.dia_semana, a.periodo)
+            for a in self.alocacao_repo.listar_por_job_e_turma(job_id, turma_id)
+        }
+
+        periodos_por_dia: dict[str, list[int]] = defaultdict(list)
+        for slot in gerar_grelha_tempos():
+            if slot.turno == turma.turno:
+                periodos_por_dia[slot.dia_semana].append(slot.periodo)
+
+        blocos = []
+        for dia_semana, periodos in periodos_por_dia.items():
+            for periodo_inicio, tamanho in self._blocos_contiguos_livres(sorted(periodos), dia_semana, ocupados):
+                if tamanho >= 2:
+                    blocos.append(
+                        {
+                            "dia_semana": dia_semana,
+                            "turno": turma.turno,
+                            "periodos": list(range(periodo_inicio, periodo_inicio + tamanho)),
+                        }
+                    )
+        return blocos
+
+    @staticmethod
+    def _blocos_contiguos_livres(
+        periodos_do_turno: list[int], dia_semana: str, ocupados: set[tuple[str, int]]
+    ) -> list[tuple[int, int]]:
+        """Devolve (periodo_inicio, tamanho) de cada sequência maximal de períodos
+        livres e contíguos dentro dos períodos do turno, nesse dia."""
+        blocos: list[tuple[int, int]] = []
+        inicio_atual: int | None = None
+        anterior: int | None = None
+        for periodo in periodos_do_turno:
+            livre = (dia_semana, periodo) not in ocupados
+            contiguo = anterior is not None and periodo == anterior + 1
+            if livre and inicio_atual is not None and contiguo:
+                pass  # continua o bloco atual
+            elif livre:
+                if inicio_atual is not None:
+                    blocos.append((inicio_atual, anterior - inicio_atual + 1))
+                inicio_atual = periodo
+            else:
+                if inicio_atual is not None:
+                    blocos.append((inicio_atual, anterior - inicio_atual + 1))
+                inicio_atual = None
+            anterior = periodo
+        if inicio_atual is not None:
+            blocos.append((inicio_atual, anterior - inicio_atual + 1))
+        return blocos
