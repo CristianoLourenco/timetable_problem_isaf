@@ -158,8 +158,13 @@ def test_consultar_horario_turma_usa_o_job_do_ano_letivo_da_propria_turma():
         assert resposta.job_id == job_sem1_id
 
 
-def test_job_runner_marca_infeasible_com_diagnostico():
-    """RN06 proíbe carga_horaria_semanal=1 (tempo isolado) — deve terminar em INFEASIBLE, nunca em exceção."""
+def test_job_runner_conclui_com_pendencia_quando_rn06_e_impossivel():
+    """RF13 — RN06 proíbe carga_horaria_semanal=1 (tempo isolado), mas RN05 agora
+    aceita défice (ver app/solver/constraints_hard.py): o Job termina DONE, sem
+    nenhuma alocação para esta disciplina, em vez de INFEASIBLE. A pendência em si
+    (razão, tempos em falta) não é persistida em Job ainda — isso é um sub-projeto
+    à parte (alocação manual); aqui só confirmamos que o job_runner nunca mais
+    bloqueia este cenário."""
     engine = _criar_engine_teste()
 
     with Session(engine) as session:
@@ -196,6 +201,6 @@ def test_job_runner_marca_infeasible_com_diagnostico():
 
     with Session(engine) as session:
         job = JobRepository(session).obter(job_id)
-        assert job.status == JobStatus.INFEASIBLE
-        assert "carga_horaria_semanal=1" in job.diagnostico
+        assert job.status == JobStatus.DONE
+        assert job.diagnostico is None
         assert AlocacaoRepository(session).listar_por_job(job_id) == []
