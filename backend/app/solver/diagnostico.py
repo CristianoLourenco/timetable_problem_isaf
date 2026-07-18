@@ -31,7 +31,7 @@ from app.solver.constraints_hard import (
     add_sala_sem_dupla_turma,
     add_turma_sem_dupla_disciplina,
 )
-from app.solver.dto import HorarioInput
+from app.solver.dto import HorarioInput, PendenciaDTO
 
 
 def isolar_nucleo_infeasible(
@@ -119,6 +119,100 @@ def formatar_diagnostico_nucleo(nucleo: list[int], dados: HorarioInput) -> str:
     )
 
 
+def gerar_razao_pendencia(
+    turma_id: int, disciplina_id: int, tempos_em_falta: int, dados: HorarioInput
+) -> PendenciaDTO:
+    """RF13 — traduz uma pendência de défice (turma, disciplina) numa razão
+    acionável para o Gestor, verificando causas prováveis em ordem barata -> cara:
+
+      1. carga da disciplina sozinha excede os tempos do turno da turma;
+      2. soma da carga de TODAS as disciplinas da turma excede os tempos do turno;
+      3. professor(es) qualificados desta disciplina todos ocupados nos mesmos
+         tempos por outra turma (via bisecção, app/solver/isolar_nucleo_infeasible,
+         mesmo orçamento de tempo já existente);
+      4. fallback — nenhuma causa automática identificada.
+
+    Nunca lança exceção: se a bisecção (causa 3) não convergir dentro do
+    orçamento, cai no fallback genérico em vez de travar o relatório final."""
+    turmas_por_id = {turma.id: turma for turma in dados.turmas}
+    turma = turmas_por_id.get(turma_id)
+    slots_por_turno: dict[str, int] = defaultdict(int)
+    for slot in dados.slots:
+        slots_por_turno[slot.turno] += 1
+    total_tempos_turno = slots_por_turno.get(turma.turno if turma else None, 0)
+
+    carga_disciplina = next(
+        (td.carga_horaria_semanal for td in dados.turma_disciplinas if td.turma_id == turma_id and td.disciplina_id == disciplina_id),
+        tempos_em_falta,
+    )
+    if carga_disciplina > total_tempos_turno:
+        return PendenciaDTO(
+            turma_id=turma_id,
+            disciplina_id=disciplina_id,
+            tempos_em_falta=tempos_em_falta,
+            razao=(
+                f"Turma {turma_id} / disciplina {disciplina_id}: carga_horaria_semanal "
+                f"({carga_disciplina}) excede o total de tempos semanais do turno "
+                f"'{turma.turno if turma else '?'}' ({total_tempos_turno}). Reduza a carga ou "
+                "distribua a disciplina por mais de uma turma paralela."
+            ),
+        )
+
+    carga_total_turma = sum(td.carga_horaria_semanal for td in dados.turma_disciplinas if td.turma_id == turma_id)
+    if carga_total_turma > total_tempos_turno:
+        return PendenciaDTO(
+            turma_id=turma_id,
+            disciplina_id=disciplina_id,
+            tempos_em_falta=tempos_em_falta,
+            razao=(
+                f"Turma {turma_id}: a soma da carga_horaria_semanal de todas as disciplinas "
+                f"({carga_total_turma}) excede o total de tempos semanais do turno "
+                f"'{turma.turno if turma else '?'}' ({total_tempos_turno}). Aloque manualmente "
+                "escolhendo quais disciplinas priorizar, ou revise a grade curricular desta turma."
+            ),
+            turmas_conflitantes=(turma_id,),
+        )
+
+    nucleo = isolar_nucleo_infeasible(dados)
+    if nucleo and turma_id in nucleo:
+        disciplinas_por_turma: dict[int, set[int]] = defaultdict(set)
+        for td in dados.turma_disciplinas:
+            if td.turma_id in nucleo:
+                disciplinas_por_turma[td.turma_id].add(td.disciplina_id)
+        professores_por_disciplina: dict[int, set[int]] = defaultdict(set)
+        for pd in dados.professor_disciplinas:
+            professores_por_disciplina[pd.disciplina_id].add(pd.professor_id)
+        professores_desta_turma = {
+            p for d in disciplinas_por_turma.get(turma_id, set()) for p in professores_por_disciplina.get(d, set())
+        }
+        outras_turmas = tuple(t for t in nucleo if t != turma_id)
+        return PendenciaDTO(
+            turma_id=turma_id,
+            disciplina_id=disciplina_id,
+            tempos_em_falta=tempos_em_falta,
+            razao=(
+                f"Turma {turma_id} / disciplina {disciplina_id}: professor(es) qualificados "
+                f"partilhados com outra(s) turma(s) do mesmo turno ({', '.join(str(t) for t in outras_turmas)}) "
+                "não têm tempos suficientes para atender todas em simultâneo. Aloque manualmente "
+                "escolhendo outro professor qualificado (se existir) ou outro horário."
+            ),
+            professores_conflitantes=tuple(sorted(professores_desta_turma)),
+            turmas_conflitantes=outras_turmas,
+        )
+
+    return PendenciaDTO(
+        turma_id=turma_id,
+        disciplina_id=disciplina_id,
+        tempos_em_falta=tempos_em_falta,
+        razao=(
+            f"Turma {turma_id} / disciplina {disciplina_id}: {tempos_em_falta} tempo(s) não "
+            "foram alocados automaticamente — conflito combinatório não identificado pelas "
+            "verificações automáticas (ex: disponibilidade insuficiente de professores/salas "
+            "face à carga total exigida). Aloque manualmente ou revise a grade desta turma."
+        ),
+    )
+
+
 def _provado_infeasible(
     dados: HorarioInput, turma_ids: set[int], timeout: float, num_search_workers: int
 ) -> bool | None:
@@ -133,8 +227,13 @@ def _provado_infeasible(
     add_professor_sem_dupla_alocacao(model, variaveis, sub_dados)
     add_turma_sem_dupla_disciplina(model, variaveis, sub_dados)
     add_sala_sem_dupla_turma(model, variaveis, sub_dados)
-    add_carga_horaria_cumprida(model, variaveis, sub_dados)
+    deficits = add_carga_horaria_cumprida(model, variaveis, sub_dados)
     add_agrupamento_em_blocos(model, variaveis, sub_dados)
+    # add_carga_horaria_cumprida agora é soft-com-défice (RN05 relaxada, RF13) — mas
+    # este diagnóstico existe precisamente para provar INFEASIBLE genuíno, então aqui
+    # (e só aqui) travamos o défice a zero para recuperar a semântica hard original.
+    for deficit_var in deficits.values():
+        model.Add(deficit_var == 0)
 
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = timeout
