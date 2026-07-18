@@ -3,6 +3,7 @@ from app.models.curso import Curso
 from app.models.disciplina import Disciplina
 from app.models.disponibilidade import Disponibilidade
 from app.models.job import Job, JobStatus
+from app.models.pendencia import Pendencia
 from app.models.plano_curricular import PlanoCurricular
 from app.models.plano_curricular_disciplina import PlanoCurricularDisciplina
 from app.models.professor import Professor
@@ -18,6 +19,7 @@ __all__ = [
     "Disponibilidade",
     "Job",
     "JobStatus",
+    "Pendencia",
     "PerfilUtilizador",
     "PlanoCurricular",
     "PlanoCurricularDisciplina",
