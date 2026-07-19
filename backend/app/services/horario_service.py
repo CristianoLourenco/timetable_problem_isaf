@@ -194,6 +194,7 @@ class HorarioService:
                     professor_nome=professores[aloc.professor_id].nome,
                     sala_id=aloc.sala_id,
                     sala_nome=salas[aloc.sala_id].nome,
+                    alocacao_id=aloc.id,
                 )
             )
 

@@ -81,6 +81,9 @@ def test_consultar_horario_por_turma_estruturado_por_dia_e_tempo():
     assert tempos[0].disciplina_nome == "Matemática"
     assert tempos[0].professor_nome == "Prof A"
     assert tempos[0].sala_nome == "Sala 1"
+    # RF13 — a UI precisa do id da Alocacao para poder mover/remover a partir da grade.
+    assert all(isinstance(t.alocacao_id, int) for t in tempos)
+    assert len({t.alocacao_id for t in tempos}) == len(tempos)  # um id distinto por tempo
 
 
 def test_consultar_horario_por_professor_espelha_a_mesma_alocacao():
