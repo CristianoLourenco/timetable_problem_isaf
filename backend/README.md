@@ -192,3 +192,35 @@ entrada mais usados no dia-a-dia:
 - Sem Alembic — ver nota na secção 3.
 - Sem Celery/Redis — filas assíncronas usam `BackgroundTasks` do FastAPI (decisão deliberada do
   MVP, ver `../CLAUDE.md`).
+
+## 9. Deploy — opções de hosting avaliadas (ainda não decidido)
+
+Discussão de 2026-07-19, antes de qualquer conta/infra real ser criada. Frontend já hospedado
+(Firebase Hosting, só falta `flutter build web` + deploy). O backend é a peça em aberto —
+requisitos que restringem as opções:
+
+- Job de geração de horário corre **dentro do próprio processo web**, via `BackgroundTasks` (sem
+  fila/worker separado) — pode demorar minutos (ver secção 10, trabalho em curso para baixar isto
+  para <3min). Isto **exclui serverless clássico** (Vercel/Netlify Functions/Cloud Functions): o
+  timeout dessas plataformas (segundos a poucos minutos) mataria o job a meio.
+- CP-SAT usa `solver_num_search_workers=8` — precisa de CPU real disponível, não um tier
+  "hobby"/0.1 vCPU.
+- Postgres persistente, com acesso `psql`/DBeaver para debug.
+- Um único container Docker — sem Swarm/K8s.
+
+| Serviço | Prós | Contras |
+|---|---|---|
+| **Railway** (favorito) | Deploy direto do Dockerfile, Postgres gerido incluído, mínima gestão | Custo escala com uso; free tier limitado para uso contínuo |
+| **Render** | Muito parecido ao Railway, Postgres gerido | Web services no free tier "dormem" após inatividade — problemático a meio de um job longo |
+| **Fly.io** | Controlo fino de CPU/memória, bom para processos longos | Mais configuração manual (`fly.toml`) |
+| VPS genérico (Hetzner/DigitalOcean) | Controlo total, mais barato a longo prazo | Gestão manual de systemd/nginx/TLS/backups |
+
+Decisão adiada até o solver estar mais rápido — sem sentido dimensionar infraestrutura para um
+pior caso de 17min que estamos ativamente a eliminar.
+
+## 10. Privacidade dos dados de demonstração (adiado)
+
+`seed_dados_teste.py` usa nomes e emails reais extraídos dos PDFs do ISAF (para a tese). Antes de
+qualquer deploy público: trocar o domínio de email (`isaf.co.ao` → algo genérico tipo `mvp.local`)
+e, depois, os nomes reais dos professores por nomes fictícios — evita expor dados reais de
+pessoas. Afeta só este ficheiro de seed de demonstração, não o domínio de negócio do sistema.
