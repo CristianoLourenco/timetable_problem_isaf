@@ -65,6 +65,14 @@ def _construir_cenario_em_escala() -> HorarioInput:
 
 
 def test_cenario_em_escala_permanece_sem_conflitos():
+    """RN01-RN03 continuam corretas à escala. RN05 (défice) — com
+    relative_gap_limit=0.30 (ver core/config.py), o CP-SAT pode provar OPTIMAL
+    aceitando um pequeno défice residual como "suficientemente bom" antes de
+    esgotar o tempo, mesmo quando o cenário tem solução completa alcançável —
+    trade-off aceite conscientemente para reduzir o tempo de geração à escala
+    real do ISAF (ver docs/superpowers/specs/2026-07-19-... para a ideia de
+    refinamento em background que mitigaria isto no futuro). Por isso só
+    validamos aqui que o défice, se existir, é pequeno — não que é sempre zero."""
     dados = _construir_cenario_em_escala()
     resultado = resolver_horario(dados, max_time_in_seconds=MAX_TIME_TESTE)
 
@@ -72,7 +80,9 @@ def test_cenario_em_escala_permanece_sem_conflitos():
     assert resultado.diagnostico is None
 
     total_esperado = sum(td.carga_horaria_semanal for td in dados.turma_disciplinas)
-    assert len(resultado.alocacoes) == total_esperado  # RN05
+    total_deficit = total_esperado - len(resultado.alocacoes)
+    assert total_deficit >= 0
+    assert total_deficit <= 3, f"défice residual maior do que o esperado: {total_deficit}"
 
     def tempo_de(aloc):
         return (aloc.dia_semana, aloc.turno, aloc.periodo)
