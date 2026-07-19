@@ -7,6 +7,7 @@ import 'package:ghorario/features/feature_auth/ui/screens/registo_professor_scre
 import 'package:ghorario/features/feature_dashboard/ui/screens/dashboard_screen.dart';
 import 'package:ghorario/features/feature_dashboard/ui/screens/home_screen.dart';
 import 'package:ghorario/features/feature_docentes/ui/screens/docentes_screen.dart';
+import 'package:ghorario/features/feature_docentes/ui/screens/docente_detalhe_screen.dart';
 import 'package:ghorario/features/feature_turmas/ui/screens/turmas_screen.dart';
 import 'package:ghorario/features/feature_turmas/ui/screens/cursos_screen.dart';
 import 'package:ghorario/features/feature_disciplinas/ui/screens/disciplinas_screen.dart';
@@ -23,6 +24,7 @@ class AppRoutes {
   static const String recuperarPassword = '/recuperar-password';
   static const String dashboard = '/dashboard';
   static const String docentes = 'docentes';
+  static const String docenteDetalhe = ':docenteId';
   static const String turmas = 'turmas';
   static const String cursos = 'cursos';
   static const String disciplinas = 'disciplinas';
@@ -64,6 +66,14 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: AppRoutes.docentes,
               builder: (context, state) => const DocentesScreen(),
+              routes: [
+                GoRoute(
+                  path: AppRoutes.docenteDetalhe,
+                  builder: (context, state) => DocenteDetalheScreen(
+                    docenteId: state.pathParameters['docenteId']!,
+                  ),
+                ),
+              ],
             ),
             GoRoute(
               path: AppRoutes.turmas,

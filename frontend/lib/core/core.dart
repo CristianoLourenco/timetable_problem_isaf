@@ -3,6 +3,7 @@
 export 'resources/data_state.dart';
 export 'resources/network/dio/dio_client_interceptor.dart';
 export 'resources/network/i_http_methods.dart';
+export 'services/file_share_service.dart';
 export 'resources/storage/hive/provider_state_hive_box.dart';
 export 'resources/storage/i_storage_methods.dart';
 export 'resources/usecases/i_usercase.dart';

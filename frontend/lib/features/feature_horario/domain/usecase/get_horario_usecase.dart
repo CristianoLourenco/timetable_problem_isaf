@@ -1,5 +1,5 @@
 import 'package:ghorario/core/core.dart';
-import 'package:ghorario/features/feature_horario/domain/entities/horario_slot.dart';
+import 'package:ghorario/features/feature_horario/domain/entities/horario_resultado.dart';
 import 'package:ghorario/features/feature_horario/domain/repository/i_horario_repository.dart';
 
 /// Query target for [GetHorarioUseCase] — the timetable is always looked up
@@ -13,13 +13,13 @@ class GetHorarioParams {
 }
 
 /// Use case to fetch the current timetable of a turma or professor.
-class GetHorarioUseCase implements IUseCase<List<HorarioSlot>, GetHorarioParams> {
+class GetHorarioUseCase implements IUseCase<HorarioResultado, GetHorarioParams> {
   GetHorarioUseCase(this._repository);
 
   final IHorarioRepository _repository;
 
   @override
-  Future<DataState<List<HorarioSlot>>> call(GetHorarioParams params) {
+  Future<DataState<HorarioResultado>> call(GetHorarioParams params) {
     return params.isProfessor
         ? _repository.getTimetableByProfessor(params.id)
         : _repository.getTimetableByTurma(params.id);

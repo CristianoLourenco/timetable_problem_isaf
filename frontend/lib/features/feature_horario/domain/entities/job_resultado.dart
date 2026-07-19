@@ -4,8 +4,14 @@ import 'package:ghorario/features/feature_horario/domain/entities/job_status.dar
 /// the backend always fills in for INFEASIBLE (RF13/RNF03: never a bare 500,
 /// always a structured explanation of why no schedule could be generated).
 class JobResultado {
-  const JobResultado({required this.status, this.diagnostico});
+  const JobResultado({
+    required this.status,
+    this.diagnostico,
+    this.tempoMaximoMinutos,
+  });
 
   final JobStatus status;
   final String? diagnostico;
+  final int? tempoMaximoMinutos;
 }
+
