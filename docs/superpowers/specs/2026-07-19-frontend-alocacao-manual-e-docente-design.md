@@ -24,17 +24,21 @@ GET  /horarios/professor/{id}  já existe — RF12
 POST /gerar-horario            já existe — agora aceita tempo_maximo_minutos: 1|5|10 (default 5)
 ```
 
-`Job` agora tem `tempo_maximo_minutos`. `JobRead` devolve esse campo. `Alocacao`
-via `status="INFEASIBLE"` pode conter alocações/pendências parciais — nunca
-assumir que INFEASIBLE = nada a mostrar.
+`GerarHorarioRequest` **não tem** campo de tempo — o Gestor nunca escolhe
+tempo de procura. `Job.tempo_maximo_minutos` (via `JobRead`) passa a ser
+só informativo: regista a última tentativa que o `job_runner` usou (o
+backend escalona sozinho 2→5→10 min, tentando sempre o valor mais baixo
+primeiro). `Alocacao` via `status="INFEASIBLE"` pode conter alocações/
+pendências parciais — nunca assumir que INFEASIBLE = nada a mostrar.
 
-## Funcionalidade 1 — Seletor de tempo máximo no ecrã de gerar horário
+## Funcionalidade 1 — Feedback de progresso no ecrã de gerar horário
 
-No formulário/diálogo de "Gerar Horário" (`feature_horario`), adicionar um
-seletor (chips ou dropdown — 3 opções fixas, nunca campo livre): **1 min / 5
-min / 10 min**, default 5. Enviar como `tempo_maximo_minutos` no `POST
-/gerar-horario`. Texto de apoio curto: "tempos maiores encontram mais
-alocações, mas demoram mais".
+**Sem seletor de tempo** (removido do backend — nunca enviar esse campo no
+`POST /gerar-horario`). Em vez disso, o ecrã de "Gerar Horário" mostra um
+indicador de progresso simples (spinner + polling em `GET /jobs/{id}`) e,
+opcionalmente, exibe `tempo_maximo_minutos` do `JobRead` já concluído como
+informação passiva: "resolvido em {tempo_maximo_minutos} min" — nunca como
+controlo editável.
 
 ## Funcionalidade 2 — Secção de pendências pós-geração
 
