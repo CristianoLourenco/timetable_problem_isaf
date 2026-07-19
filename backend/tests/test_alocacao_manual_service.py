@@ -83,27 +83,32 @@ def test_criar_alocacao_manual_bloco_valido():
         assert len(persistidas) == 2
 
 
-def test_criar_alocacao_manual_bloco_de_um_tempo_e_rejeitado():
-    """RN06 — bloco tem de ter pelo menos 2 tempos contíguos."""
+def test_criar_alocacao_manual_aceita_um_unico_tempo():
+    """RN06 (bloco contíguo >=2) é a regra do solver AUTOMÁTICO — a alocação
+    manual (RF13) é o mecanismo de fallback para preencher exatamente o que o
+    solver não conseguiu, incluindo um tempo isolado; e o novo fluxo de
+    drag-and-drop (2026-07-19) monta a grade período a período, deixando
+    "buracos" temporários até ficar completa. Não faz sentido a via manual
+    exigir mais rigidez do que a automática já relaxou (RN05 soft-com-défice).
+    """
     engine = _criar_engine_teste()
     with Session(engine) as session:
         job, turma, professor, disciplina, sala = _semear_cenario(session)
         service = AlocacaoManualService(session)
 
-        try:
-            service.criar(
-                job_id=job.id,
-                turma_id=turma.id,
-                disciplina_id=disciplina.id,
-                professor_id=professor.id,
-                sala_id=sala.id,
-                dia_semana="segunda",
-                turno="manha",
-                periodos=[1],
-            )
-            assert False, "devia ter lançado IntegridadeVioladaError"
-        except IntegridadeVioladaError as exc:
-            assert "RN06" in str(exc) or "bloco" in str(exc).lower()
+        alocacoes = service.criar(
+            job_id=job.id,
+            turma_id=turma.id,
+            disciplina_id=disciplina.id,
+            professor_id=professor.id,
+            sala_id=sala.id,
+            dia_semana="segunda",
+            turno="manha",
+            periodos=[1],
+        )
+
+        assert len(alocacoes) == 1
+        assert alocacoes[0].periodo == 1
 
 
 def test_criar_alocacao_manual_periodos_nao_contiguos_e_rejeitado():
@@ -270,7 +275,7 @@ def test_listar_professores_qualificados():
         assert {p.id for p in qualificados} == {professor.id}
 
 
-def test_listar_slots_vagos_exclui_periodos_ja_alocados_e_so_devolve_blocos_validos():
+def test_listar_slots_vagos_exclui_periodos_ja_alocados():
     engine = _criar_engine_teste()
     with Session(engine) as session:
         job, turma, professor, disciplina, sala = _semear_cenario(session)
@@ -294,8 +299,32 @@ def test_listar_slots_vagos_exclui_periodos_ja_alocados_e_so_devolve_blocos_vali
         bloco_segunda = next(b for b in blocos if b["dia_semana"] == "segunda")
         assert bloco_segunda["periodos"] == [3, 4, 5, 6]
 
-        # nenhum bloco de tamanho 1 é devolvido em nenhum dia
-        assert all(len(b["periodos"]) >= 2 for b in blocos)
+
+def test_listar_slots_vagos_devolve_bloco_de_tamanho_1_para_o_fluxo_drag_and_drop():
+    """Fluxo de drag-and-drop (2026-07-19) monta a grade 1 slot de cada vez —
+    um "buraco" isolado entre duas alocações já feitas tem de aparecer como
+    slot vago selecionável, não ser omitido por RN06 (regra do solver
+    automático, não da alocação manual — ver AlocacaoManualService docstring)."""
+    engine = _criar_engine_teste()
+    with Session(engine) as session:
+        job, turma, professor, disciplina, sala = _semear_cenario(session)
+
+        service = AlocacaoManualService(session)
+        # Ocupa 1 e 3 em "segunda", deixando 2 isolado entre elas (turno "manha"
+        # tem 6 períodos) — o período 2 tem de aparecer como bloco de tamanho 1.
+        service.criar(
+            job_id=job.id, turma_id=turma.id, disciplina_id=disciplina.id, professor_id=professor.id,
+            sala_id=sala.id, dia_semana="segunda", turno="manha", periodos=[1],
+        )
+        service.criar(
+            job_id=job.id, turma_id=turma.id, disciplina_id=disciplina.id, professor_id=professor.id,
+            sala_id=sala.id, dia_semana="segunda", turno="manha", periodos=[3],
+        )
+
+        blocos = service.listar_slots_vagos(turma.id, job.id)
+        blocos_segunda = [b for b in blocos if b["dia_semana"] == "segunda"]
+
+        assert any(b["periodos"] == [2] for b in blocos_segunda)
 
 
 def test_remover_alocacao_recria_pendencia():
