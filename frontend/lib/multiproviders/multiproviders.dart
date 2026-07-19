@@ -98,8 +98,16 @@ import 'package:ghorario/features/feature_horario/data/datasource/remote/i_horar
 import 'package:ghorario/features/feature_horario/data/repository_impl/horario_repository_impl.dart';
 import 'package:ghorario/features/feature_horario/domain/repository/i_horario_repository.dart';
 import 'package:ghorario/features/feature_horario/domain/usecase/check_job_status_usecase.dart';
+import 'package:ghorario/features/feature_horario/domain/usecase/exportar_horario_turma_pdf_usecase.dart';
+import 'package:ghorario/features/feature_horario/domain/usecase/exportar_todos_horarios_pdf_usecase.dart';
 import 'package:ghorario/features/feature_horario/domain/usecase/gerar_horario_usecase.dart';
 import 'package:ghorario/features/feature_horario/domain/usecase/get_horario_usecase.dart';
+import 'package:ghorario/features/feature_horario/domain/usecase/get_pendencias_usecase.dart';
+import 'package:ghorario/features/feature_horario/domain/usecase/get_professores_qualificados_usecase.dart';
+import 'package:ghorario/features/feature_horario/domain/usecase/get_slots_vagos_usecase.dart';
+import 'package:ghorario/features/feature_horario/domain/usecase/criar_alocacao_manual_usecase.dart';
+import 'package:ghorario/features/feature_horario/domain/usecase/mover_alocacao_usecase.dart';
+import 'package:ghorario/features/feature_horario/domain/usecase/remover_alocacao_usecase.dart';
 import 'package:ghorario/features/feature_horario/presentation/provider/horario_provider.dart';
 
 // Feature Auth
@@ -184,6 +192,14 @@ class AppMultiProviders {
     final gerarHorarioUseCase = GerarHorarioUseCase(horarioRepository);
     final getHorarioUseCase = GetHorarioUseCase(horarioRepository);
     final checkJobStatusUseCase = CheckJobStatusUseCase(horarioRepository);
+    final exportarHorarioTurmaPdfUseCase = ExportarHorarioTurmaPdfUseCase(horarioRepository);
+    final exportarTodosHorariosPdfUseCase = ExportarTodosHorariosPdfUseCase(horarioRepository);
+    final getPendenciasUseCase = GetPendenciasUseCase(horarioRepository);
+    final getProfessoresQualificadosUseCase = GetProfessoresQualificadosUseCase(horarioRepository);
+    final getSlotsVagosUseCase = GetSlotsVagosUseCase(horarioRepository);
+    final criarAlocacaoManualUseCase = CriarAlocacaoManualUseCase(horarioRepository);
+    final moverAlocacaoUseCase = MoverAlocacaoUseCase(horarioRepository);
+    final removerAlocacaoUseCase = RemoverAlocacaoUseCase(horarioRepository);
 
     // 8. Importação Excel Dependencies (RF06/RF07/RF08)
     final IImportacaoRemote importacaoRemote = ImportacaoRemoteImpl(httpMethods);
@@ -260,6 +276,14 @@ class AppMultiProviders {
           gerarHorarioUseCase: gerarHorarioUseCase,
           getHorarioUseCase: getHorarioUseCase,
           checkJobStatusUseCase: checkJobStatusUseCase,
+          exportarHorarioTurmaPdfUseCase: exportarHorarioTurmaPdfUseCase,
+          exportarTodosHorariosPdfUseCase: exportarTodosHorariosPdfUseCase,
+          getPendenciasUseCase: getPendenciasUseCase,
+          getProfessoresQualificadosUseCase: getProfessoresQualificadosUseCase,
+          getSlotsVagosUseCase: getSlotsVagosUseCase,
+          criarAlocacaoManualUseCase: criarAlocacaoManualUseCase,
+          moverAlocacaoUseCase: moverAlocacaoUseCase,
+          removerAlocacaoUseCase: removerAlocacaoUseCase,
         ),
       ),
       ChangeNotifierProvider<DashboardProvider>(
@@ -279,6 +303,10 @@ class AppMultiProviders {
       Provider<SetGradeCurricularUseCase>.value(value: setGradeCurricularUseCase),
       Provider<GetQualificacaoUseCase>.value(value: getQualificacaoUseCase),
       Provider<SetQualificacaoUseCase>.value(value: setQualificacaoUseCase),
+      Provider<GetProfessoresQualificadosUseCase>.value(value: getProfessoresQualificadosUseCase),
+      Provider<GetSlotsVagosUseCase>.value(value: getSlotsVagosUseCase),
+      Provider<CriarAlocacaoManualUseCase>.value(value: criarAlocacaoManualUseCase),
+      Provider<RemoverAlocacaoUseCase>.value(value: removerAlocacaoUseCase),
     ];
   }
 }
