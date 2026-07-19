@@ -17,6 +17,7 @@ from app.repositories.alocacao_repository import AlocacaoRepository
 from app.repositories.job_repository import JobRepository
 from app.repositories.pendencia_repository import PendenciaRepository
 from app.services.horario_service import extrair_dados
+from app.workers import job_runner
 from app.workers.job_runner import executar
 
 
@@ -159,22 +160,55 @@ def test_consultar_horario_turma_usa_o_job_do_ano_letivo_da_propria_turma():
         assert resposta.job_id == job_sem1_id
 
 
-def test_job_runner_respeita_tempo_maximo_escolhido_pelo_gestor():
-    """RF09 — o Gestor escolhe 1/5/10 min por pedido; job_runner deve passar esse
-    valor ao solver em vez do teto fixo de settings."""
+def test_job_runner_comeca_sempre_pelo_tempo_mais_baixo_do_escalonamento():
+    """RF13 — o Gestor nunca escolhe tempo de procura; job_runner tenta sempre
+    2 min primeiro (ESCALONAMENTO_TEMPO_MINUTOS) e só escala se o solver devolver
+    UNKNOWN por tempo esgotado. Um cenário viável resolve logo na 1ª tentativa."""
     engine = _criar_engine_teste()
 
     with Session(engine) as session:
         _semear_cenario_viavel(session)
-        job = JobRepository(session).criar(ano_letivo=2026, semestre="1", tempo_maximo_minutos=1)
-        job_id = job.id
-        assert job.tempo_maximo_minutos == 1
+        job_id = JobRepository(session).criar(ano_letivo=2026, semestre="1").id
 
     executar(job_id, engine=engine)
 
     with Session(engine) as session:
         job = JobRepository(session).obter(job_id)
         assert job.status == JobStatus.DONE
+        assert job.tempo_maximo_minutos == job_runner.ESCALONAMENTO_TEMPO_MINUTOS[0]
+
+
+def test_job_runner_escala_para_o_proximo_tempo_quando_a_primeira_tentativa_da_timeout(monkeypatch):
+    """RF13 — se a 1ª tentativa (2 min) devolver UNKNOWN por tempo esgotado, o
+    job_runner tenta de novo com o próximo valor do escalonamento (5 min), sem
+    reportar INFEASIBLE ao Gestor enquanto ainda houver tempo maior por tentar."""
+    from app.solver.dto import SolverResult
+
+    engine = _criar_engine_teste()
+    with Session(engine) as session:
+        _semear_cenario_viavel(session)
+        job_id = JobRepository(session).criar(ano_letivo=2026, semestre="1").id
+
+    chamadas: list[float] = []
+    original = job_runner.resolver_horario_por_turnos
+
+    def _falha_na_primeira_tentativa(dados, max_time_in_seconds_por_turno, **kwargs):
+        chamadas.append(max_time_in_seconds_por_turno)
+        if len(chamadas) == 1:
+            return SolverResult(status="INFEASIBLE", alocacoes=[], diagnostico="tempo esgotado (simulado)")
+        return original(dados, max_time_in_seconds_por_turno=max_time_in_seconds_por_turno, **kwargs)
+
+    monkeypatch.setattr(job_runner, "resolver_horario_por_turnos", _falha_na_primeira_tentativa)
+
+    executar(job_id, engine=engine)
+
+    with Session(engine) as session:
+        job = JobRepository(session).obter(job_id)
+        assert job.status == JobStatus.DONE
+        assert job.tempo_maximo_minutos == job_runner.ESCALONAMENTO_TEMPO_MINUTOS[1]
+    assert len(chamadas) == 2
+    assert chamadas[0] == job_runner.ESCALONAMENTO_TEMPO_MINUTOS[0] * 60 / 3
+    assert chamadas[1] == job_runner.ESCALONAMENTO_TEMPO_MINUTOS[1] * 60 / 3
 
 
 def test_job_runner_conclui_com_pendencia_quando_rn06_e_impossivel():

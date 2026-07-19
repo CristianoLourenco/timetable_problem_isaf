@@ -9,14 +9,14 @@ from app.models.job import JobStatus
 
 class GerarHorarioRequest(SQLModel):
     """RF09 — âmbito da geração: um Job gera sempre o horário completo de todas as
-    turmas de um único (ano_letivo, semestre) de uma só vez."""
+    turmas de um único (ano_letivo, semestre) de uma só vez.
+
+    Não recebe tempo de procura — job_runner.py escala automaticamente por
+    2/5/10 min (RF13, ver ESCALONAMENTO_TEMPO_MINUTOS), sempre começando pelo
+    valor mais baixo, nunca uma escolha do Gestor."""
 
     ano_letivo: int
     semestre: Literal["1", "2"]
-    # RF13 — UNKNOWN por tempo esgotado é sempre "precisa de mais tempo", nunca
-    # impossibilidade estrutural; o Gestor escolhe entre 3 opções, nunca um valor
-    # livre (evita tempos de procura fora do que foi testado/documentado).
-    tempo_maximo_minutos: Literal[1, 5, 10] = 5
 
 
 class GerarHorarioResponse(SQLModel):
@@ -32,4 +32,6 @@ class JobRead(SQLModel):
     diagnostico: str | None
     ano_letivo: int
     semestre: str
+    # Última tentativa de tempo de procura usada pelo escalonamento automático
+    # (RF13) — auditoria/UI ("resolvido em 5 min"), nunca um input do Gestor.
     tempo_maximo_minutos: int
