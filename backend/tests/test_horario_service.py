@@ -1,6 +1,7 @@
 # Implementa: Fase 4 (RF09, RF10, RF13) — fluxo assíncrono ponta-a-ponta com BD em memória
 from datetime import datetime
 
+import pytest
 from sqlmodel import Session, SQLModel, create_engine, select
 
 import app.models  # noqa: F401 - garante que todos os modelos entram no metadata
@@ -264,3 +265,66 @@ def test_job_runner_conclui_com_pendencia_quando_rn06_e_impossivel():
         assert pendencias[0].turma_id == turma_id
         assert pendencias[0].disciplina_id == disciplina_id
         assert pendencias[0].tempos_em_falta == 1
+
+
+def test_consultar_job_de_ambito_devolve_none_quando_nao_existe():
+    """Gerar noutro (ano_letivo, semestre) nunca deve esconder nem confundir-se
+    com o âmbito consultado — sem nenhum Job para (2027, "2"), devolve None
+    (200 na API), nunca o Job mais recente de outro âmbito."""
+    from app.services.horario_service import HorarioService
+
+    engine = _criar_engine_teste()
+    with Session(engine) as session:
+        _semear_cenario_viavel(session)
+        JobRepository(session).criar(ano_letivo=2026, semestre="1").id
+
+    with Session(engine) as session:
+        assert HorarioService(session).consultar_job_de_ambito(2027, "2") is None
+
+
+def test_consultar_job_de_ambito_encontra_o_job_do_ambito_exato():
+    from app.services.horario_service import HorarioService
+
+    engine = _criar_engine_teste()
+    with Session(engine) as session:
+        _semear_cenario_viavel(session)
+        job_id = JobRepository(session).criar(ano_letivo=2026, semestre="1").id
+        JobRepository(session).criar(ano_letivo=2026, semestre="2")  # outro âmbito, não deve interferir
+
+    executar(job_id, engine=engine)
+
+    with Session(engine) as session:
+        job = HorarioService(session).consultar_job_de_ambito(2026, "1")
+        assert job is not None
+        assert job.id == job_id
+        assert job.status == JobStatus.DONE
+
+
+def test_limpar_horario_remove_job_alocacoes_e_pendencias():
+    from app.services.horario_service import HorarioService
+
+    engine = _criar_engine_teste()
+    with Session(engine) as session:
+        _semear_cenario_viavel(session)
+        job_id = JobRepository(session).criar(ano_letivo=2026, semestre="1").id
+
+    executar(job_id, engine=engine)
+
+    with Session(engine) as session:
+        assert len(AlocacaoRepository(session).listar_por_job(job_id)) > 0
+        HorarioService(session).limpar_horario(job_id)
+
+    with Session(engine) as session:
+        assert JobRepository(session).obter(job_id) is None
+        assert AlocacaoRepository(session).listar_por_job(job_id) == []
+        assert PendenciaRepository(session).listar_por_job(job_id) == []
+
+
+def test_limpar_horario_job_inexistente_levanta_erro():
+    from app.core.exceptions import EntidadeNaoEncontradaError
+    from app.services.horario_service import HorarioService
+
+    engine = _criar_engine_teste()
+    with Session(engine) as session:
+        with pytest.raises(EntidadeNaoEncontradaError):
+            HorarioService(session).limpar_horario("job-inexistente")

@@ -30,6 +30,13 @@ class AlocacaoRepository:
     def listar_por_job(self, job_id: str) -> list[Alocacao]:
         return list(self.session.exec(select(Alocacao).where(Alocacao.job_id == job_id)))
 
+    def remover_por_job(self, job_id: str) -> None:
+        """Botão "limpar horário" (RF09) — apaga todas as Alocacao deste Job antes
+        de o Job em si poder ser removido (FK job_id sem ondelete=CASCADE)."""
+        for alocacao in self.listar_por_job(job_id):
+            self.session.delete(alocacao)
+        self.session.commit()
+
     def listar_por_job_e_turma(self, job_id: str, turma_id: int) -> list[Alocacao]:
         """RF11 — consulta de horário por turma."""
         return list(
