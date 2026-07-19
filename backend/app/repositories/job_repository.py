@@ -10,8 +10,10 @@ class JobRepository:
     def __init__(self, session: Session):
         self.session = session
 
-    def criar(self, ano_letivo: int, semestre: str, tempo_maximo_minutos: int = 5) -> Job:
-        job = Job(ano_letivo=ano_letivo, semestre=semestre, tempo_maximo_minutos=tempo_maximo_minutos)
+    def criar(self, ano_letivo: int, semestre: str) -> Job:
+        # tempo_maximo_minutos nunca é escolhido aqui — job_runner.py define-o a
+        # cada tentativa do escalonamento automático (RF13, ESCALONAMENTO_TEMPO_MINUTOS).
+        job = Job(ano_letivo=ano_letivo, semestre=semestre)
         self.session.add(job)
         self.session.commit()
         self.session.refresh(job)

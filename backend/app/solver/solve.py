@@ -147,6 +147,7 @@ def _diagnosticar_tempo_esgotado(max_time_in_seconds: float) -> str:
     return (
         f"O solver não encontrou nenhuma solução dentro do limite de tempo "
         f"({max_time_in_seconds:.0f}s) — isto não significa que o cenário seja "
-        "impossível, apenas que precisa de mais tempo de procura. Tente novamente "
-        "escolhendo um tempo máximo maior (1, 5 ou 10 min)."
+        "impossível, apenas que precisa de mais tempo de procura. O sistema já "
+        "tentou o tempo máximo disponível (job_runner.ESCALONAMENTO_TEMPO_MINUTOS); "
+        "reduza o âmbito do pedido ou tente novamente mais tarde."
     )
