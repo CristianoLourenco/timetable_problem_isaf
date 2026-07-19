@@ -54,10 +54,17 @@ class HorarioRemoteImpl implements IHorarioRemote {
 
   Future<DataState<HorarioResponseDto>> _fetchHorario(String path) async {
     final response = await _http.get<dynamic>(path);
-    if (!response.success || response.data == null) {
+    if (!response.success) {
       return DataState<HorarioResponseDto>(
         success: false,
         error: response.error,
+        statusCode: response.statusCode,
+      );
+    }
+    if (response.data == null) {
+      return DataState<HorarioResponseDto>(
+        data: const HorarioResponseDto(jobId: '', slots: []),
+        success: true,
         statusCode: response.statusCode,
       );
     }
@@ -222,6 +229,45 @@ class HorarioRemoteImpl implements IHorarioRemote {
   @override
   Future<DataState<void>> removerAlocacao(int alocacaoId) async {
     final response = await _http.delete<dynamic>('/alocacoes/$alocacaoId');
+    if (!response.success) {
+      return DataState<void>(success: false, error: response.error, statusCode: response.statusCode);
+    }
+    return DataState<void>(success: true, statusCode: response.statusCode);
+  }
+
+  @override
+  Future<DataState<JobResultado?>> getJobByScope(int anoLetivo, String semestre) async {
+    final response = await _http.get<dynamic>('/jobs', queryParameters: {
+      'ano_letivo': anoLetivo,
+      'semestre': semestre,
+    });
+    if (!response.success) {
+      return DataState<JobResultado?>(success: false, error: response.error, statusCode: response.statusCode);
+    }
+    if (response.data == null) {
+      return DataState<JobResultado?>(data: null, success: true, statusCode: response.statusCode);
+    }
+    final dataMap = response.data as Map<String, dynamic>;
+    final jobData = dataMap['job'];
+    if (jobData == null) {
+      return DataState<JobResultado?>(data: null, success: true, statusCode: response.statusCode);
+    }
+    final jobMap = jobData as Map<String, dynamic>;
+    return DataState<JobResultado?>(
+      data: JobResultado(
+        status: JobStatus.fromApi(jobMap['status']?.toString()),
+        diagnostico: jobMap['diagnostico'] as String?,
+        tempoMaximoMinutos: jobMap['tempo_maximo_minutos'] as int?,
+        jobId: jobMap['id']?.toString(),
+      ),
+      success: true,
+      statusCode: response.statusCode,
+    );
+  }
+
+  @override
+  Future<DataState<void>> deleteJob(String jobId) async {
+    final response = await _http.delete<dynamic>('/jobs/$jobId');
     if (!response.success) {
       return DataState<void>(success: false, error: response.error, statusCode: response.statusCode);
     }

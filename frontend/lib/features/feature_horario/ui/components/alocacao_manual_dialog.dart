@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:ghorario/core/themes/app_colors.dart';
 import 'package:ghorario/features/feature_disciplinas/domain/entities/disciplina.dart';
 import 'package:ghorario/features/feature_horario/domain/entities/bloco_vago.dart';
+import 'package:ghorario/features/feature_horario/domain/entities/pendencia.dart';
 import 'package:ghorario/features/feature_horario/domain/entities/professor_qualificado.dart';
 import 'package:ghorario/features/feature_horario/domain/usecase/criar_alocacao_manual_usecase.dart';
 import 'package:ghorario/features/feature_horario/domain/usecase/get_professores_qualificados_usecase.dart';
@@ -36,22 +37,42 @@ class AlocacaoManualDialog extends StatefulWidget {
     required this.turmas,
     required this.disciplinas,
     required this.salas,
+    required this.pendencias,
     required this.getProfessoresQualificadosUseCase,
     required this.getSlotsVagosUseCase,
     required this.criarAlocacaoManualUseCase,
     this.preencherTurmaId,
     this.preencherDisciplinaId,
+    this.preencherDiaSemana,
+    this.preencherPeriodo,
+    this.preencherTurno,
     this.jobId,
   });
 
   final List<Turma> turmas;
   final List<Disciplina> disciplinas;
   final List<Sala> salas;
+  // Pendências do Job atual (turma/disciplina ainda com défice de carga
+  // horária, RN05). Quando a turma selecionada tem pendências conhecidas, a
+  // dropdown de Disciplina fica restrita a elas — evita o Gestor escolher
+  // por engano uma disciplina já totalmente preenchida. Sem pendências
+  // conhecidas para a turma (lista vazia ou nenhuma bater), mostra todas as
+  // disciplinas — permite reorganizar/complementar mesmo sem défice registado.
+  final List<Pendencia> pendencias;
   final GetProfessoresQualificadosUseCase getProfessoresQualificadosUseCase;
   final GetSlotsVagosUseCase getSlotsVagosUseCase;
   final CriarAlocacaoManualUseCase criarAlocacaoManualUseCase;
   final String? preencherTurmaId;
   final int? preencherDisciplinaId;
+  // Vindo de um clique numa célula específica da grelha (dia/período/turno já
+  // conhecidos) — quando presentes, o dropdown de bloco vago fica restrito a
+  // esse slot exato (pré-selecionado, sem escolha) em vez de listar todos os
+  // blocos livres da turma, e a Turma deixa de ser editável (já implícita no
+  // clique). Sem isto, clicar numa célula abria o mesmo diálogo genérico de
+  // sempre, ignorando qual slot o Gestor realmente clicou (bug real, 2026-07-19).
+  final String? preencherDiaSemana;
+  final int? preencherPeriodo;
+  final String? preencherTurno;
   final String? jobId;
 
   @override
@@ -73,6 +94,25 @@ class _AlocacaoManualDialogState extends State<AlocacaoManualDialog> {
   bool _submitting = false;
   String? _error;
 
+  bool get _isSlotFixo =>
+      widget.preencherDiaSemana != null && widget.preencherPeriodo != null && widget.preencherTurno != null;
+
+  /// Disciplinas da turma selecionada com défice de carga horária conhecido
+  /// (RN05, via Pendencia) — restringe a dropdown a essas quando existirem,
+  /// evitando o Gestor escolher uma disciplina já totalmente preenchida.
+  /// Sem pendências para a turma, devolve todas (fallback: reorganizar
+  /// alocações já existentes continua possível mesmo sem défice registado).
+  List<Disciplina> get _disciplinasDisponiveis {
+    if (_selectedTurma == null) return const [];
+    final turmaId = int.tryParse(_selectedTurma!.id);
+    final disciplinaIdsComDeficit = widget.pendencias
+        .where((p) => p.turmaId == turmaId)
+        .map((p) => p.disciplinaId)
+        .toSet();
+    if (disciplinaIdsComDeficit.isEmpty) return widget.disciplinas;
+    return widget.disciplinas.where((d) => disciplinaIdsComDeficit.contains(int.tryParse(d.id))).toList();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -85,6 +125,16 @@ class _AlocacaoManualDialogState extends State<AlocacaoManualDialog> {
           .where((d) => int.tryParse(d.id) == widget.preencherDisciplinaId)
           .firstOrNull;
     }
+    if (_isSlotFixo) {
+      // Clique numa célula da grelha: o bloco é sempre esse único slot, sem
+      // depender de listar/escolher entre vários blocos livres da turma.
+      _selectedBloco = BlocoVago(
+        diaSemana: widget.preencherDiaSemana!,
+        turno: widget.preencherTurno!,
+        periodos: [widget.preencherPeriodo!],
+      );
+      _blocos = [_selectedBloco!];
+    }
     if (_selectedTurma != null && _selectedDisciplina != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _loadProfessores());
     }
@@ -96,8 +146,12 @@ class _AlocacaoManualDialogState extends State<AlocacaoManualDialog> {
       _loadingProfessores = true;
       _professores = [];
       _selectedProfessor = null;
-      _blocos = [];
-      _selectedBloco = null;
+      // Slot fixo (clique numa célula da grelha) nunca é limpo aqui — só
+      // professor/sala mudam nesse fluxo, o bloco já está decidido.
+      if (!_isSlotFixo) {
+        _blocos = [];
+        _selectedBloco = null;
+      }
     });
     final result = await widget.getProfessoresQualificadosUseCase(
       GetProfessoresQualificadosParams(
@@ -115,6 +169,7 @@ class _AlocacaoManualDialogState extends State<AlocacaoManualDialog> {
   }
 
   Future<void> _loadBlocos() async {
+    if (_isSlotFixo) return; // bloco já decidido pelo clique na grelha, nunca recarregar
     final jobId = widget.jobId ?? context.read<HorarioProvider>().currentJobId;
     if (_selectedTurma == null || jobId == null) return;
     setState(() {
@@ -229,24 +284,28 @@ class _AlocacaoManualDialogState extends State<AlocacaoManualDialog> {
                           value: _selectedTurma,
                           items: widget.turmas,
                           itemLabel: (t) => t.code ?? t.name,
-                          onChanged: (t) {
-                            setState(() {
-                              _selectedTurma = t;
-                              _selectedDisciplina = null;
-                              _selectedProfessor = null;
-                              _selectedSala = null;
-                              _selectedBloco = null;
-                              _professores = [];
-                              _blocos = [];
-                            });
-                          },
+                          // Slot fixo (clique numa célula da grelha): a turma já
+                          // está implícita nesse contexto, não é editável aqui.
+                          onChanged: _isSlotFixo
+                              ? null
+                              : (t) {
+                                  setState(() {
+                                    _selectedTurma = t;
+                                    _selectedDisciplina = null;
+                                    _selectedProfessor = null;
+                                    _selectedSala = null;
+                                    _selectedBloco = null;
+                                    _professores = [];
+                                    _blocos = [];
+                                  });
+                                },
                         ),
                         const SizedBox(height: 16),
                         _buildDropdown<Disciplina>(
                           label: 'Disciplina',
                           icon: Icons.book_outlined,
                           value: _selectedDisciplina,
-                          items: _selectedTurma != null ? widget.disciplinas : [],
+                          items: _disciplinasDisponiveis,
                           itemLabel: (d) => d.name,
                           onChanged: _selectedTurma == null
                               ? null
@@ -291,8 +350,13 @@ class _AlocacaoManualDialogState extends State<AlocacaoManualDialog> {
                           },
                         ),
                         const SizedBox(height: 16),
-                        // Blocos Vagos — async loaded
-                        _buildAsyncDropdown<BlocoVago>(
+                        // Slot fixo (clique numa célula da grelha) — mostrado como
+                        // informação fixa, nunca uma escolha entre vários blocos.
+                        if (_isSlotFixo)
+                          _buildBlocoFixoInfo(_selectedBloco!)
+                        else
+                          // Blocos Vagos — async loaded
+                          _buildAsyncDropdown<BlocoVago>(
                           label: 'Bloco de Tempo Livre',
                           icon: Icons.schedule_outlined,
                           loading: _loadingBlocos,
@@ -552,6 +616,46 @@ class _AlocacaoManualDialogState extends State<AlocacaoManualDialog> {
                         onChanged: onChanged,
                       ),
                     ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBlocoFixoInfo(BlocoVago bloco) {
+    final dia = _diaSemanaLabels[bloco.diaSemana] ?? bloco.diaSemana;
+    final turno = _turnoLabels[bloco.turno] ?? bloco.turno;
+    final periodos = bloco.periodos.join(', ');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Horário',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.blackBlue,
+            fontFamily: 'Poppins',
+            letterSpacing: 0.4,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              const Icon(Icons.schedule_outlined, size: 16, color: Color(0xFF94A3B8)),
+              const SizedBox(width: 8),
+              Text(
+                '$dia — $turno (período $periodos)',
+                style: const TextStyle(fontSize: 14, color: AppColors.blackBlue, fontFamily: 'Poppins'),
+              ),
+            ],
+          ),
         ),
       ],
     );

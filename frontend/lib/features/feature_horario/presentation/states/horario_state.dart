@@ -20,6 +20,8 @@ class HorarioState {
     this.isAlocando = false,
     this.alocacaoError,
     this.tempoMaximoMinutos,
+    this.hasScopeJob,
+    this.isCheckingScope = false,
   });
 
   final List<HorarioSlot> slots;
@@ -35,6 +37,10 @@ class HorarioState {
   final bool isAlocando;
   final String? alocacaoError;
   final int? tempoMaximoMinutos;
+  // null = âmbito (ano/semestre selecionado) ainda não verificado; false =
+  // verificado e não existe Job; true = existe Job para este âmbito.
+  final bool? hasScopeJob;
+  final bool isCheckingScope;
 
   HorarioState copyWith({
     List<HorarioSlot>? slots,
@@ -50,6 +56,8 @@ class HorarioState {
     bool? isAlocando,
     Object? alocacaoError = _sentinel,
     Object? tempoMaximoMinutos = _sentinel,
+    Object? hasScopeJob = _sentinel,
+    bool? isCheckingScope,
   }) {
     return HorarioState(
       slots: slots ?? this.slots,
@@ -73,6 +81,8 @@ class HorarioState {
       tempoMaximoMinutos: tempoMaximoMinutos == _sentinel
           ? this.tempoMaximoMinutos
           : (tempoMaximoMinutos as int?),
+      hasScopeJob: hasScopeJob == _sentinel ? this.hasScopeJob : (hasScopeJob as bool?),
+      isCheckingScope: isCheckingScope ?? this.isCheckingScope,
     );
   }
 }

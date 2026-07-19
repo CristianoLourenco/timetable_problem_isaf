@@ -8,10 +8,12 @@ class JobResultado {
     required this.status,
     this.diagnostico,
     this.tempoMaximoMinutos,
+    this.jobId,
   });
 
   final JobStatus status;
   final String? diagnostico;
   final int? tempoMaximoMinutos;
+  final String? jobId;
 }
 
