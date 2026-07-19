@@ -86,12 +86,15 @@ class AlocacaoManualService:
         return alocacoes
 
     def _validar_bloco(self, periodos: list[int]) -> None:
-        """RN06 — bloco contíguo >=2 tempos, sem tempo isolado."""
+        """Contiguidade dos períodos pedidos num único chamada a `criar` — RN06
+        (bloco >=2 tempos, sem isolado) é regra do MODELO CP-SAT automático
+        (constraints_hard.add_agrupamento_em_blocos), não da alocação manual.
+        Aqui o Gestor pode alocar 1 período de cada vez (fluxo de
+        drag-and-drop, 2026-07-19) — a grade pode ficar com "buracos"
+        temporários até ficar completa; só interessa que os períodos passados
+        NUMA MESMA chamada sejam contíguos entre si, quando houver mais de um."""
         if len(periodos) < 2:
-            raise IntegridadeVioladaError(
-                "RN06: um bloco de alocação manual precisa de pelo menos 2 tempos contíguos "
-                "(nunca um tempo isolado)."
-            )
+            return
         ordenados = sorted(periodos)
         if any(ordenados[i + 1] - ordenados[i] != 1 for i in range(len(ordenados) - 1)):
             raise IntegridadeVioladaError(
@@ -146,8 +149,13 @@ class AlocacaoManualService:
         return [p for p in (self.professor_repo.get(i) for i in ids) if p is not None]
 
     def listar_slots_vagos(self, turma_id: int, job_id: str) -> list[dict]:
-        """RF13 — dropdown 2: slots do turno da turma sem Alocacao(job_id, turma_id),
-        agrupados em blocos contíguos >=2 por dia (RN06) — nunca um período isolado."""
+        """RF13 — slots do turno da turma sem Alocacao(job_id, turma_id), agrupados
+        em blocos contíguos de tamanho >=1 por dia. Blocos de tamanho 1 (um
+        período isolado entre alocações já existentes) são devolvidos de propósito
+        — o fluxo de alocação manual/drag-and-drop (2026-07-19) preenche a grade
+        período a período, não exige um bloco mínimo de 2 (essa é a regra RN06 do
+        solver automático, ver constraints_hard.add_agrupamento_em_blocos, que não
+        se aplica aqui)."""
         turma = self.turma_repo.get(turma_id)
         if turma is None:
             raise EntidadeNaoEncontradaError(f"Turma {turma_id} não encontrada.")
@@ -165,14 +173,13 @@ class AlocacaoManualService:
         blocos = []
         for dia_semana, periodos in periodos_por_dia.items():
             for periodo_inicio, tamanho in self._blocos_contiguos_livres(sorted(periodos), dia_semana, ocupados):
-                if tamanho >= 2:
-                    blocos.append(
-                        {
-                            "dia_semana": dia_semana,
-                            "turno": turma.turno,
-                            "periodos": list(range(periodo_inicio, periodo_inicio + tamanho)),
-                        }
-                    )
+                blocos.append(
+                    {
+                        "dia_semana": dia_semana,
+                        "turno": turma.turno,
+                        "periodos": list(range(periodo_inicio, periodo_inicio + tamanho)),
+                    }
+                )
         return blocos
 
     @staticmethod
