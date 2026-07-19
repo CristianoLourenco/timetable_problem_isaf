@@ -45,6 +45,13 @@ class PendenciaRepository:
             )
         )
 
+    def remover_por_job(self, job_id: str) -> None:
+        """Botão "limpar horário" (RF09) — apaga todas as Pendencia deste Job antes
+        de o Job em si poder ser removido (FK job_id sem ondelete=CASCADE)."""
+        for pendencia in self.listar_por_job(job_id):
+            self.session.delete(pendencia)
+        self.session.commit()
+
     def remover_por_turma_disciplina(self, job_id: str, turma_id: int, disciplina_id: int) -> None:
         pendencias = self.session.exec(
             select(Pendencia).where(

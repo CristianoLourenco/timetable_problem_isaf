@@ -35,3 +35,10 @@ class JobRead(SQLModel):
     # Última tentativa de tempo de procura usada pelo escalonamento automático
     # (RF13) — auditoria/UI ("resolvido em 5 min"), nunca um input do Gestor.
     tempo_maximo_minutos: int
+
+
+class JobDeAmbitoResponse(SQLModel):
+    """RF09/RF10 — consulta do Job de um (ano_letivo, semestre) exato. `job=None`
+    é o estado "ainda não gerado" (200, nunca 404 — ver services/horario_service.py)."""
+
+    job: JobRead | None
