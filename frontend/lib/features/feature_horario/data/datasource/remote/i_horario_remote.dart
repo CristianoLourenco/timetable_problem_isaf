@@ -55,5 +55,11 @@ abstract class IHorarioRemote {
 
   /// `DELETE /alocacoes/{alocacao_id}`.
   Future<DataState<void>> removerAlocacao(int alocacaoId);
+
+  /// `GET /jobs?ano_letivo={ano}&semestre={semestre}`.
+  Future<DataState<JobResultado?>> getJobByScope(int anoLetivo, String semestre);
+
+  /// `DELETE /jobs/{job_id}`.
+  Future<DataState<void>> deleteJob(String jobId);
 }
 

@@ -31,5 +31,7 @@ abstract class IHorarioRepository {
   });
   Future<DataState<AlocacaoManualResponse>> moverAlocacao(int alocacaoId, String diaSemana, int periodo);
   Future<DataState<void>> removerAlocacao(int alocacaoId);
+  Future<DataState<JobResultado?>> getJobByScope(int anoLetivo, String semestre);
+  Future<DataState<void>> deleteJob(String jobId);
 }
 
