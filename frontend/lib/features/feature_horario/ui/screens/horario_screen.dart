@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ghorario/core/services/file_share_service.dart';
 import 'package:ghorario/core/themes/app_colors.dart';
+import 'package:ghorario/core/enums/turno.dart';
 import 'package:ghorario/features/feature_disciplinas/presentation/provider/disciplinas_provider.dart';
+import 'package:ghorario/features/feature_disponibilidade/domain/entities/tempo.dart';
+import 'package:ghorario/features/feature_disponibilidade/domain/usecase/get_all_tempos_usecase.dart';
 import 'package:ghorario/features/feature_horario/domain/entities/horario_slot.dart';
 import 'package:ghorario/features/feature_horario/domain/entities/job_status.dart';
 import 'package:ghorario/features/feature_horario/domain/entities/pendencia.dart';
@@ -17,6 +20,7 @@ import 'package:ghorario/features/feature_salas/presentation/provider/salas_prov
 import 'package:ghorario/features/feature_turmas/domain/entities/turma.dart';
 import 'package:ghorario/features/feature_turmas/presentation/provider/turmas_provider.dart';
 import 'package:ghorario/features/feature_docentes/presentation/provider/docentes_provider.dart';
+import 'package:ghorario/core/enums/dia_semana.dart';
 
 const _fileShareService = FileShareService();
 
@@ -84,6 +88,13 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
   late int _anoLetivo = DateTime.now().year;
   String _semestre = '1';
 
+  // Grelha oficial de tempos (GET /slots) — independente das alocações já
+  // feitas. Sem isto, a grade era derivada dos próprios `HorarioSlot`
+  // preenchidos: uma turma/professor sem NENHUMA alocação ficava sem grade
+  // nenhuma, impedindo o Gestor de clicar em qualquer célula para fazer a
+  // alocação manual (bug real, 2026-07-19).
+  List<Tempo> _todosTempos = const <Tempo>[];
+
   @override
   void initState() {
     super.initState();
@@ -96,18 +107,47 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
       final docentesProvider = context.read<DocentesProvider>();
       final disciplinasProvider = context.read<DisciplinasProvider>();
       final salasProvider = context.read<SalasProvider>();
+      final getAllTemposUseCase = context.read<GetAllTemposUseCase>();
 
       if (turmasProvider.turmas.isEmpty) await turmasProvider.loadTurmas();
       if (docentesProvider.docentes.isEmpty) await docentesProvider.loadDocentes();
       if (disciplinasProvider.disciplinas.isEmpty) await disciplinasProvider.loadDisciplinas();
       if (salasProvider.salas.isEmpty) await salasProvider.loadSalas();
 
+      final temposResult = await getAllTemposUseCase(null);
+      if (mounted && temposResult.success && temposResult.data != null) {
+        setState(() => _todosTempos = temposResult.data!);
+      }
+
       if (!mounted) return;
       if (turmasProvider.turmas.isNotEmpty) {
         setState(() => _selectedTurmaId = turmasProvider.turmas.first.id);
-        _controller.fetchTimetableByTurma(_selectedTurmaId!);
       }
+      await _onAmbitoChanged();
     });
+  }
+
+  /// RF09/RF10 — troca de filtro ano/semestre nunca deve reutilizar o
+  /// horário/pendências do âmbito anterior: verifica primeiro se existe Job
+  /// para o novo âmbito e só então decide buscar (existe) ou limpar (não
+  /// existe) o horário da turma/professor atualmente selecionado. Bug real
+  /// (2026-07-19): antes, fetchTimetableByTurma corria ANTES de checkScope
+  /// terminar — checkScope então limpava (ou não repunha) `_slots` por cima
+  /// do resultado que tinha acabado de chegar, fazendo a grelha nunca
+  /// aparecer mesmo com um horário real já gerado.
+  Future<void> _onAmbitoChanged() async {
+    await _controller.checkScope(_anoLetivo, _semestre);
+    if (!mounted) return;
+
+    if (_controller.value.hasScopeJob != true) {
+      _controller.clearSlots();
+      return;
+    }
+    if (_filtroTipo == _FiltroTipo.turma && _selectedTurmaId != null) {
+      await _controller.fetchTimetableByTurma(_selectedTurmaId!);
+    } else if (_filtroTipo == _FiltroTipo.professor && _selectedProfessorId != null) {
+      await _controller.fetchTimetableByProfessor(_selectedProfessorId!);
+    }
   }
 
   @override
@@ -127,11 +167,31 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
     _controller.fetchTimetableByProfessor(professorId);
   }
 
-  Future<void> _openAlocacaoDialog({int? preencherTurmaId, int? preencherDisciplinaId}) async {
+  Future<void> _openAlocacaoDialog({
+    int? preencherTurmaId,
+    int? preencherDisciplinaId,
+    String? preencherDiaSemana,
+    int? preencherPeriodo,
+    String? preencherTurno,
+  }) async {
     final horarioProvider = context.read<HorarioProvider>();
     final turmas = context.read<TurmasProvider>().turmas;
     final disciplinas = context.read<DisciplinasProvider>().disciplinas;
     final salas = context.read<SalasProvider>().salas;
+
+    // Alocação manual exige um Job já existente (Alocacao.job_id é FK — ver
+    // app/services/alocacao_manual_service.py) — sem nenhum horário gerado
+    // ainda para este âmbito, não há a quem associar a alocação.
+    final jobId = horarioProvider.currentJobId ?? horarioProvider.scopeJobId;
+    if (jobId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gere o horário deste âmbito primeiro (mesmo que incompleto) para poder alocar manualmente.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
 
     final turmaIdStr = preencherTurmaId != null ? preencherTurmaId.toString() : _selectedTurmaId;
 
@@ -142,12 +202,16 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
         turmas: turmas,
         disciplinas: disciplinas,
         salas: salas,
+        pendencias: horarioProvider.pendencias,
         getProfessoresQualificadosUseCase: context.read<GetProfessoresQualificadosUseCase>(),
         getSlotsVagosUseCase: context.read<GetSlotsVagosUseCase>(),
         criarAlocacaoManualUseCase: context.read<CriarAlocacaoManualUseCase>(),
         preencherTurmaId: turmaIdStr,
         preencherDisciplinaId: preencherDisciplinaId,
-        jobId: horarioProvider.currentJobId,
+        preencherDiaSemana: preencherDiaSemana,
+        preencherPeriodo: preencherPeriodo,
+        preencherTurno: preencherTurno,
+        jobId: jobId,
       ),
     );
 
@@ -157,10 +221,79 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
       } else if (_filtroTipo == _FiltroTipo.professor && _selectedProfessorId != null) {
         _controller.fetchTimetableByProfessor(_selectedProfessorId!);
       }
-      if (horarioProvider.currentJobId != null) {
-        await horarioProvider.loadPendencias(horarioProvider.currentJobId!);
-      }
+      await horarioProvider.loadPendencias(jobId);
     }
+  }
+
+  Future<void> _moverAlocacao(HorarioSlot slot, int day, int periodo) async {
+    if (slot.alocacaoId == null) return;
+    final diaSemana = DiaSemana.values[day - 1].apiValue;
+
+    final success = await _controller.moverAlocacao(slot.alocacaoId!, diaSemana, periodo);
+    if (!mounted) return;
+
+    if (success) {
+      // O provider não reescreve `slots` sozinho após mover (o HorarioSlot
+      // movido continuaria com o dia/período antigos em memória) — sem isto
+      // o drag-and-drop parecia "não fazer nada" mesmo com o PATCH a ter
+      // sucesso no backend (bug real, 2026-07-19).
+      if (_filtroTipo == _FiltroTipo.turma && _selectedTurmaId != null) {
+        await _controller.fetchTimetableByTurma(_selectedTurmaId!);
+      } else if (_filtroTipo == _FiltroTipo.professor && _selectedProfessorId != null) {
+        await _controller.fetchTimetableByProfessor(_selectedProfessorId!);
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Alocação movida com sucesso!'), backgroundColor: AppColors.success),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_controller.value.alocacaoError ?? 'Erro ao mover alocação.'), backgroundColor: AppColors.error),
+      );
+    }
+  }
+
+  void _onEmptyCellTap(int day, int periodo, String timeLabel, String turno) {
+    final diaSemana = DiaSemana.values[day - 1].apiValue;
+    _openAlocacaoDialog(
+      preencherDiaSemana: diaSemana,
+      preencherPeriodo: periodo,
+      preencherTurno: turno,
+    );
+  }
+
+  /// Botão "Limpar Horário" (RF09) — ação destrutiva (apaga o Job do âmbito
+  /// selecionado e todas as suas Alocacao/Pendencia), por isso pede
+  /// confirmação antes de chamar o provider.
+  Future<void> _confirmarLimparHorario() async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Limpar horário?'),
+        content: Text(
+          'Isto apaga permanentemente o horário gerado para o Ano Letivo $_anoLetivo, '
+          '$_semestreº Semestre, incluindo todas as alocações e pendências. Esta ação não '
+          'pode ser desfeita.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Limpar', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+    if (confirmar != true || !mounted) return;
+
+    final sucesso = await _controller.limparHorarioDoAmbito(_anoLetivo, _semestre);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(sucesso ? 'Horário limpo com sucesso.' : 'Erro ao limpar o horário.'),
+        backgroundColor: sucesso ? AppColors.success : AppColors.error,
+      ),
+    );
   }
 
   @override
@@ -208,8 +341,14 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
                           anoLetivo: _anoLetivo,
                           semestre: _semestre,
                           enabled: !state.isGenerating,
-                          onAnoLetivoChanged: (v) => setState(() => _anoLetivo = v),
-                          onSemestreChanged: (v) => setState(() => _semestre = v),
+                          onAnoLetivoChanged: (v) {
+                            setState(() => _anoLetivo = v);
+                            _onAmbitoChanged();
+                          },
+                          onSemestreChanged: (v) {
+                            setState(() => _semestre = v);
+                            _onAmbitoChanged();
+                          },
                         ),
                         const SizedBox(width: 16),
                         ElevatedButton.icon(
@@ -239,6 +378,23 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
                                 ? '${_jobStatusLabel(state.jobStatus)}... ${_formatElapsed(state.elapsedSeconds)}'
                                 : 'Gerar Horário',
                             style: const TextStyle(fontWeight: FontWeight.w600, fontFamily: 'Poppins'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        OutlinedButton.icon(
+                          onPressed: (state.isGenerating || state.hasScopeJob != true)
+                              ? null
+                              : _confirmarLimparHorario,
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.2),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                          ),
+                          icon: const Icon(Icons.delete_outline, size: 16, color: AppColors.error),
+                          label: const Text(
+                            'Limpar Horário',
+                            style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600, fontFamily: 'Poppins'),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -379,21 +535,33 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
                                   elapsedSeconds: state.elapsedSeconds,
                                   tempoMaximoMinutos: state.tempoMaximoMinutos,
                                 )
-                              : state.isLoading
+                              : state.isLoading || state.isCheckingScope
                                   ? const Center(child: CircularProgressIndicator(color: AppColors.blackBlue))
                                   : state.errorMessage != null
                                       ? _ErrorView(message: state.errorMessage!)
-                                      : state.slots.isEmpty
-                                          ? const _EmptyView()
-                                          : _filtroTipo == _FiltroTipo.turma
-                                              ? _TurmaView(slots: state.slots)
-                                              : _ProfessorView(
-                                                  slots: state.slots,
-                                                  tabController: _tabController,
-                                                ),
+                                      // A grelha aparece SEMPRE (mesmo sem nenhuma alocação
+                                      // ainda) — desenhada a partir de _todosTempos (grelha
+                                      // oficial, GET /slots), não a partir de state.slots
+                                      // (que ficaria vazio para uma turma/professor sem
+                                      // nenhum horário gerado, impedindo a alocação manual).
+                                      : _filtroTipo == _FiltroTipo.turma
+                                          ? _TurmaView(
+                                              slots: state.slots,
+                                              todosTempos: _todosTempos,
+                                              turno: turmas.where((t) => t.id == _selectedTurmaId).firstOrNull?.period,
+                                              onMoveAlocacao: _moverAlocacao,
+                                              onEmptyCellTap: _onEmptyCellTap,
+                                            )
+                                          : _ProfessorView(
+                                              slots: state.slots,
+                                              todosTempos: _todosTempos,
+                                              tabController: _tabController,
+                                              onMoveAlocacao: _moverAlocacao,
+                                              onEmptyCellTap: _onEmptyCellTap,
+                                            ),
                         ),
                         // ── Legend ──────────────────────────────────────
-                        if (!state.isLoading && !state.isGenerating && state.slots.isNotEmpty)
+                        if (!state.isLoading && !state.isGenerating && !state.isCheckingScope && state.slots.isNotEmpty)
                           _Legenda(slots: state.slots),
                       ],
                     ),
@@ -465,7 +633,7 @@ class _PendenciasSectionState extends State<_PendenciasSection> {
           if (_expanded) ...[
             const Divider(height: 1, color: Color(0xFFFDE68A)),
             SizedBox(
-              height: 130,
+              height: 144,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -545,22 +713,51 @@ class _PendenciaCard extends StatelessWidget {
 
 /// Turma view — no tabs, shows grid for the turma's single shift (Funcionalidade 5)
 class _TurmaView extends StatelessWidget {
-  const _TurmaView({required this.slots});
+  const _TurmaView({
+    required this.slots,
+    required this.todosTempos,
+    required this.turno,
+    required this.onMoveAlocacao,
+    required this.onEmptyCellTap,
+  });
 
   final List<HorarioSlot> slots;
+  final List<Tempo> todosTempos;
+  final Turno? turno;
+  final void Function(HorarioSlot slot, int dayOfWeek, int periodo) onMoveAlocacao;
+  final void Function(int dayOfWeek, int periodo, String timeLabel, String turno) onEmptyCellTap;
 
   @override
   Widget build(BuildContext context) {
-    return _HorarioGrid(slots: slots);
+    if (turno == null) {
+      return const Center(
+        child: Text('Selecione uma turma.', style: TextStyle(color: AppColors.textSecondary, fontFamily: 'Poppins')),
+      );
+    }
+    return _HorarioGrid(
+      slots: slots,
+      tempos: todosTempos.where((t) => t.turno == turno).toList(),
+      onMoveAlocacao: onMoveAlocacao,
+      onEmptyCellTap: onEmptyCellTap,
+    );
   }
 }
 
 /// Professor view — tabs by shift (Funcionalidade 5)
 class _ProfessorView extends StatelessWidget {
-  const _ProfessorView({required this.slots, required this.tabController});
+  const _ProfessorView({
+    required this.slots,
+    required this.todosTempos,
+    required this.tabController,
+    required this.onMoveAlocacao,
+    required this.onEmptyCellTap,
+  });
 
   final List<HorarioSlot> slots;
+  final List<Tempo> todosTempos;
   final TabController tabController;
+  final void Function(HorarioSlot slot, int dayOfWeek, int periodo) onMoveAlocacao;
+  final void Function(int dayOfWeek, int periodo, String timeLabel, String turno) onEmptyCellTap;
 
   @override
   Widget build(BuildContext context) {
@@ -585,6 +782,9 @@ class _ProfessorView extends StatelessWidget {
             children: _turnos
                 .map((turno) => _HorarioGrid(
                       slots: slots.where((s) => s.turno == turno).toList(),
+                      tempos: todosTempos.where((t) => t.turno.apiValue == turno).toList(),
+                      onMoveAlocacao: onMoveAlocacao,
+                      onEmptyCellTap: onEmptyCellTap,
                     ))
                 .toList(),
           ),
@@ -595,19 +795,35 @@ class _ProfessorView extends StatelessWidget {
 }
 
 class _HorarioGrid extends StatelessWidget {
-  const _HorarioGrid({required this.slots});
+  const _HorarioGrid({
+    required this.slots,
+    required this.tempos,
+    required this.onMoveAlocacao,
+    required this.onEmptyCellTap,
+  });
 
   final List<HorarioSlot> slots;
+  // Grelha oficial de tempos deste turno (GET /slots) — fonte da estrutura
+  // da grade (linhas/colunas), independente de haver ou não alocações.
+  final List<Tempo> tempos;
+  final void Function(HorarioSlot slot, int dayOfWeek, int periodo) onMoveAlocacao;
+  final void Function(int dayOfWeek, int periodo, String timeLabel, String turno) onEmptyCellTap;
 
   @override
   Widget build(BuildContext context) {
-    if (slots.isEmpty) {
+    if (tempos.isEmpty) {
       return const Center(
-        child: Text('Nenhuma aula neste turno.', style: TextStyle(color: AppColors.textSecondary, fontFamily: 'Poppins')),
+        child: Text('Nenhum tempo letivo definido para este turno.', style: TextStyle(color: AppColors.textSecondary, fontFamily: 'Poppins')),
       );
     }
 
-    final timeSlots = slots.map((s) => s.timeSlot).toSet().toList()..sort();
+    // (periodo, timeLabel) únicos, ordenados por periodo — cada linha da
+    // grade é um período do turno (não depende de haver alocação nele).
+    final periodosOrdenados = tempos.map((t) => t.periodo).toSet().toList()..sort();
+    final timeLabelPorPeriodo = <int, String>{
+      for (final t in tempos) t.periodo: '${t.horaInicio}-${t.horaFim}',
+    };
+    final turnoApiValue = tempos.first.turno.apiValue;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -638,7 +854,7 @@ class _HorarioGrid extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          for (final timeLabel in timeSlots) ...[
+          for (final periodo in periodosOrdenados) ...[
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: SizedBox(
@@ -648,12 +864,22 @@ class _HorarioGrid extends StatelessWidget {
                     SizedBox(
                       width: 100,
                       child: Text(
-                        timeLabel,
+                        timeLabelPorPeriodo[periodo] ?? '',
                         style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontFamily: 'Poppins'),
                       ),
                     ),
                     for (int day = 1; day <= 5; day++)
-                      Expanded(child: _GridCell(dayOfWeek: day, timeLabel: timeLabel, slots: slots)),
+                      Expanded(
+                        child: _GridCell(
+                          dayOfWeek: day,
+                          periodo: periodo,
+                          timeLabel: timeLabelPorPeriodo[periodo] ?? '',
+                          turno: turnoApiValue,
+                          slots: slots,
+                          onMoveAlocacao: onMoveAlocacao,
+                          onEmptyCellTap: onEmptyCellTap,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -667,30 +893,62 @@ class _HorarioGrid extends StatelessWidget {
 }
 
 class _GridCell extends StatelessWidget {
-  const _GridCell({required this.dayOfWeek, required this.timeLabel, required this.slots});
+  const _GridCell({
+    required this.dayOfWeek,
+    required this.periodo,
+    required this.timeLabel,
+    required this.turno,
+    required this.slots,
+    required this.onMoveAlocacao,
+    required this.onEmptyCellTap,
+  });
 
   final int dayOfWeek;
+  // Vem sempre da grelha oficial de tempos (Tempo.periodo, ver _HorarioGrid),
+  // nunca derivado de `slots` — antes, uma célula vazia calculava o período
+  // com `slots.firstWhere((s) => s.timeSlot == timeLabel).periodo`, que
+  // lançava exceção sempre que não havia NENHUMA alocação nesse horário em
+  // nenhum dia (turma/professor sem horário gerado — bug real, 2026-07-19).
+  final int periodo;
   final String timeLabel;
+  final String turno;
   final List<HorarioSlot> slots;
+  final void Function(HorarioSlot slot, int dayOfWeek, int periodo) onMoveAlocacao;
+  final void Function(int dayOfWeek, int periodo, String timeLabel, String turno) onEmptyCellTap;
 
   @override
   Widget build(BuildContext context) {
-    final match = slots.where((s) => s.dayOfWeek == dayOfWeek && s.timeSlot == timeLabel).firstOrNull;
+    final match = slots.where((s) => s.dayOfWeek == dayOfWeek && s.periodo == periodo).firstOrNull;
 
     if (match == null) {
-      return Container(
-        margin: const EdgeInsets.all(3),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFF1F5F9), width: 1),
-        ),
+      return DragTarget<HorarioSlot>(
+        onWillAcceptWithDetails: (details) => true, // Valid because cell is empty
+        onAcceptWithDetails: (details) {
+          onMoveAlocacao(details.data, dayOfWeek, periodo);
+        },
+        builder: (context, candidateData, rejectedData) {
+          final isHovering = candidateData.isNotEmpty;
+          return InkWell(
+            onTap: () => onEmptyCellTap(dayOfWeek, periodo, timeLabel, turno),
+            child: Container(
+              margin: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: isHovering ? const Color(0xFFE2E8F0) : const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isHovering ? AppColors.blackBlue : const Color(0xFFF1F5F9),
+                  width: 1,
+                ),
+              ),
+            ),
+          );
+        },
       );
     }
 
     final color = _disciplinaColor(match.disciplinaId);
 
-    return Container(
+    final cellContent = Container(
       margin: const EdgeInsets.all(3),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
@@ -723,6 +981,26 @@ class _GridCell extends StatelessWidget {
           ),
         ],
       ),
+    );
+
+    return Draggable<HorarioSlot>(
+      data: match,
+      feedback: Material(
+        color: Colors.transparent,
+        child: Opacity(
+          opacity: 0.9,
+          child: SizedBox(
+            width: 140, // approximate width
+            height: 90,
+            child: cellContent,
+          ),
+        ),
+      ),
+      childWhenDragging: Opacity(
+        opacity: 0.4,
+        child: cellContent,
+      ),
+      child: cellContent,
     );
   }
 }
@@ -1040,28 +1318,3 @@ class _ErrorView extends StatelessWidget {
   }
 }
 
-class _EmptyView extends StatelessWidget {
-  const _EmptyView();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.calendar_today_outlined, size: 48, color: Color(0xFFCBD5E1)),
-          SizedBox(height: 16),
-          Text(
-            'Sem horário gerado para este filtro.',
-            style: TextStyle(color: AppColors.textSecondary, fontFamily: 'Poppins'),
-          ),
-          SizedBox(height: 6),
-          Text(
-            'Gere um horário ou selecione outro professor/turma.',
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontFamily: 'Poppins'),
-          ),
-        ],
-      ),
-    );
-  }
-}

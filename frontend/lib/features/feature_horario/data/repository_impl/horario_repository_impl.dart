@@ -133,5 +133,15 @@ class HorarioRepositoryImpl implements IHorarioRepository {
   Future<DataState<void>> removerAlocacao(int alocacaoId) {
     return remoteDatasource.removerAlocacao(alocacaoId);
   }
+
+  @override
+  Future<DataState<JobResultado?>> getJobByScope(int anoLetivo, String semestre) {
+    return remoteDatasource.getJobByScope(anoLetivo, semestre);
+  }
+
+  @override
+  Future<DataState<void>> deleteJob(String jobId) {
+    return remoteDatasource.deleteJob(jobId);
+  }
 }
 

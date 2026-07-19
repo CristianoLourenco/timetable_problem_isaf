@@ -4,10 +4,12 @@ import 'package:ghorario/features/feature_horario/domain/entities/horario_slot.d
 import 'package:ghorario/features/feature_horario/domain/entities/job_status.dart';
 import 'package:ghorario/features/feature_horario/domain/entities/pendencia.dart';
 import 'package:ghorario/features/feature_horario/domain/usecase/check_job_status_usecase.dart';
+import 'package:ghorario/features/feature_horario/domain/usecase/delete_job_usecase.dart';
 import 'package:ghorario/features/feature_horario/domain/usecase/exportar_horario_turma_pdf_usecase.dart';
 import 'package:ghorario/features/feature_horario/domain/usecase/exportar_todos_horarios_pdf_usecase.dart';
 import 'package:ghorario/features/feature_horario/domain/usecase/gerar_horario_usecase.dart';
 import 'package:ghorario/features/feature_horario/domain/usecase/get_horario_usecase.dart';
+import 'package:ghorario/features/feature_horario/domain/usecase/get_job_by_scope_usecase.dart';
 import 'package:ghorario/features/feature_horario/domain/usecase/get_pendencias_usecase.dart';
 import 'package:ghorario/features/feature_horario/domain/usecase/get_professores_qualificados_usecase.dart';
 import 'package:ghorario/features/feature_horario/domain/usecase/get_slots_vagos_usecase.dart';
@@ -31,6 +33,8 @@ class HorarioProvider extends ChangeNotifier {
     required CriarAlocacaoManualUseCase criarAlocacaoManualUseCase,
     required MoverAlocacaoUseCase moverAlocacaoUseCase,
     required RemoverAlocacaoUseCase removerAlocacaoUseCase,
+    required GetJobByScopeUseCase getJobByScopeUseCase,
+    required DeleteJobUseCase deleteJobUseCase,
   })  : _gerarHorarioUseCase = gerarHorarioUseCase,
         _getHorarioUseCase = getHorarioUseCase,
         _checkJobStatusUseCase = checkJobStatusUseCase,
@@ -39,7 +43,9 @@ class HorarioProvider extends ChangeNotifier {
         _getPendenciasUseCase = getPendenciasUseCase,
         _criarAlocacaoManualUseCase = criarAlocacaoManualUseCase,
         _moverAlocacaoUseCase = moverAlocacaoUseCase,
-        _removerAlocacaoUseCase = removerAlocacaoUseCase;
+        _removerAlocacaoUseCase = removerAlocacaoUseCase,
+        _getJobByScopeUseCase = getJobByScopeUseCase,
+        _deleteJobUseCase = deleteJobUseCase;
 
   final GerarHorarioUseCase _gerarHorarioUseCase;
   final GetHorarioUseCase _getHorarioUseCase;
@@ -50,6 +56,8 @@ class HorarioProvider extends ChangeNotifier {
   final CriarAlocacaoManualUseCase _criarAlocacaoManualUseCase;
   final MoverAlocacaoUseCase _moverAlocacaoUseCase;
   final RemoverAlocacaoUseCase _removerAlocacaoUseCase;
+  final GetJobByScopeUseCase _getJobByScopeUseCase;
+  final DeleteJobUseCase _deleteJobUseCase;
 
   static const _pollInterval = Duration(seconds: 3);
   // ~20min — o backend escalona automaticamente 2→5→10 min por tentativa
@@ -99,6 +107,92 @@ class HorarioProvider extends ChangeNotifier {
 
   int? _tempoMaximoMinutos;
   int? get tempoMaximoMinutos => _tempoMaximoMinutos;
+
+  /// True quando já se confirmou (via [checkScope]) que existe um Job
+  /// (qualquer status) para o âmbito atualmente selecionado no dropdown de
+  /// ano/semestre — distinto de "ainda não verificado" (null). Sem isto a UI
+  /// não conseguia distinguir "âmbito sem horário gerado" de "âmbito ainda
+  /// não consultado", mostrando sempre o horário da última turma consultada
+  /// independentemente do ano/semestre selecionado (bug real, 2026-07-19).
+  bool? _hasScopeJob;
+  bool? get hasScopeJob => _hasScopeJob;
+
+  String? _scopeJobId;
+  String? get scopeJobId => _scopeJobId;
+
+  bool _isCheckingScope = false;
+  bool get isCheckingScope => _isCheckingScope;
+
+  /// RF09/RF10 — verifica se existe Job (qualquer status) para [anoLetivo]/
+  /// [semestre] exatos, sem depender de qual turma está selecionada. Chamar
+  /// sempre que o filtro de ano/semestre mudar — nunca reutilizar o último
+  /// job consultado de outro âmbito.
+  ///
+  /// Responsabilidade única: só resolve `hasScopeJob`/`scopeJobId`/
+  /// `pendencias`/`tempoMaximoMinutos` — NUNCA toca em `_slots`/`_currentJobId`.
+  /// Bug real (2026-07-19): esta função limpava `_slots` sempre que
+  /// `job == null`, e nunca os repunha quando `job != null` (não sabe qual
+  /// turma/professor mostrar) — resultado, a grelha ficava sempre vazia
+  /// depois de checkScope correr, mesmo com o horário real já carregado por
+  /// fetchTimetableByTurma/Professor logo antes. Quem decide buscar (ou não)
+  /// o horário de uma turma/professor específico é sempre a tela, depois de
+  /// checkScope confirmar que hasScopeJob é true.
+  Future<void> checkScope(int anoLetivo, String semestre) async {
+    _isCheckingScope = true;
+    _hasScopeJob = null;
+    notifyListeners();
+
+    final result = await _getJobByScopeUseCase(
+      GetJobByScopeParams(anoLetivo: anoLetivo, semestre: semestre),
+    );
+
+    _isCheckingScope = false;
+    if (!result.success) {
+      _hasScopeJob = null;
+      _errorMessage = result.message;
+      notifyListeners();
+      return;
+    }
+
+    final job = result.data;
+    _hasScopeJob = job != null;
+    _scopeJobId = job?.jobId;
+    if (job != null && job.jobId != null) {
+      await loadPendencias(job.jobId!);
+      _tempoMaximoMinutos = job.tempoMaximoMinutos;
+    } else {
+      _pendencias = const <Pendencia>[];
+      _tempoMaximoMinutos = null;
+    }
+    notifyListeners();
+  }
+
+  /// Limpa o horário mostrado (usado pela tela quando checkScope confirma
+  /// `hasScopeJob == false` — não há Job para o âmbito, então nenhum
+  /// horário de uma turma/professor deste âmbito pode ainda estar visível).
+  void clearSlots() {
+    _slots = const <HorarioSlot>[];
+    _currentJobId = null;
+    notifyListeners();
+  }
+
+  /// Botão "Limpar Horário" (RF09) — apaga o Job do âmbito atualmente
+  /// verificado e todas as suas Alocacao/Pendencia. Depois de limpar,
+  /// re-verifica o âmbito (deve voltar a `hasScopeJob = false`).
+  Future<bool> limparHorarioDoAmbito(int anoLetivo, String semestre) async {
+    final jobId = _scopeJobId;
+    if (jobId == null) return false;
+
+    final result = await _deleteJobUseCase(jobId);
+    if (!result.success) {
+      _errorMessage = result.message;
+      notifyListeners();
+      return false;
+    }
+
+    await checkScope(anoLetivo, semestre);
+    return true;
+  }
 
   /// Triggers the solver run for every turma of [anoLetivo]/[semestre] (RF09
   /// — sempre o horário completo desse âmbito, de uma vez), polls

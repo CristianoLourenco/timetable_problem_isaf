@@ -38,6 +38,8 @@ class HorarioController extends ValueNotifier<HorarioState> {
       isAlocando: _provider.isAlocando,
       alocacaoError: _provider.alocacaoError,
       tempoMaximoMinutos: _provider.tempoMaximoMinutos,
+      hasScopeJob: _provider.hasScopeJob,
+      isCheckingScope: _provider.isCheckingScope,
     );
   }
 
@@ -56,11 +58,30 @@ class HorarioController extends ValueNotifier<HorarioState> {
       isAlocando: _provider.isAlocando,
       alocacaoError: _provider.alocacaoError,
       tempoMaximoMinutos: _provider.tempoMaximoMinutos,
+      hasScopeJob: _provider.hasScopeJob,
+      isCheckingScope: _provider.isCheckingScope,
     );
   }
 
   Future<void> generateTimetable(String turmaId, {required int anoLetivo, required String semestre}) async {
     await _provider.generateTimetable(turmaId, anoLetivo: anoLetivo, semestre: semestre);
+  }
+
+  /// RF09/RF10 — verifica se existe Job para o âmbito (ano/semestre) exato
+  /// selecionado no filtro, independentemente de qual turma está selecionada.
+  Future<void> checkScope(int anoLetivo, String semestre) async {
+    await _provider.checkScope(anoLetivo, semestre);
+  }
+
+  /// Botão "Limpar Horário" — apaga o Job do âmbito atual.
+  Future<bool> limparHorarioDoAmbito(int anoLetivo, String semestre) {
+    return _provider.limparHorarioDoAmbito(anoLetivo, semestre);
+  }
+
+  /// Limpa o horário mostrado — usado quando checkScope confirma que não há
+  /// Job para o âmbito atualmente selecionado.
+  void clearSlots() {
+    _provider.clearSlots();
   }
 
   Future<void> fetchTimetableByTurma(String turmaId) async {

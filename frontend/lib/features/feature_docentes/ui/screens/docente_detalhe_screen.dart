@@ -15,6 +15,9 @@ import 'package:ghorario/features/feature_horario/presentation/states/horario_st
 import 'package:ghorario/features/feature_horario/ui/components/alocacao_manual_dialog.dart';
 import 'package:ghorario/features/feature_salas/presentation/provider/salas_provider.dart';
 import 'package:ghorario/features/feature_turmas/presentation/provider/turmas_provider.dart';
+import 'package:ghorario/features/feature_docentes/ui/components/docentes_screen_components/qualificacao_dialog.dart';
+import 'package:ghorario/features/feature_docentes/domain/usecase/get_qualificacao_usecase.dart';
+import 'package:ghorario/features/feature_docentes/domain/usecase/set_qualificacao_usecase.dart';
 
 
 const List<String> _weekdayLabels = [
@@ -98,6 +101,28 @@ class _DocenteDetalheScreenState extends State<DocenteDetalheScreen>
     return '?';
   }
 
+  Future<void> _showQualificacaoDialog(Docente docente) async {
+    final professorId = int.tryParse(docente.id);
+    if (professorId == null) return;
+
+    final disciplinasProvider = context.read<DisciplinasProvider>();
+    if (disciplinasProvider.disciplinas.isEmpty) {
+      await disciplinasProvider.loadDisciplinas();
+    }
+    if (!mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) => QualificacaoDialog(
+        professorId: professorId,
+        professorNome: docente.name,
+        disciplinas: disciplinasProvider.disciplinas,
+        getQualificacaoUseCase: context.read<GetQualificacaoUseCase>(),
+        setQualificacaoUseCase: context.read<SetQualificacaoUseCase>(),
+      ),
+    );
+  }
+
   Future<void> _openAlocacaoDialog({int? preencherDisciplinaId}) async {
     final horarioProvider = context.read<HorarioProvider>();
     final disciplinas = context.read<DisciplinasProvider>().disciplinas;
@@ -111,6 +136,7 @@ class _DocenteDetalheScreenState extends State<DocenteDetalheScreen>
         turmas: turmas,
         disciplinas: disciplinas,
         salas: salas,
+        pendencias: horarioProvider.pendencias,
         getProfessoresQualificadosUseCase: context.read<GetProfessoresQualificadosUseCase>(),
         getSlotsVagosUseCase: context.read<GetSlotsVagosUseCase>(),
         criarAlocacaoManualUseCase: context.read<CriarAlocacaoManualUseCase>(),
@@ -246,6 +272,22 @@ class _DocenteDetalheScreenState extends State<DocenteDetalheScreen>
                               style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, fontFamily: 'Poppins'),
                             ),
                         ],
+                      ),
+                      const Spacer(),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: AppColors.blackBlue,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.2),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        onPressed: () => _showQualificacaoDialog(docente),
+                        icon: const Icon(Icons.school_outlined, size: 18),
+                        label: const Text('Qualificações', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600)),
                       ),
                     ] else
                       const Text(
@@ -525,13 +567,14 @@ class _DocenteLegenda extends StatelessWidget {
 
   final List<HorarioSlot> slots;
 
-  @override
   Widget build(BuildContext context) {
-    // Collect unique disciplina×turma combinations
-    final Map<String, ({int disciplinaId, String disciplinaName, String turmaName})> entries = {};
+    // Group by disciplinaId, accumulating set of turmas
+    final Map<int, ({String disciplinaName, Set<String> turmas})> grouped = {};
     for (final slot in slots) {
-      final key = '${slot.disciplinaId}_${slot.turmaName}';
-      entries[key] = (disciplinaId: slot.disciplinaId, disciplinaName: slot.disciplinaName, turmaName: slot.turmaName);
+      if (!grouped.containsKey(slot.disciplinaId)) {
+        grouped[slot.disciplinaId] = (disciplinaName: slot.disciplinaName, turmas: <String>{});
+      }
+      grouped[slot.disciplinaId]!.turmas.add(slot.turmaName);
     }
 
     return Container(
@@ -556,29 +599,59 @@ class _DocenteLegenda extends StatelessWidget {
           const SizedBox(height: 10),
           Wrap(
             spacing: 12,
-            runSpacing: 8,
-            children: entries.values.map((entry) {
-              final color = _disciplinaColor(entry.disciplinaId);
+            runSpacing: 12,
+            children: grouped.entries.map((entry) {
+              final color = _disciplinaColor(entry.key);
+              final disciplinaName = entry.value.disciplinaName;
+              final turmas = entry.value.turmas.toList()..sort();
+
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.08),
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: color.withOpacity(0.3), width: 1),
+                  boxShadow: const [
+                    BoxShadow(color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 2)),
+                  ],
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          disciplinaName,
+                          style: TextStyle(fontSize: 12, color: AppColors.blackBlue, fontWeight: FontWeight.w600, fontFamily: 'Poppins'),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${entry.disciplinaName} · ${entry.turmaName}',
-                      style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600, fontFamily: 'Poppins'),
-                    ),
+                    if (turmas.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: turmas.map((t) => Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            t,
+                            style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w500, fontFamily: 'Poppins'),
+                          ),
+                        )).toList(),
+                      ),
+                    ],
                   ],
                 ),
               );
