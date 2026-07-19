@@ -29,8 +29,12 @@ def _criar_engine_teste():
 
 
 def _semear_e_gerar(engine, n_turmas: int = 2) -> tuple[str, list[int]]:
-    """Semeia n_turmas viáveis (mesma disciplina/professor/sala) e corre o job_runner
-    — devolve (job_id, [turma_ids])."""
+    """Semeia n_turmas viáveis (mesma disciplina/professor, uma sala por turma)
+    e corre o job_runner — devolve (job_id, [turma_ids]). Uma sala por turma:
+    cada turma fica presa a uma única sala pelo turno inteiro (ver
+    builder.atribuir_salas_por_turma_turno, 2026-07-19) — n_turmas turmas do
+    mesmo turno precisam de n_turmas salas para não gerar défice estrutural
+    por escassez de sala."""
     with Session(engine) as session:
         curso = Curso(codigo="INF", nome="Informática")
         session.add(curso)
@@ -44,12 +48,11 @@ def _semear_e_gerar(engine, n_turmas: int = 2) -> tuple[str, list[int]]:
 
         professor = Professor(nome="Prof A", email="profa@isaf.co.ao", classificacao=5, vinculo_casa=True)
         disciplina = Disciplina(codigo="MAT", nome="Matemática")
-        sala = Sala(codigo="S1", nome="Sala 1", capacidade=30)
-        session.add_all([professor, disciplina, sala])
+        salas = [Sala(codigo=f"S{i + 1}", nome=f"Sala {i + 1}", capacidade=30) for i in range(n_turmas)]
+        session.add_all([professor, disciplina, *salas])
         session.commit()
         session.refresh(professor)
         session.refresh(disciplina)
-        session.refresh(sala)
         session.add(ProfessorDisciplina(professor_id=professor.id, disciplina_id=disciplina.id))
         # Grade curricular é partilhada por todas as turmas do mesmo plano — um só
         # registo, não um por turma (ver docs/04_04_analise_desenvolvimento.md secção 4.2.3).

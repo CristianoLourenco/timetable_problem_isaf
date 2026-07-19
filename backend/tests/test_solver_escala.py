@@ -28,12 +28,16 @@ def _construir_slots_reais() -> list[SlotDTO]:
 
 def _construir_cenario_em_escala() -> HorarioInput:
     """12 turmas x 2 disciplinas, 8 professores (6 especialistas + 2 flutuantes),
-    5 salas, grelha real de um turno — uma ordem de grandeza acima do cenário mínimo da Fase 3."""
+    12 salas (1 por turma — ver builder.atribuir_salas_por_turma_turno, 2026-07-19:
+    cada turma fica presa a uma única sala pelo turno inteiro, logo N turmas no
+    mesmo turno exigem N salas para não gerar défice estrutural por escassez de
+    sala, distinto do défice de RN05/gap que este teste efetivamente mede),
+    grelha real de um turno — uma ordem de grandeza acima do cenário mínimo da Fase 3."""
     slots = _construir_slots_reais()
 
     turmas = [TurmaDTO(id=i, numero_alunos=30, turno=TURNO_TESTE) for i in range(1, N_TURMAS + 1)]
     professores = [ProfessorDTO(id=p, classificacao=(p % 5) + 1, vinculo_casa=(p % 2 == 0)) for p in range(1, 9)]
-    salas = [SalaDTO(id=s, capacidade=40) for s in range(1, 6)]
+    salas = [SalaDTO(id=s, capacidade=40) for s in range(1, N_TURMAS + 1)]
 
     # professores 1-6 são especialistas (1 disciplina cada); 7 e 8 são flutuantes,
     # qualificados para mais que uma disciplina — aumenta a concorrência sem tornar
