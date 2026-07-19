@@ -33,6 +33,18 @@ from app.solver.constraints_hard import (
 )
 from app.solver.dto import HorarioInput, PendenciaDTO
 
+# Sentinela distinta de `None` para `gerar_razao_pendencia(nucleo_compartilhado=...)` —
+# `None` é um valor LEGÍTIMO de retorno de isolar_nucleo_infeasible (bisecção não
+# convergiu, ver docstring), por isso não pode também significar "não fornecido pelo
+# chamador". Bug real medido à escala do ISAF (2026-07-19, 86 turmas): quando o
+# cenário tem défice mas não é genuinamente INFEASIBLE (comum agora que RN05 é
+# soft-com-défice), a chamada única em _extrair_pendencias_deficit devolve None —
+# e `nucleo_compartilhado if nucleo_compartilhado is not None else isolar_nucleo_infeasible(dados)`
+# tratava esse None como "não fornecido", recalculando a bisecção (5-9s) para CADA
+# uma das pendências do cenário — 56 pendências mediram 419s só nisto, 73% do
+# tempo total do teste ponta-a-ponta (572s).
+_NAO_FORNECIDO = object()
+
 
 def isolar_nucleo_infeasible(
     dados: HorarioInput,
@@ -124,7 +136,7 @@ def gerar_razao_pendencia(
     disciplina_id: int,
     tempos_em_falta: int,
     dados: HorarioInput,
-    nucleo_compartilhado: list[int] | None = None,
+    nucleo_compartilhado: list[int] | None = _NAO_FORNECIDO,
 ) -> PendenciaDTO:
     """RF13 — traduz uma pendência de défice (turma, disciplina) numa razão
     acionável para o Gestor, verificando causas prováveis em ordem barata -> cara:
@@ -141,9 +153,11 @@ def gerar_razao_pendencia(
     seria idêntica para todas — calcular uma vez por chamada e passar aqui em vez
     de repetir isolar_nucleo_infeasible(dados) por pendência evita um custo de até
     N × orçamento_total (confirmado >15min de CPU num cenário real do ISAF com 86
-    turmas). Se omitido (None), mantém o comportamento antigo — chama
-    isolar_nucleo_infeasible(dados) aqui mesmo, para retrocompatibilidade de quem
-    invoca esta função diretamente (ex: testes).
+    turmas). Se omitido (sentinela `_NAO_FORNECIDO`), mantém o comportamento antigo
+    — chama isolar_nucleo_infeasible(dados) aqui mesmo, para retrocompatibilidade de
+    quem invoca esta função diretamente (ex: testes). Passar `None` explicitamente
+    (o valor real de "bisecção não convergiu") NUNCA deve disparar o recálculo —
+    ver `_NAO_FORNECIDO` no topo do módulo para o bug real que isto corrige.
 
     Nunca lança exceção: se a bisecção (causa 3) não convergir dentro do
     orçamento, cai no fallback genérico em vez de travar o relatório final."""
@@ -186,7 +200,7 @@ def gerar_razao_pendencia(
             turmas_conflitantes=(turma_id,),
         )
 
-    nucleo = nucleo_compartilhado if nucleo_compartilhado is not None else isolar_nucleo_infeasible(dados)
+    nucleo = isolar_nucleo_infeasible(dados) if nucleo_compartilhado is _NAO_FORNECIDO else nucleo_compartilhado
     if nucleo and turma_id in nucleo:
         disciplinas_por_turma: dict[int, set[int]] = defaultdict(set)
         for td in dados.turma_disciplinas:

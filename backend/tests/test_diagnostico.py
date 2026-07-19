@@ -130,6 +130,50 @@ def test_isolar_nucleo_infeasible_e_chamado_no_maximo_uma_vez_por_chamada_ao_sol
     assert nucleo_mock.call_count <= 1
 
 
+def _cenario_multiplas_pendencias_sem_nucleo_infeasible() -> HorarioInput:
+    """4 turmas, cada uma com défice de RN05 (soft) mas SEM nenhum conflito
+    estrutural provável — RN01-RN06 são satisfazíveis para cada uma sozinha,
+    o défice só existe porque relative_gap_limit aceitou uma solução "boa o
+    suficiente" antes de preencher tudo (ver core/config.py). Reproduz o caso
+    real medido à escala do ISAF (2026-07-19, 86 turmas): isolar_nucleo_infeasible
+    devolve None (não confirma INFEASIBLE de nenhum subconjunto), e o bug
+    corrigido aqui era tratar esse None partilhado como "não fornecido",
+    recalculando a bisecção cara (5-9s) para CADA uma das pendências."""
+    slots = [SlotDTO(dia_semana="segunda", turno=TURNO_TESTE, periodo=p) for p in range(1, 6)]
+    turmas = [TurmaDTO(id=i, numero_alunos=20, turno=TURNO_TESTE) for i in range(1, 5)]
+    professores = [ProfessorDTO(id=i, classificacao=5, vinculo_casa=True) for i in range(1, 5)]
+    return HorarioInput(
+        turmas=turmas,
+        professores=professores,
+        salas=[SalaDTO(id=1, capacidade=30)],
+        slots=slots,
+        turma_disciplinas=[
+            TurmaDisciplinaDTO(turma_id=i, disciplina_id=i, carga_horaria_semanal=2) for i in range(1, 5)
+        ],
+        professor_disciplinas=[ProfessorDisciplinaDTO(professor_id=i, disciplina_id=i) for i in range(1, 5)],
+        disponibilidades=[],
+    )
+
+
+def test_isolar_nucleo_infeasible_e_chamado_no_maximo_uma_vez_mesmo_quando_devolve_none():
+    """Bug real (2026-07-19, 86 turmas): `nucleo_compartilhado if nucleo_compartilhado
+    is not None else isolar_nucleo_infeasible(dados)` tratava o retorno legítimo
+    `None` (bisecção não confirma nenhum núcleo INFEASIBLE — comum agora que RN05 é
+    soft-com-défice) como "não fornecido", recalculando isolar_nucleo_infeasible
+    (5-9s cada) para cada pendência sem causa barata. Com 56 pendências isto mediu
+    419s de 572s totais (73%) num teste ponta-a-ponta real. Corrigido com o
+    sentinela `_NAO_FORNECIDO` — `None` explícito nunca mais dispara o recálculo."""
+    dados = _cenario_multiplas_pendencias_sem_nucleo_infeasible()
+
+    with patch(
+        "app.solver.solve.isolar_nucleo_infeasible", wraps=isolar_nucleo_infeasible
+    ) as nucleo_mock:
+        resultado = resolver_horario(dados, max_time_in_seconds=10.0, num_search_workers=4)
+
+    assert resultado.status in ("OPTIMAL", "FEASIBLE")
+    assert nucleo_mock.call_count <= 1
+
+
 def test_gerar_razao_pendencia_disciplina_excede_tempos_do_turno():
     """Causa barata #3: a própria carga da disciplina excede o total de tempos do
     turno da turma — deve ser identificada sem precisar da bisecção cara."""
