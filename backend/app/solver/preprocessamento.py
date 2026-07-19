@@ -18,6 +18,7 @@
 # de preencher automaticamente.
 from collections import defaultdict
 
+from app.solver.builder import atribuir_salas_por_turma_turno
 from app.solver.dto import HorarioInput, PendenciaDTO
 
 
@@ -25,8 +26,10 @@ def podar_dominio(dados: HorarioInput) -> tuple[HorarioInput, list[PendenciaDTO]
     """Remove professores/qualificações/disponibilidades irrelevantes ao âmbito de
     `dados` e devolve, no mesmo varrimento, as pendências estruturais óbvias
     (disciplina sem professor qualificado, turma sem sala com capacidade
-    suficiente) — cada uma já com défice = carga_horaria_semanal inteira, pronta
-    para entrar na lista final de SolverResult.pendencias sem acionar o CP-SAT."""
+    suficiente, ou turno com menos salas do que turmas — ver
+    atribuir_salas_por_turma_turno) — cada uma já com défice = carga_horaria_semanal
+    inteira, pronta para entrar na lista final de SolverResult.pendencias sem
+    acionar o CP-SAT."""
     disciplinas_em_uso = {td.disciplina_id for td in dados.turma_disciplinas}
 
     professores_por_disciplina: dict[int, list[int]] = defaultdict(list)
@@ -40,6 +43,12 @@ def podar_dominio(dados: HorarioInput) -> tuple[HorarioInput, list[PendenciaDTO]
 
     turmas_por_id = {turma.id: turma for turma in dados.turmas}
     capacidade_maxima = max((sala.capacidade for sala in dados.salas), default=0)
+    # Turma+turno decidida (ou impossível) por 1-sala-fixa-por-turno — ver
+    # app/solver/builder.py::atribuir_salas_por_turma_turno para a decisão de
+    # modelagem (2026-07-19). Uma turma ausente daqui não tem NENHUMA sala
+    # disponível no seu turno (escassez real, nunca uma turma "grande demais"
+    # — esse caso já é pego pela checagem de capacidade_maxima abaixo).
+    sala_por_turma_turno = atribuir_salas_por_turma_turno(dados)
 
     pendencias: list[PendenciaDTO] = []
     for td in dados.turma_disciplinas:
@@ -70,6 +79,23 @@ def podar_dominio(dados: HorarioInput) -> tuple[HorarioInput, list[PendenciaDTO]
                         f"Turma {td.turma_id}: {turma.numero_alunos} alunos excede a capacidade "
                         f"máxima disponível entre as salas ({capacidade_maxima}). Cadastre uma sala "
                         "com capacidade suficiente, ou aloque manualmente aceitando a lotação atual."
+                    ),
+                )
+            )
+            continue
+
+        if turma is not None and (turma.id, turma.turno) not in sala_por_turma_turno:
+            pendencias.append(
+                PendenciaDTO(
+                    turma_id=td.turma_id,
+                    disciplina_id=td.disciplina_id,
+                    tempos_em_falta=td.carga_horaria_semanal,
+                    razao=(
+                        f"Turma {td.turma_id}: nenhuma sala disponível no turno '{turma.turno}' — "
+                        "cada turma ocupa uma única sala durante todo o turno (ver decisão de "
+                        "modelagem), e as salas com capacidade suficiente já estão todas atribuídas "
+                        "a outras turmas deste turno. Cadastre mais uma sala, ou aloque manualmente "
+                        "partilhando uma sala já em uso."
                     ),
                 )
             )

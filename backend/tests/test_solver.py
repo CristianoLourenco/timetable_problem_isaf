@@ -23,7 +23,11 @@ def _construir_slots(dias: list[str], periodos_por_dia: int, turno: str = TURNO_
 
 
 def _cenario_viavel() -> HorarioInput:
-    """3 turmas, 3 disciplinas, 2 professores, 1 sala — carga par (2) em cada disciplina."""
+    """3 turmas, 3 disciplinas, 2 professores, 3 salas — carga par (2) em cada
+    disciplina. Uma sala por turma (ver builder.atribuir_salas_por_turma_turno,
+    2026-07-19: cada turma fica presa a uma única sala pelo turno inteiro) —
+    3 turmas no mesmo turno precisam de 3 salas distintas para não gerar
+    pendência estrutural de escassez de sala."""
     slots = _construir_slots(["segunda", "terca"], periodos_por_dia=4)
 
     return HorarioInput(
@@ -36,7 +40,7 @@ def _cenario_viavel() -> HorarioInput:
             ProfessorDTO(id=1, classificacao=5, vinculo_casa=True),
             ProfessorDTO(id=2, classificacao=3, vinculo_casa=False),
         ],
-        salas=[SalaDTO(id=1, capacidade=30)],
+        salas=[SalaDTO(id=1, capacidade=30), SalaDTO(id=2, capacidade=30), SalaDTO(id=3, capacidade=30)],
         slots=slots,
         turma_disciplinas=[
             TurmaDisciplinaDTO(turma_id=1, disciplina_id=1, carga_horaria_semanal=2),

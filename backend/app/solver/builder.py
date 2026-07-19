@@ -12,7 +12,6 @@ from dataclasses import dataclass, field
 
 from ortools.sat.python import cp_model
 
-from app.core.config import settings
 from app.solver.dto import HorarioInput
 
 # chave esparsa: (turma_id, disciplina_id, professor_id, sala_id, dia_semana, turno, periodo)
@@ -35,23 +34,74 @@ class VariaveisModelo:
     )
 
 
-def build_variables(model: cp_model.CpModel, dados: HorarioInput) -> VariaveisModelo:
+def atribuir_salas_por_turma_turno(dados: HorarioInput) -> dict[tuple[int, str], int]:
+    """Decide, de forma determinística e FORA do CP-SAT, uma única sala por
+    (turma_id, turno) — a turma usa essa mesma sala do início ao fim do turno,
+    mesmo trocando de disciplina (decisão confirmada com o utilizador,
+    2026-07-19: "uma vez encontrada [a sala] naquele turno, [a turma] deve ter
+    o seu horário gerado naquela sala por completo naquele período").
+
+    Isto substitui a escolha de sala como parte da otimização do CP-SAT — RN08
+    (capacidade mais próxima) já é satisfeita aqui pelo mesmo critério de
+    desempate usado antes (menor excesso de capacidade, hash(turma,sala) para
+    quebrar empates sem convergir turmas parecidas para as mesmas salas).
+    Reduz drasticamente o nº de BoolVar (de até `solver_max_salas_candidatas`
+    salas candidatas por tempo para 1 sala fixa por turma+turno) e elimina por
+    construção qualquer troca de sala dentro do mesmo turno — nunca precisa de
+    uma restrição hard extra no modelo para impedir isso.
+
+    Duas turmas do MESMO turno nunca recebem a mesma sala (glutão por ordem de
+    `numero_alunos` decrescente — turmas maiores, com menos salas candidatas,
+    escolhem primeiro); turmas de turnos DIFERENTES podem repetir a mesma sala
+    livremente (nunca estão simultaneamente em uso)."""
+    turmas_por_turno: dict[str, list] = defaultdict(list)
+    for turma in dados.turmas:
+        turmas_por_turno[turma.turno].append(turma)
+
+    atribuicao: dict[tuple[int, str], int] = {}
+    for turno, turmas_do_turno in turmas_por_turno.items():
+        salas_ocupadas_no_turno: set[int] = set()
+        # Turmas maiores primeiro — têm menos salas candidatas (capacidade
+        # mínima mais alta), logo devem escolher antes que as menores
+        # esgotem as salas pequenas que também lhes serviriam.
+        for turma in sorted(turmas_do_turno, key=lambda t: -t.numero_alunos):
+            candidatas = sorted(
+                (
+                    sala
+                    for sala in dados.salas
+                    if sala.capacidade >= turma.numero_alunos and sala.id not in salas_ocupadas_no_turno
+                ),
+                key=lambda sala: (sala.capacidade - turma.numero_alunos, hash((turma.id, sala.id))),
+            )
+            if not candidatas:
+                continue  # sem sala livre e com capacidade suficiente — surge no diagnóstico se INFEASIBLE
+            sala_escolhida = candidatas[0]
+            atribuicao[(turma.id, turno)] = sala_escolhida.id
+            salas_ocupadas_no_turno.add(sala_escolhida.id)
+    return atribuicao
+
+
+def build_variables(
+    model: cp_model.CpModel,
+    dados: HorarioInput,
+    chaves_professor_ocupadas: frozenset[tuple[int, str, str, int]] = frozenset(),
+) -> VariaveisModelo:
     """Gera x[turma, disciplina, professor, sala, dia, turno, periodo] só para combinações válidas.
 
     Filtragem em cascata (nunca modelagem densa turma x disciplina x professor x sala x tempo):
       1. TurmaDisciplina -> só pares (turma, disciplina) da grade curricular (conjunto E).
       2. ProfessorDisciplina -> só professores qualificados para a disciplina.
       3. Só tempos do turno da turma (uma turma nunca é alocada fora do seu turno).
-      4. Sala com capacidade >= numero_alunos da turma, limitada às
-         `settings.solver_max_salas_candidatas` salas com o excesso de capacidade mais
-         baixo (necessidade física; a proximidade "ideal" de capacidade, RN08, é soft e
-         tratada no objetivo — mas RN08 já define "capacidade mínima viável" como a
-         alocação preferencial, logo as salas fora do top-K nunca seriam escolhidas numa
-         solução ótima a não ser por conflito, e o top-K deixa folga suficiente para
-         isso). Sem este limite, todas as salas com capacidade suficiente entram como
-         candidatas — a maioria qualifica, criando simetria severa entre salas
-         semelhantes e inflando o nº de BoolVar em ~5-10x sem ganho real (medido em
-         benchmark à escala real do ISAF).
+      3.5. `chaves_professor_ocupadas` -> exclui (professor, dia, turno, periodo) já
+         fixados por uma fase anterior de uma decomposição por turno (ver
+         app/solver/orquestrador_turnos.py). Com a configuração atual de
+         `turno_hora_inicio`/`turno_periodos` (core/config.py) os turnos nunca se
+         sobrepõem em hora real e RN01 já chaveia por turno, logo isto é um no-op
+         hoje — fica como proteção defensiva única (nunca duplicada) caso essa
+         configuração mude para turnos sobrepostos no futuro.
+      4. Sala: UMA única sala por (turma, turno) — ver atribuir_salas_por_turma_turno.
+         Não é mais uma escolha do CP-SAT entre top-K candidatas: a turma usa a
+         mesma sala do início ao fim do turno, decidido fora do modelo.
 
     Disponibilidade (RN04) não filtra aqui — é soft, ver nota de modelagem acima.
     """
@@ -59,20 +109,7 @@ def build_variables(model: cp_model.CpModel, dados: HorarioInput) -> VariaveisMo
     for pd in dados.professor_disciplinas:
         professores_por_disciplina[pd.disciplina_id].append(pd.professor_id)
 
-    salas_com_capacidade: dict[int, list[int]] = defaultdict(list)
-    for turma in dados.turmas:
-        # Desempate por hash(turma, sala) em vez de sala.id: turmas de tamanho
-        # semelhante têm o mesmo grupo de salas empatadas em excesso de capacidade —
-        # sem isto, um desempate fixo faria TODAS convergirem para as mesmas K salas
-        # (contenção artificial de sala nunca implicada por RN08, que só pede
-        # capacidade mínima viável, não uma sala específica).
-        candidatas = sorted(
-            (sala for sala in dados.salas if sala.capacidade >= turma.numero_alunos),
-            key=lambda sala: (sala.capacidade - turma.numero_alunos, hash((turma.id, sala.id))),
-        )
-        salas_com_capacidade[turma.id] = [
-            sala.id for sala in candidatas[: settings.solver_max_salas_candidatas]
-        ]
+    sala_por_turma_turno = atribuir_salas_por_turma_turno(dados)
 
     slots_por_turno: dict[str, list] = defaultdict(list)
     for slot in dados.slots:
@@ -87,14 +124,17 @@ def build_variables(model: cp_model.CpModel, dados: HorarioInput) -> VariaveisMo
         if turma is None:
             continue
 
-        salas_validas = salas_com_capacidade.get(td.turma_id, [])
-        if not salas_validas:
+        sala_id = sala_por_turma_turno.get((td.turma_id, turma.turno))
+        if sala_id is None:
             continue  # nenhuma sala comporta a turma — surge no diagnóstico se INFEASIBLE
+        salas_validas = [sala_id]
 
         professores_qualificados = professores_por_disciplina.get(td.disciplina_id, [])
         slots_do_turno = slots_por_turno.get(turma.turno, [])
         for professor_id in professores_qualificados:
             for slot in slots_do_turno:
+                if (professor_id, slot.dia_semana, slot.turno, slot.periodo) in chaves_professor_ocupadas:
+                    continue
                 for sala_id in salas_validas:
                     chave = (
                         td.turma_id,
