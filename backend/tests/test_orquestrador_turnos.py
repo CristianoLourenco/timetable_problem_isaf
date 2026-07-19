@@ -61,7 +61,7 @@ def _cenario_dois_turnos() -> HorarioInput:
 
 def test_decomposicao_resolve_ambas_as_fases_sem_conflitos():
     dados = _cenario_dois_turnos()
-    resultado = resolver_horario_por_turnos(dados, max_time_in_seconds_por_turno=MAX_TIME_TESTE)
+    resultado = resolver_horario_por_turnos(dados, max_time_in_seconds_total=MAX_TIME_TESTE)
 
     assert resultado.status in ("OPTIMAL", "FEASIBLE")
     assert resultado.diagnostico is None
@@ -113,7 +113,7 @@ def test_turma_sem_professor_qualificado_vira_pendencia_no_turno_certo():
         disponibilidades=[],
     )
 
-    resultado = resolver_horario_por_turnos(dados, max_time_in_seconds_por_turno=MAX_TIME_TESTE)
+    resultado = resolver_horario_por_turnos(dados, max_time_in_seconds_total=MAX_TIME_TESTE)
 
     assert resultado.status in ("OPTIMAL", "FEASIBLE")
     assert len(resultado.alocacoes) == 2  # só a turma 1 (manhã) foi alocada
@@ -136,7 +136,7 @@ def test_fase_sem_turmas_e_ignorada():
         disponibilidades=[],
     )
 
-    resultado = resolver_horario_por_turnos(dados, max_time_in_seconds_por_turno=MAX_TIME_TESTE)
+    resultado = resolver_horario_por_turnos(dados, max_time_in_seconds_total=MAX_TIME_TESTE)
 
     assert resultado.status in ("OPTIMAL", "FEASIBLE")
     assert len(resultado.alocacoes) == 2
@@ -162,9 +162,71 @@ def test_timeout_em_fase_posterior_preserva_alocacoes_e_pendencias_de_fases_ante
         return SolverResult(status="INFEASIBLE", alocacoes=[], diagnostico="timeout simulado", pendencias=[])
 
     with patch("app.solver.orquestrador_turnos.resolver_horario", side_effect=resolver_horario_fake):
-        resultado = resolver_horario_por_turnos(dados, max_time_in_seconds_por_turno=MAX_TIME_TESTE)
+        resultado = resolver_horario_por_turnos(dados, max_time_in_seconds_total=MAX_TIME_TESTE)
 
     assert resultado.status == "INFEASIBLE"
     assert "[Turno tarde]" in resultado.diagnostico
     assert len(resultado.alocacoes) == len(resultado_manha_real.alocacoes) > 0
     assert resultado.pendencias == resultado_manha_real.pendencias
+
+
+def test_orcamento_total_e_distribuido_proporcionalmente_ao_tamanho_do_turno():
+    """RNF01 — um turno com mais pares (turma, disciplina, professor qualificado)
+    candidatos recebe uma fatia maior do orçamento total do que um turno pequeno,
+    em vez de cada turno receber o mesmo tempo fixo (ineficiente: desperdiça tempo
+    no turno pequeno, falta tempo ao grande — achado real medido à escala do ISAF
+    em 2026-07-19: Manhã convergia em 75s/100s, Tarde não convergia nem em 100s)."""
+    slots = (
+        _slots("manha", ["segunda", "terca"], 4)
+        + _slots("tarde", ["segunda", "terca"], 4)
+    )
+
+    # Manhã: 1 turma, 1 par (turma,disciplina), 1 professor qualificado -> turno pequeno.
+    # Tarde: 4 turmas, 4 pares, 4 professores qualificados cada -> turno bem maior.
+    dados = HorarioInput(
+        turmas=[
+            TurmaDTO(id=1, numero_alunos=20, turno="manha"),
+            TurmaDTO(id=2, numero_alunos=20, turno="tarde"),
+            TurmaDTO(id=3, numero_alunos=20, turno="tarde"),
+            TurmaDTO(id=4, numero_alunos=20, turno="tarde"),
+            TurmaDTO(id=5, numero_alunos=20, turno="tarde"),
+        ],
+        professores=[ProfessorDTO(id=p, classificacao=3, vinculo_casa=False) for p in range(1, 9)],
+        salas=[SalaDTO(id=1, capacidade=30)],
+        slots=slots,
+        turma_disciplinas=[
+            TurmaDisciplinaDTO(turma_id=1, disciplina_id=1, carga_horaria_semanal=2),
+            TurmaDisciplinaDTO(turma_id=2, disciplina_id=2, carga_horaria_semanal=2),
+            TurmaDisciplinaDTO(turma_id=3, disciplina_id=3, carga_horaria_semanal=2),
+            TurmaDisciplinaDTO(turma_id=4, disciplina_id=4, carga_horaria_semanal=2),
+            TurmaDisciplinaDTO(turma_id=5, disciplina_id=5, carga_horaria_semanal=2),
+        ],
+        professor_disciplinas=[
+            ProfessorDisciplinaDTO(professor_id=1, disciplina_id=1),
+            # disciplinas 2-5 (tarde) têm 2 professores qualificados cada -> mais
+            # combinações candidatas do que a disciplina 1 (manhã, só 1 professor).
+            ProfessorDisciplinaDTO(professor_id=2, disciplina_id=2),
+            ProfessorDisciplinaDTO(professor_id=3, disciplina_id=2),
+            ProfessorDisciplinaDTO(professor_id=4, disciplina_id=3),
+            ProfessorDisciplinaDTO(professor_id=5, disciplina_id=3),
+            ProfessorDisciplinaDTO(professor_id=6, disciplina_id=4),
+            ProfessorDisciplinaDTO(professor_id=7, disciplina_id=4),
+            ProfessorDisciplinaDTO(professor_id=8, disciplina_id=5),
+            ProfessorDisciplinaDTO(professor_id=2, disciplina_id=5),
+        ],
+        disponibilidades=[],
+    )
+
+    tempos_usados: dict[str, float] = {}
+
+    def resolver_horario_fake(sub_dados, max_time_in_seconds, **kwargs):
+        turno = sub_dados.turmas[0].turno
+        tempos_usados[turno] = max_time_in_seconds
+        return resolver_horario(sub_dados, max_time_in_seconds=max_time_in_seconds, **kwargs)
+
+    with patch("app.solver.orquestrador_turnos.resolver_horario", side_effect=resolver_horario_fake):
+        resolver_horario_por_turnos(dados, max_time_in_seconds_total=30.0)
+
+    assert tempos_usados["tarde"] > tempos_usados["manha"]
+    # soma das fatias não pode exceder o orçamento total pedido
+    assert sum(tempos_usados.values()) <= 30.0 + 1e-6

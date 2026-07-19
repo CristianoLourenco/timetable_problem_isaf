@@ -15,6 +15,70 @@ from app.solver.solve import resolver_horario
 
 _ORDEM_TURNOS_PADRAO = ("manha", "tarde", "noite")
 
+# Fração mínima do orçamento total garantida a cada turno ativo, mesmo que a
+# estimativa de tamanho lhe atribua uma fatia proporcional menor — nunca deixar
+# um turno pequeno com um tempo tão curto que nem o warm-start/construção do
+# modelo (~2-3s medido à escala real do ISAF) tenha margem para correr.
+_FRACAO_MINIMA_POR_TURNO = 0.15
+
+
+def _estimar_tamanho_turno(dados: HorarioInput) -> int:
+    """Proxy barata do nº de variáveis que build_variables() geraria para este
+    sub-problema, sem construir nenhuma BoolVar — soma, por (turma, disciplina),
+    o nº de professores qualificados vezes o nº de slots do turno da turma
+    (o nº de salas candidatas é o mesmo teto para todas as turmas, por isso não
+    muda a proporção RELATIVA entre turnos e pode ser omitido do produto).
+    Calibrado contra medições reais à escala do ISAF em 2026-07-19: Manhã
+    (35250 vars reais) convergiu em 75s, Tarde (48625 vars reais) não convergiu
+    em 100s — confirma que mais variáveis correlaciona com mais dificuldade,
+    justificando distribuir o orçamento proporcionalmente a esta estimativa."""
+    professores_por_disciplina: dict[int, int] = {}
+    for pd in dados.professor_disciplinas:
+        professores_por_disciplina[pd.disciplina_id] = professores_por_disciplina.get(pd.disciplina_id, 0) + 1
+
+    slots_por_turno: dict[str, int] = {}
+    for slot in dados.slots:
+        slots_por_turno[slot.turno] = slots_por_turno.get(slot.turno, 0) + 1
+
+    turmas_por_id = {turma.id: turma for turma in dados.turmas}
+
+    total = 0
+    for td in dados.turma_disciplinas:
+        turma = turmas_por_id.get(td.turma_id)
+        if turma is None:
+            continue
+        n_professores = professores_por_disciplina.get(td.disciplina_id, 0)
+        n_slots = slots_por_turno.get(turma.turno, 0)
+        total += n_professores * n_slots
+    return total
+
+
+def _distribuir_orcamento(
+    dados_por_turno: dict[str, HorarioInput], orcamento_total: float
+) -> dict[str, float]:
+    """Divide `orcamento_total` entre os turnos ativos proporcionalmente ao
+    tamanho estimado de cada um (ver `_estimar_tamanho_turno`), com um piso de
+    `_FRACAO_MINIMA_POR_TURNO` do valor que cada turno receberia numa divisão
+    igual — evita que um turno pequeno fique com tempo insuficiente mesmo para
+    a construção do modelo, sem deixar de dar mais tempo ao turno maior."""
+    tamanhos = {turno: _estimar_tamanho_turno(sub_dados) for turno, sub_dados in dados_por_turno.items()}
+    total_tamanho = sum(tamanhos.values())
+    n_turnos = len(dados_por_turno)
+
+    if total_tamanho == 0 or n_turnos == 0:
+        # Sem sinal para distribuir de forma proporcional — divide em partes iguais.
+        return {turno: orcamento_total / n_turnos for turno in dados_por_turno} if n_turnos else {}
+
+    piso = _FRACAO_MINIMA_POR_TURNO * (orcamento_total / n_turnos)
+    brutos = {turno: (tamanhos[turno] / total_tamanho) * orcamento_total for turno in dados_por_turno}
+    com_piso = {turno: max(valor, piso) for turno, valor in brutos.items()}
+
+    # Reescalar para a soma continuar a ser exatamente orcamento_total, já que
+    # aplicar o piso pode ter feito a soma ultrapassar o total pedido.
+    soma_com_piso = sum(com_piso.values())
+    fator = orcamento_total / soma_com_piso if soma_com_piso > 0 else 1.0
+    return {turno: valor * fator for turno, valor in com_piso.items()}
+
 
 def _filtrar_por_turno(dados: HorarioInput, turno: str) -> HorarioInput:
     """Restringe turmas/turma_disciplinas/slots ao turno; professores/salas/
@@ -36,7 +100,7 @@ def _filtrar_por_turno(dados: HorarioInput, turno: str) -> HorarioInput:
 
 def resolver_horario_por_turnos(
     dados: HorarioInput,
-    max_time_in_seconds_por_turno: float,
+    max_time_in_seconds_total: float,
     num_search_workers: int = 8,
     relative_gap_limit: float | None = None,
     ordem_turnos: tuple[str, ...] = _ORDEM_TURNOS_PADRAO,
@@ -50,10 +114,24 @@ def resolver_horario_por_turnos(
     assim `status="INFEASIBLE"` sinaliza que o resultado está incompleto (Job tem
     um único par status/diagnostico, sem um estado "parcialmente pronto" dedicado).
 
+    `max_time_in_seconds_total` é o orçamento AGREGADO das 3 fases, não um valor
+    fixo por turno — distribuído proporcionalmente ao tamanho estimado de cada
+    turno ativo (ver `_distribuir_orcamento`/`_estimar_tamanho_turno`). Achado
+    real medido à escala do ISAF (2026-07-19): um valor fixo igual para todos os
+    turnos desperdiça tempo no turno pequeno (converge bem antes do teto) e falta
+    tempo ao turno grande (não converge nem no dobro do tempo do pequeno).
+
     `prioridades` (RN12) é calculada uma única vez sobre `dados` completo (semana
     toda, não filtrado por turno) — a escassez de disponibilidade tem de refletir
     a semana inteira, não uma fatia."""
     prioridades = calcular_prioridades(dados.professores, dados.disponibilidades)
+
+    dados_por_turno = {
+        turno: sub_dados
+        for turno in ordem_turnos
+        if (sub_dados := _filtrar_por_turno(dados, turno)).turmas
+    }
+    tempo_por_turno = _distribuir_orcamento(dados_por_turno, max_time_in_seconds_total)
 
     chaves_ocupadas: set[tuple[int, str, str, int]] = set()
     contagem_diaria: dict[tuple[int, str], int] = {}
@@ -61,14 +139,10 @@ def resolver_horario_por_turnos(
     todas_pendencias: list = []
     alguma_fase_feasible = False
 
-    for turno in ordem_turnos:
-        sub_dados = _filtrar_por_turno(dados, turno)
-        if not sub_dados.turmas:
-            continue  # nenhuma turma deste turno neste âmbito — nada a resolver
-
+    for turno, sub_dados in dados_por_turno.items():
         resultado = resolver_horario(
             sub_dados,
-            max_time_in_seconds=max_time_in_seconds_por_turno,
+            max_time_in_seconds=tempo_por_turno[turno],
             num_search_workers=num_search_workers,
             relative_gap_limit=relative_gap_limit,
             prioridades=prioridades,

@@ -28,13 +28,15 @@ class Settings(BaseSettings):
     solver_num_search_workers: int = 8
     # Aceita uma solução dentro deste gap do bound provado em vez de exigir
     # otimalidade — a função objetivo é uma soma de penalizações soft (RN04,
-    # RN08, equidade), nunca uma correção binária, logo uma solução "boa o
-    # suficiente" encontrada depressa vale mais em produção do que uma
-    # marginalmente melhor encontrada muito mais tarde (ou nunca, dentro do
-    # solver_max_time_seconds). Medido nesta sessão: à escala real, o CP-SAT
-    # frequentemente gasta a maior parte do orçamento a tentar provar
-    # otimalidade em vez de a procurar a primeira solução viável.
-    solver_relative_gap_limit: float = 0.10
+    # RN08, equidade, défice de RN05), nunca uma correção binária, logo uma
+    # solução "boa o suficiente" encontrada depressa vale mais em produção do
+    # que uma marginalmente melhor encontrada muito mais tarde (ou nunca).
+    # 0.10 media, à escala real do turno Manhã do ISAF, um gap real de ~85%
+    # nunca fechado — o CP-SAT gastava todo o orçamento tentando prová-lo em
+    # vez de aceitar uma solução já boa. Medido em 2026-07-19: com 0.30, o
+    # mesmo turno prova OPTIMAL em 75s (défice=14, melhor resultado obtido em
+    # qualquer combinação testada) — 0.10 nunca convergiu no mesmo tempo.
+    solver_relative_gap_limit: float = 0.30
     # Bisecção de diagnóstico (app/solver/diagnostico.py) — só corre quando o CP-SAT já
     # provou INFEASIBLE no solve principal (nunca para decidir UNKNOWN vs INFEASIBLE) e
     # as verificações baratas não encontraram nenhuma causa óbvia. Tempo limitado por

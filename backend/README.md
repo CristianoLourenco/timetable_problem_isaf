@@ -224,3 +224,9 @@ pior caso de 17min que estamos ativamente a eliminar.
 qualquer deploy público: trocar o domínio de email (`isaf.co.ao` → algo genérico tipo `mvp.local`)
 e, depois, os nomes reais dos professores por nomes fictícios — evita expor dados reais de
 pessoas. Afeta só este ficheiro de seed de demonstração, não o domínio de negócio do sistema.
+
+## 11. Ideia futura (sub-projeto separado, não implementado)
+
+Ver `docs/superpowers/specs/2026-07-19-refinamento-background-design.md` — refinamento em
+background do resultado do solver, com notificação/confirmação do Gestor antes de substituir.
+Não implementado; registado só como ideia a retomar depois.
