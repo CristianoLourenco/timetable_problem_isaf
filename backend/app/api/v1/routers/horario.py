@@ -6,7 +6,7 @@ from app.api.v1.deps import get_session
 from app.core.exceptions import EntidadeNaoEncontradaError
 from app.core.security import UtilizadorAutenticado, get_current_user, require_gestor, verificar_acesso_professor_proprio
 from app.schemas.horario_schema import HorarioResponseSchema
-from app.schemas.job_schema import GerarHorarioRequest, GerarHorarioResponse, JobRead
+from app.schemas.job_schema import GerarHorarioRequest, GerarHorarioResponse, JobDeAmbitoResponse, JobRead
 from app.services.exportacao_pdf_service import gerar_pdf_turma, gerar_zip_por_job
 from app.services.horario_service import HorarioService
 from app.workers.job_runner import executar
@@ -40,9 +40,33 @@ def obter_job(job_id: str, service: HorarioService = Depends(_get_service)):
         raise HTTPException(404, str(exc)) from exc
 
 
-@router.get("/horarios/turma/{turma_id}", response_model=HorarioResponseSchema, dependencies=[Depends(require_gestor)])
+@router.get("/jobs", response_model=JobDeAmbitoResponse, dependencies=[Depends(require_gestor)])
+def obter_job_de_ambito(ano_letivo: int, semestre: str, service: HorarioService = Depends(_get_service)):
+    """RF09/RF10 — Job mais recente (qualquer status) de um (ano_letivo, semestre)
+    exato, para a tela de Horários trocar de filtro sem esconder/misturar âmbitos
+    diferentes. `job=null` (200) é o estado "ainda não gerado" — nunca 404, é um
+    estado normal da UI, não um erro."""
+    job = service.consultar_job_de_ambito(ano_letivo, semestre)
+    return JobDeAmbitoResponse(job=job)
+
+
+@router.delete("/jobs/{job_id}", status_code=204, dependencies=[Depends(require_gestor)])
+def limpar_horario(job_id: str, service: HorarioService = Depends(_get_service)):
+    """RF09 — botão "limpar horário": apaga o Job e as Alocacao/Pendencia associadas,
+    para o Gestor poder gerar de novo o mesmo âmbito do zero."""
+    try:
+        service.limpar_horario(job_id)
+    except EntidadeNaoEncontradaError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+
+@router.get(
+    "/horarios/turma/{turma_id}", response_model=HorarioResponseSchema | None, dependencies=[Depends(require_gestor)]
+)
 def horario_por_turma(turma_id: int, service: HorarioService = Depends(_get_service)):
-    """RF11 (UC11) — actor exclusivo Gestor; horário estruturado por dia/slot."""
+    """RF11 (UC11) — actor exclusivo Gestor; horário estruturado por dia/slot.
+    200 com corpo `null` quando a turma existe mas ainda não há horário gerado
+    para o seu âmbito — "ainda não gerado" não é um erro (ver horario_service.py)."""
     try:
         return service.consultar_horario_turma(turma_id)
     except EntidadeNaoEncontradaError as exc:

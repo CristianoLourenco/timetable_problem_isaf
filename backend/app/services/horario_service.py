@@ -22,6 +22,7 @@ from app.models.turma import Turma
 from app.repositories.alocacao_repository import AlocacaoRepository
 from app.repositories.disciplina_repository import DisciplinaRepository
 from app.repositories.job_repository import JobRepository
+from app.repositories.pendencia_repository import PendenciaRepository
 from app.repositories.plano_curricular_repository import PlanoCurricularRepository
 from app.repositories.professor_repository import ProfessorRepository
 from app.repositories.sala_repository import SalaRepository
@@ -112,6 +113,12 @@ class HorarioService:
         self.disciplina_repo = DisciplinaRepository(session)
         self.sala_repo = SalaRepository(session)
         self.plano_curricular_repo = PlanoCurricularRepository(session)
+        self.pendencia_repo = PendenciaRepository(session)
+        # Cache por instância — montar_resposta é chamado uma vez por turma ao
+        # exportar o .zip de um Job inteiro (gerar_zip_por_job); sem isto, cada
+        # chamada refaria as 4 queries "SELECT * FROM ..." completas (turma,
+        # professor, disciplina, sala) — 86 turmas = 86x a mesma tabela inteira.
+        self._referencias: tuple[dict, dict, dict, dict] | None = None
 
     def disparar_geracao(self, ano_letivo: int, semestre: str) -> Job:
         """RF09 — cria o Job em PENDING para o âmbito (ano_letivo, semestre); o router
@@ -126,11 +133,36 @@ class HorarioService:
             raise EntidadeNaoEncontradaError("Job não encontrado.")
         return job
 
-    def consultar_horario_turma(self, turma_id: int) -> HorarioResponseSchema:
+    def consultar_job_de_ambito(self, ano_letivo: int, semestre: str) -> Job | None:
+        """RF09/RF10 — Job mais recente (qualquer status) de um (ano_letivo,
+        semestre) exato, para a tela de Horários saber o estado deste âmbito
+        específico ao trocar o filtro — devolve None (nunca 404) quando ainda não
+        existe nenhum Job para este âmbito: "ainda não gerado" é um estado válido
+        da UI, não um erro."""
+        return self.job_repo.obter_ultimo_para(ano_letivo, semestre)
+
+    def limpar_horario(self, job_id: str) -> None:
+        """Botão "limpar horário" (RF09) — remove o Job e tudo o que dependa dele
+        (Alocacao, Pendencia), para o Gestor poder gerar de novo o mesmo
+        (ano_letivo, semestre) do zero sem o resultado anterior a interferir."""
+        job = self.job_repo.obter(job_id)
+        if job is None:
+            raise EntidadeNaoEncontradaError("Job não encontrado.")
+        self.alocacao_repo.remover_por_job(job_id)
+        self.pendencia_repo.remover_por_job(job_id)
+        self.job_repo.remover(job)
+
+    def consultar_horario_turma(self, turma_id: int) -> HorarioResponseSchema | None:
         """RF11 (UC11) — horário da turma, a partir do Job DONE mais recente do
         (ano_letivo, semestre) exato desta turma — nunca "o Job mais recente entre
         todos", que poderia ser de outro ano/semestre e simplesmente não conter
-        nenhuma alocação desta turma."""
+        nenhuma alocação desta turma.
+
+        Devolve None (nunca EntidadeNaoEncontradaError) quando a turma existe mas
+        ainda não há Job DONE para o seu âmbito — "ainda não gerado" é um estado
+        normal da UI (ex: filtro de ano/semestre sem horário gerado ainda), não um
+        erro; turma inexistente continua a ser EntidadeNaoEncontradaError (404),
+        esse sim um erro real de referência inválida."""
         turma = self.turma_repo.get(turma_id)
         if turma is None:
             raise EntidadeNaoEncontradaError("Turma não encontrada.")
@@ -140,10 +172,7 @@ class HorarioService:
 
         job = self.job_repo.obter_ultimo_concluido_para(turma.ano_letivo, semestres)
         if job is None:
-            raise EntidadeNaoEncontradaError(
-                f"Ainda não existe horário gerado para o ano letivo {turma.ano_letivo}, "
-                f"semestre {'/'.join(semestres)}, desta turma."
-            )
+            return None
         alocacoes = self.alocacao_repo.listar_por_job_e_turma(job.id, turma_id)
         return self.montar_resposta(job.id, alocacoes)
 
@@ -169,10 +198,7 @@ class HorarioService:
         à 3.ª Forma Normal — ver docs/media/src/diagrama_er.puml) — obtém-se aqui via
         turmas[aloc.turma_id].turno.
         """
-        turmas = {t.id: t for t in self.turma_repo.list()}
-        professores = {p.id: p for p in self.professor_repo.list()}
-        disciplinas = {d.id: d for d in self.disciplina_repo.list()}
-        salas = {s.id: s for s in self.sala_repo.list()}
+        turmas, professores, disciplinas, salas = self._carregar_referencias()
         horas = {(g.dia_semana, g.turno, g.periodo): (g.hora_inicio, g.hora_fim) for g in gerar_grelha_tempos()}
 
         itens_por_dia: dict[str, list[HorarioItemSchema]] = defaultdict(list)
@@ -209,3 +235,16 @@ class HorarioService:
             for dia in settings.slot_dias_semana
         ]
         return HorarioResponseSchema(job_id=job_id, dias=dias)
+
+    def _carregar_referencias(self) -> tuple[dict, dict, dict, dict]:
+        """Turma/Professor/Disciplina/Sala indexados por id, calculado uma única vez
+        por instância — ver comentário no `__init__` sobre o custo de repetir isto
+        por turma ao exportar o .zip de um Job inteiro."""
+        if self._referencias is None:
+            self._referencias = (
+                {t.id: t for t in self.turma_repo.list()},
+                {p.id: p for p in self.professor_repo.list()},
+                {d.id: d for d in self.disciplina_repo.list()},
+                {s.id: s for s in self.sala_repo.list()},
+            )
+        return self._referencias

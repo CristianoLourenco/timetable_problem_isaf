@@ -107,7 +107,11 @@ def test_turma_inexistente_levanta_erro_404():
             HorarioService(session).consultar_horario_turma(999)
 
 
-def test_sem_job_concluido_levanta_erro_404():
+def test_sem_job_concluido_devolve_none_em_vez_de_erro():
+    """"Ainda não gerado" é um estado normal da UI (ex: filtro de ano/semestre
+    sem horário), não um erro — turma existente sem Job DONE devolve None (200
+    na API), nunca EntidadeNaoEncontradaError (404). Turma inexistente continua
+    a levantar erro (ver test_turma_inexistente_levanta_erro_404)."""
     engine = _criar_engine_teste()
     with Session(engine) as session:
         curso = Curso(codigo="INF", nome="Informática")
@@ -125,5 +129,4 @@ def test_sem_job_concluido_levanta_erro_404():
         session.commit()
         session.refresh(turma)
 
-        with pytest.raises(EntidadeNaoEncontradaError):
-            HorarioService(session).consultar_horario_turma(turma.id)
+        assert HorarioService(session).consultar_horario_turma(turma.id) is None
