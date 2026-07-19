@@ -21,6 +21,9 @@ class HorarioItemSchema(SQLModel):
     professor_nome: str
     sala_id: int
     sala_nome: str
+    # RF13 — id da Alocacao de origem, para a UI poder chamar PATCH/DELETE
+    # /alocacoes/{id} (mover/remover) diretamente a partir da grade consultada.
+    alocacao_id: int
 
 
 class HorarioDiaSchema(SQLModel):
