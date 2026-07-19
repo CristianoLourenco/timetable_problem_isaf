@@ -94,11 +94,13 @@ class DioClient implements IHttpMethods {
   Future<DataState<T>> get<T>(
     String path, {
     Map<String, dynamic>? queryParameters,
+    ResponseType? responseType,
   }) {
     return _handleRequest<T>(
       _dio.get<T>(
         path,
         queryParameters: queryParameters,
+        options: responseType != null ? Options(responseType: responseType) : null,
       ),
     );
   }

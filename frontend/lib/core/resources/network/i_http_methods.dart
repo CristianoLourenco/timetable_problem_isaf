@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart' show ResponseType;
 import 'package:ghorario/core/resources/data_state.dart';
 
 /// Abstract contract for HTTP network methods.
@@ -5,6 +6,7 @@ abstract class IHttpMethods {
   Future<DataState<T>> get<T>(
     String path, {
     Map<String, dynamic>? queryParameters,
+    ResponseType? responseType,
   });
 
   Future<DataState<T>> post<T>(

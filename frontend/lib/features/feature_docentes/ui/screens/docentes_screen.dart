@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:ghorario/core/themes/app_colors.dart';
 import 'package:ghorario/core/themes/app_text_styles.dart';
@@ -336,7 +337,7 @@ class _DocentesScreenState extends State<DocentesScreen> {
                                   ),
                                 ),
                               ),
-                              SizedBox(width: 48),
+                              SizedBox(width: 96),
                             ],
                           ),
                         ),
@@ -414,6 +415,14 @@ class _DocentesScreenState extends State<DocentesScreen> {
                                                   icon: const Icon(Icons.school_outlined, color: Color(0xFF94A3B8)),
                                                   tooltip: 'Qualificação',
                                                   onPressed: () => _showQualificacaoDialog(docente),
+                                                ),
+                                              ),
+                                              SizedBox(
+                                                width: 48,
+                                                child: IconButton(
+                                                  icon: const Icon(Icons.calendar_today_outlined, color: Color(0xFF94A3B8)),
+                                                  tooltip: 'Ver Ficha do Docente',
+                                                  onPressed: () => context.go('/dashboard/docentes/${docente.id}'),
                                                 ),
                                               ),
                                             ],
