@@ -192,11 +192,11 @@ def test_job_runner_escala_para_o_proximo_tempo_quando_a_primeira_tentativa_da_t
     chamadas: list[float] = []
     original = job_runner.resolver_horario_por_turnos
 
-    def _falha_na_primeira_tentativa(dados, max_time_in_seconds_por_turno, **kwargs):
-        chamadas.append(max_time_in_seconds_por_turno)
+    def _falha_na_primeira_tentativa(dados, max_time_in_seconds_total, **kwargs):
+        chamadas.append(max_time_in_seconds_total)
         if len(chamadas) == 1:
             return SolverResult(status="INFEASIBLE", alocacoes=[], diagnostico="tempo esgotado (simulado)")
-        return original(dados, max_time_in_seconds_por_turno=max_time_in_seconds_por_turno, **kwargs)
+        return original(dados, max_time_in_seconds_total=max_time_in_seconds_total, **kwargs)
 
     monkeypatch.setattr(job_runner, "resolver_horario_por_turnos", _falha_na_primeira_tentativa)
 
@@ -207,8 +207,8 @@ def test_job_runner_escala_para_o_proximo_tempo_quando_a_primeira_tentativa_da_t
         assert job.status == JobStatus.DONE
         assert job.tempo_maximo_minutos == job_runner.ESCALONAMENTO_TEMPO_MINUTOS[1]
     assert len(chamadas) == 2
-    assert chamadas[0] == job_runner.ESCALONAMENTO_TEMPO_MINUTOS[0] * 60 / 3
-    assert chamadas[1] == job_runner.ESCALONAMENTO_TEMPO_MINUTOS[1] * 60 / 3
+    assert chamadas[0] == job_runner.ESCALONAMENTO_TEMPO_MINUTOS[0] * 60
+    assert chamadas[1] == job_runner.ESCALONAMENTO_TEMPO_MINUTOS[1] * 60
 
 
 def test_job_runner_conclui_com_pendencia_quando_rn06_e_impossivel():

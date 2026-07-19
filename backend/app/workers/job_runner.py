@@ -62,10 +62,12 @@ def executar(job_id: str, *, engine=_engine_producao) -> None:
             if settings.solver_usar_decomposicao_turno:
                 resultado = resolver_horario_por_turnos(
                     dados,
-                    # 3 fases (Manhã/Tarde/Noite) dividem o orçamento desta tentativa —
-                    # mantém a mesma proporção que settings.solver_max_time_seconds_por_turno
-                    # já usava (100s de 300s totais = 1/3 por fase).
-                    max_time_in_seconds_por_turno=tempo_total_segundos / 3,
+                    # Orçamento agregado desta tentativa — resolver_horario_por_turnos
+                    # distribui-o entre as fases (Manhã/Tarde/Noite) proporcionalmente
+                    # ao tamanho estimado de cada uma, não em partes iguais (achado
+                    # real: um turno maior precisa de bem mais tempo do que um
+                    # pequeno para convergir — ver _distribuir_orcamento).
+                    max_time_in_seconds_total=tempo_total_segundos,
                     num_search_workers=settings.solver_num_search_workers,
                 )
             else:
