@@ -20,7 +20,10 @@ def _cenario_com_professor_sobrecarregado() -> HorarioInput:
     """2 turmas partilham o ÚNICO professor qualificado para a sua disciplina, mas
     o turno só tem 3 tempos no total — o professor precisaria de 4 (2+2) usos
     distintos, impossível por pigeonhole independentemente de blocos/salas.
-    Réplica minimalista do caso real encontrado à escala do ISAF (GBS 4º ano)."""
+    Réplica minimalista do caso real encontrado à escala do ISAF (GBS 4º ano).
+    2 salas (uma por turma — ver builder.atribuir_salas_por_turma_turno,
+    2026-07-19) para isolar o conflito de professor sem mascará-lo com uma
+    pendência de escassez de sala."""
     slots = [SlotDTO(dia_semana="segunda", turno=TURNO_TESTE, periodo=p) for p in range(1, 4)]
     return HorarioInput(
         turmas=[
@@ -28,7 +31,7 @@ def _cenario_com_professor_sobrecarregado() -> HorarioInput:
             TurmaDTO(id=2, numero_alunos=20, turno=TURNO_TESTE),
         ],
         professores=[ProfessorDTO(id=1, classificacao=5, vinculo_casa=True)],
-        salas=[SalaDTO(id=1, capacidade=30)],
+        salas=[SalaDTO(id=1, capacidade=30), SalaDTO(id=2, capacidade=30)],
         slots=slots,
         turma_disciplinas=[
             TurmaDisciplinaDTO(turma_id=1, disciplina_id=1, carga_horaria_semanal=2),
