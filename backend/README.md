@@ -124,6 +124,43 @@ a forma mais simples para testes é pôr esse email em `SUPERADMIN_EMAILS` no `.
 `curl -H "Authorization: Bearer <id_token>" http://localhost:8000/cursos`. Quando expirar (~1h),
 `POST /auth/refresh` com o `refresh_token` dá um novo `id_token` sem repetir o login.
 
+## 5.5. Limpar a BD e semear de novo (dados de teste do ISAF)
+
+Para repetir um teste manual do zero (BD real via Docker/Postgres, não a suite automática):
+
+```bash
+# 1. Parar o backend se estiver a correr (Ctrl+C no terminal do uvicorn, ou:)
+pkill -f "uvicorn app.main"
+
+# 2. Apagar a BD por completo (para o container e destrói o volume — perde TODOS os dados)
+docker compose down -v
+
+# 3. Recriar o Postgres vazio
+docker compose up -d
+docker compose ps   # confirmar "healthy" antes de continuar
+
+# 4. Recriar as tabelas (inclui os 45 Slot)
+source .venv/bin/activate
+python init_db.py
+
+# 5. Semear o currículo real do ISAF (cursos, turmas, professores, disciplinas,
+#    salas, qualificações, contas de teste Firebase — ver docstring do próprio
+#    ficheiro para a lista de credenciais criadas)
+python seed_dados_teste.py
+
+# 6. Arrancar o backend
+uvicorn app.main:app --reload
+```
+
+Passos 2-3 são o "reset total": qualquer horário gerado, alocação manual ou pendência
+anterior desaparece junto com o resto. Se só quiseres limpar `Job`/`Alocacao`/`Pendencia`
+(gerações de horário) sem tocar no currículo semeado, usa antes:
+
+```bash
+docker compose exec db psql -U isaf -d isaf_horarios -c \
+  "TRUNCATE TABLE alocacao, pendencia, job CASCADE;"
+```
+
 ## 6. Testes
 
 ```bash
