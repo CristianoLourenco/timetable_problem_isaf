@@ -1,8 +1,7 @@
 {
   "folders": [
     { "path": "backend", "name": "Backend (FastAPI)" },
-    { "path": "frontend", "name": "Frontend (Flutter)" },
-    { "path": "docs/tfc", "name": "TFC — Documentação" }
+    { "path": "frontend", "name": "Frontend (Flutter)" }
   ],
   "settings": {
     "search.exclude": { "**/build": true, "**/.venv": true, "**/node_modules": true }
