@@ -80,7 +80,9 @@ class Settings(BaseSettings):
     # frontend/lib/core/config/firebase_config.dart). Usada para chamar a REST API do
     # Identity Toolkit (login, refresh, recuperação de password, login Google) a
     # partir do backend — o login NÃO é feito no cliente Flutter (ver core/firebase_rest.py).
-    firebase_web_api_key: str = "AIzaSyCcmvG_mtxbvyMQnIcFynm2WWv_SwS7wXI"
+    # Sem default: sempre lida de FIREBASE_WEB_API_KEY em .env (ver .env.example) — nunca
+    # hardcoded no repositório (scanner de secrets do GitHub sinaliza o valor literal).
+    firebase_web_api_key: str
     # URI arbitrário exigido pelo endpoint accounts:signInWithIdp do Firebase para o
     # login com Google — não é um redirect real (o Google ID Token já vem do cliente),
     # só precisa de ser um URI sintaticamente válido associado ao projeto.
