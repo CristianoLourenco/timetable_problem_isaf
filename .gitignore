@@ -34,6 +34,10 @@ docs/dist/*.docx
 docs/dist/*.pdf
 !docs/dist/custom-reference.docx
 
+# TFC — material de referência/exemplares de terceiros, não deve subir ao remoto
+docs/exemplar_isaf/
+docs/exemplar_modelo_tfc_docx/
+
 # IDE
 .idea/
 *.iml
