@@ -108,6 +108,8 @@ import 'package:ghorario/features/feature_horario/domain/usecase/get_slots_vagos
 import 'package:ghorario/features/feature_horario/domain/usecase/criar_alocacao_manual_usecase.dart';
 import 'package:ghorario/features/feature_horario/domain/usecase/mover_alocacao_usecase.dart';
 import 'package:ghorario/features/feature_horario/domain/usecase/remover_alocacao_usecase.dart';
+import 'package:ghorario/features/feature_horario/domain/usecase/get_job_by_scope_usecase.dart';
+import 'package:ghorario/features/feature_horario/domain/usecase/delete_job_usecase.dart';
 import 'package:ghorario/features/feature_horario/presentation/provider/horario_provider.dart';
 
 // Feature Auth
@@ -200,6 +202,8 @@ class AppMultiProviders {
     final criarAlocacaoManualUseCase = CriarAlocacaoManualUseCase(horarioRepository);
     final moverAlocacaoUseCase = MoverAlocacaoUseCase(horarioRepository);
     final removerAlocacaoUseCase = RemoverAlocacaoUseCase(horarioRepository);
+    final getJobByScopeUseCase = GetJobByScopeUseCase(horarioRepository);
+    final deleteJobUseCase = DeleteJobUseCase(horarioRepository);
 
     // 8. Importação Excel Dependencies (RF06/RF07/RF08)
     final IImportacaoRemote importacaoRemote = ImportacaoRemoteImpl(httpMethods);
@@ -284,6 +288,8 @@ class AppMultiProviders {
           criarAlocacaoManualUseCase: criarAlocacaoManualUseCase,
           moverAlocacaoUseCase: moverAlocacaoUseCase,
           removerAlocacaoUseCase: removerAlocacaoUseCase,
+          getJobByScopeUseCase: getJobByScopeUseCase,
+          deleteJobUseCase: deleteJobUseCase,
         ),
       ),
       ChangeNotifierProvider<DashboardProvider>(
@@ -307,6 +313,9 @@ class AppMultiProviders {
       Provider<GetSlotsVagosUseCase>.value(value: getSlotsVagosUseCase),
       Provider<CriarAlocacaoManualUseCase>.value(value: criarAlocacaoManualUseCase),
       Provider<RemoverAlocacaoUseCase>.value(value: removerAlocacaoUseCase),
+      Provider<MoverAlocacaoUseCase>.value(value: moverAlocacaoUseCase),
+      Provider<GetJobByScopeUseCase>.value(value: getJobByScopeUseCase),
+      Provider<DeleteJobUseCase>.value(value: deleteJobUseCase),
     ];
   }
 }

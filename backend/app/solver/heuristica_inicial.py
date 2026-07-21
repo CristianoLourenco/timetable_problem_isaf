@@ -5,13 +5,14 @@
 # professor×sala×tempo disponíveis, escolhendo greedily um professor+sala e
 # preenchendo blocos contíguos de >=2 tempos (RN06) nos primeiros tempos livres.
 #
-# Múltiplas tentativas com ordens diferentes (dias/combos embaralhados) — uma
-# única passagem gulosa em ordem fixa tende a "gastar" cedo os tempos mais
-# convenientes em pares fáceis, deixando pares difíceis sem hipótese mais
-# tarde; repetir com ordens diferentes e ficar com a tentativa mais completa
-# aproxima-se do padrão "construir uma solução completa, depois o CP-SAT só
-# repara/otimiza localmente" usado por sistemas reais de timetabling (UniTime)
-# em vez de "hint parcial + procura do zero".
+# Múltiplas tentativas com ordens diferentes (dias embaralhados, professores
+# ordenados por prioridade RN12 com desempate aleatório) — uma única passagem
+# gulosa em ordem fixa tende a "gastar" cedo os tempos mais convenientes em
+# pares fáceis, deixando pares difíceis sem hipótese mais tarde; repetir com
+# ordens diferentes e ficar com a tentativa mais completa aproxima-se do padrão
+# "construir uma solução completa, depois o CP-SAT só repara/otimiza localmente"
+# usado por sistemas reais de timetabling (UniTime) em vez de "hint parcial +
+# procura do zero".
 #
 # Isto NUNCA lança exceção nem garante uma solução completa — devolve o melhor
 # hint conseguido (o CP-SAT aceita hints parciais via model.AddHint, ver
@@ -29,18 +30,25 @@ _NUM_TENTATIVAS = 6
 _SEMENTE_BASE = 42
 
 
-def gerar_hint_inicial(dados: HorarioInput, variaveis: VariaveisModelo) -> dict[ChaveVar, int]:
+def gerar_hint_inicial(
+    dados: HorarioInput, variaveis: VariaveisModelo, prioridades: dict[int, float] | None = None
+) -> dict[ChaveVar, int]:
     """Devolve {chave: 0|1} para um subconjunto das variáveis de `variaveis.x` —
     só as escolhidas ativamente pela heurística (1); as demais ficam sem entrada
     (nem 0 nem 1), deixando o CP-SAT livre para as decidir. Corre várias
     tentativas com ordens diferentes e devolve a mais completa (menos pares
-    turma-disciplina por colocar)."""
+    turma-disciplina por colocar).
+
+    `prioridades` (RN12, ver prioridade_docente.py) influencia só a ordem em que os
+    professores candidatos de um mesmo par (turma, disciplina) são tentados — nunca
+    a ordem dos pares em si, que continua "mais restrito primeiro" (turma tem
+    prioridade estrutural sobre professor, ver "Três Cenários Concorrentes")."""
     try:
         melhor_hint: dict[ChaveVar, int] = {}
         melhor_pares_cobertos = -1
         for tentativa in range(_NUM_TENTATIVAS):
             rng = random.Random(_SEMENTE_BASE + tentativa)
-            hint, pares_cobertos = _construir(dados, variaveis, rng)
+            hint, pares_cobertos = _construir(dados, variaveis, rng, prioridades or {})
             if pares_cobertos > melhor_pares_cobertos:
                 melhor_hint = hint
                 melhor_pares_cobertos = pares_cobertos
@@ -54,7 +62,7 @@ def gerar_hint_inicial(dados: HorarioInput, variaveis: VariaveisModelo) -> dict[
 
 
 def _construir(
-    dados: HorarioInput, variaveis: VariaveisModelo, rng: random.Random
+    dados: HorarioInput, variaveis: VariaveisModelo, rng: random.Random, prioridades: dict[int, float]
 ) -> tuple[dict[ChaveVar, int], int]:
     turmas_por_id = {turma.id: turma for turma in dados.turmas}
 
@@ -93,7 +101,10 @@ def _construir(
         combos = _combos_professor_sala(variaveis, td.turma_id, td.disciplina_id)
         if not combos:
             continue
-        rng.shuffle(combos)
+        # RN12 — professor de maior prioridade tentado primeiro (chave primária);
+        # desempate aleatório por tentativa preserva a diversidade das _NUM_TENTATIVAS
+        # entre professores de prioridade semelhante/igual.
+        combos.sort(key=lambda combo: (-prioridades.get(combo[0], 0.0), rng.random()))
 
         dias_tentativa = list(dias_base)
         rng.shuffle(dias_tentativa)

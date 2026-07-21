@@ -52,6 +52,22 @@ COMPLEMENTOS: dict[str, str] = {
 }
 
 
+_VALORES_VERDADEIROS_PT = {"sim", "true", "1", "x", "verdadeiro"}
+
+
+def _parse_booleano_pt(valor: Any) -> bool:
+    """`bool(valor)` nativo trataria qualquer string não vazia (incl. "Não") como
+    True — uma célula Excel com "Não" inverteria silenciosamente a intenção do
+    Gestor. Só os valores desta lista (case/espaço-insensitive) contam como True."""
+    if isinstance(valor, bool):
+        return valor
+    if isinstance(valor, int | float):
+        return bool(valor)
+    if isinstance(valor, str):
+        return valor.strip().lower() in _VALORES_VERDADEIROS_PT
+    return False
+
+
 def _abrir_workbook(conteudo: bytes):
     try:
         return openpyxl.load_workbook(BytesIO(conteudo), read_only=True, data_only=True)
@@ -127,7 +143,7 @@ def _importar_professores(
                 nome=str(nome),
                 email=str(email),
                 classificacao=classificacao,
-                vinculo_casa=bool(dados.get("vinculo_casa")),
+                vinculo_casa=_parse_booleano_pt(dados.get("vinculo_casa")),
             )
         )
         relatorio.importados += 1

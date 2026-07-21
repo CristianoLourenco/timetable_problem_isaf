@@ -17,7 +17,7 @@ class DisponibilidadeRepository:
         )
         return [TempoChave(dia_semana=d, turno=t, periodo=p) for d, t, p in rows]
 
-    def substituir(self, professor_id: int, tempos: list[TempoChave]) -> None:
+    def substituir(self, professor_id: int, tempos: list[TempoChave], gerada_automaticamente: bool = False) -> None:
         self.session.exec(delete(Disponibilidade).where(Disponibilidade.professor_id == professor_id))
         for tempo in tempos:
             self.session.add(
@@ -26,6 +26,7 @@ class DisponibilidadeRepository:
                     dia_semana=tempo.dia_semana,
                     turno=tempo.turno,
                     periodo=tempo.periodo,
+                    gerada_automaticamente=gerada_automaticamente,
                 )
             )
         self.session.commit()
