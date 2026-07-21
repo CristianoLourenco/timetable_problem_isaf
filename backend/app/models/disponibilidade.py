@@ -12,3 +12,9 @@ class Disponibilidade(SQLModel, table=True):
     dia_semana: str = Field(primary_key=True)
     turno: str = Field(primary_key=True)
     periodo: int = Field(primary_key=True)
+    # RN12/RF05 — distingue um registo confirmado pelo próprio professor (via RF05,
+    # False) de uma sugestão gerada automaticamente pelo sistema (True, ver
+    # app/services/disponibilidade_geracao_service.py) quando não existe nenhum
+    # registo real. Um professor que edita a sua disponibilidade via RF05 limpa
+    # sempre esta flag (substituir() com gerada_automaticamente=False).
+    gerada_automaticamente: bool = Field(default=False)

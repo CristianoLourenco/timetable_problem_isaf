@@ -1,7 +1,10 @@
 # Grade curricular — pré-requisito de dados do solver (conjunto E da definição formal UCTP)
+from collections import defaultdict
+
 from sqlmodel import Session, delete, select
 
 from app.models.plano_curricular_disciplina import PlanoCurricularDisciplina
+from app.models.turma import Turma
 
 
 class PlanoCurricularDisciplinaRepository:
@@ -59,3 +62,20 @@ class PlanoCurricularDisciplinaRepository:
             )
         )
         self.session.commit()
+
+    def listar_turnos_por_disciplina(self, disciplina_ids: list[int]) -> dict[int, set[str]]:
+        """Turnos em que cada disciplina realmente decorre, via as turmas das suas
+        PlanoCurricularDisciplina — usado por disponibilidade_geracao_service.py
+        para fundamentar a disponibilidade sintética nas qualificações reais do
+        professor, nunca em turnos que ele nunca teria motivo para lecionar."""
+        if not disciplina_ids:
+            return {}
+        linhas = self.session.exec(
+            select(PlanoCurricularDisciplina.disciplina_id, Turma.turno)
+            .join(Turma, Turma.plano_curricular_id == PlanoCurricularDisciplina.plano_curricular_id)
+            .where(PlanoCurricularDisciplina.disciplina_id.in_(disciplina_ids))
+        )
+        turnos_por_disciplina: dict[int, set[str]] = defaultdict(set)
+        for disciplina_id, turno in linhas:
+            turnos_por_disciplina[disciplina_id].add(str(turno))
+        return dict(turnos_por_disciplina)

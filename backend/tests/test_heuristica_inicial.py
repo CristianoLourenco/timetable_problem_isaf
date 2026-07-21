@@ -2,6 +2,15 @@
 from ortools.sat.python import cp_model
 
 from app.solver.builder import build_variables
+from app.solver.dto import (
+    HorarioInput,
+    ProfessorDisciplinaDTO,
+    ProfessorDTO,
+    SalaDTO,
+    SlotDTO,
+    TurmaDisciplinaDTO,
+    TurmaDTO,
+)
 from app.solver.heuristica_inicial import gerar_hint_inicial
 from tests.test_solver import _cenario_viavel
 from tests.test_solver_escala import _construir_cenario_em_escala
@@ -62,3 +71,33 @@ def test_hint_em_cenario_pequeno_nao_colide_com_constraints_hard():
 
 def test_hint_em_cenario_em_escala_nao_colide_com_constraints_hard():
     _hint_nao_torna_infeasible(_construir_cenario_em_escala())
+
+
+def test_hint_prefere_professor_de_maior_prioridade_rn12():
+    """1 turma/1 disciplina, 2 professores igualmente qualificados/disponíveis —
+    o hint deve escolher sistematicamente o de maior prioridade (RN12), já que
+    combos são ordenados por -prioridade antes do desempate aleatório."""
+    slots = [SlotDTO(dia_semana=dia, turno="manha", periodo=p) for dia in ["segunda", "terca"] for p in range(1, 5)]
+    dados = HorarioInput(
+        turmas=[TurmaDTO(id=1, numero_alunos=20, turno="manha")],
+        professores=[
+            ProfessorDTO(id=1, classificacao=3, vinculo_casa=False),
+            ProfessorDTO(id=2, classificacao=3, vinculo_casa=False),
+        ],
+        salas=[SalaDTO(id=1, capacidade=30)],
+        slots=slots,
+        turma_disciplinas=[TurmaDisciplinaDTO(turma_id=1, disciplina_id=1, carga_horaria_semanal=2)],
+        professor_disciplinas=[
+            ProfessorDisciplinaDTO(professor_id=1, disciplina_id=1),
+            ProfessorDisciplinaDTO(professor_id=2, disciplina_id=1),
+        ],
+        disponibilidades=[],
+    )
+    prioridades = {1: 0.1, 2: 0.9}  # professor 2 é claramente mais prioritário
+
+    model = cp_model.CpModel()
+    variaveis = build_variables(model, dados)
+    hint = gerar_hint_inicial(dados, variaveis, prioridades)
+
+    professores_no_hint = {chave[2] for chave, valor in hint.items() if valor == 1}
+    assert professores_no_hint == {2}
