@@ -135,33 +135,26 @@ class _TurmasScreenState extends State<TurmasScreen> {
       builder: (context) {
         return AlertDialog(
           title: const Text('Filtrar por Período'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                title: const Text('Todos'),
-                leading: Radio<Turno?>(
-                  value: null,
-                  groupValue: _selectedPeriodFilter,
-                  onChanged: (val) {
-                    setState(() => _selectedPeriodFilter = val);
-                    Navigator.pop(context);
-                  },
+          content: RadioGroup<Turno?>(
+            groupValue: _selectedPeriodFilter,
+            onChanged: (val) {
+              setState(() => _selectedPeriodFilter = val);
+              Navigator.pop(context);
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const ListTile(
+                  title: Text('Todos'),
+                  leading: Radio<Turno?>(value: null),
                 ),
-              ),
-              for (final turno in Turno.values)
-                ListTile(
-                  title: Text(turno.displayName),
-                  leading: Radio<Turno?>(
-                    value: turno,
-                    groupValue: _selectedPeriodFilter,
-                    onChanged: (val) {
-                      setState(() => _selectedPeriodFilter = val);
-                      Navigator.pop(context);
-                    },
+                for (final turno in Turno.values)
+                  ListTile(
+                    title: Text(turno.displayName),
+                    leading: Radio<Turno?>(value: turno),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         );
       },
