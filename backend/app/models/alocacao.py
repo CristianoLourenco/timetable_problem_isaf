@@ -1,4 +1,4 @@
-# Implementa: RF11, RF12 (UC11, UC12) — ver docs/04_04_analise_desenvolvimento.md
+# Implementa: RF11, RF12 (UC11, UC12) — ver docs/relatorio/04_analise_desenvolvimento/
 # Entidade de output — resultado do solver persistido, ausente enquanto dado de entrada.
 #
 # dia_semana + periodo em vez de slot_id (não existe tabela Slot — ver

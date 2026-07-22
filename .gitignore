@@ -29,8 +29,16 @@ frontend/.packages
 **/ios/Flutter/Flutter.framework
 **/ios/Pods/
 
-# Documentação do TFC — mantida apenas localmente, fora do repositório remoto
-docs/
+# TFC — documento compilado (gerado a partir de docs/relatorio/**/*.md via Pandoc, ver docs/dist/README.md)
+docs/dist/*.docx
+docs/dist/*.pdf
+!docs/dist/custom-reference.docx
+
+# Material confidencial — nunca sobe ao repositório remoto:
+# dados institucionais reais do ISAF (exemplares de horário) e TFCs de terceiros
+# usados só como referência de formatação, nunca para distribuição.
+docs/exemplar_isaf/
+docs/exemplar_modelo_tfc_docx/
 
 # IDE
 .idea/

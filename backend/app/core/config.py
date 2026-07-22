@@ -58,7 +58,7 @@ class Settings(BaseSettings):
     # que outra nunca é preferida pelo objetivo, logo nunca seria escolhida numa solução
     # ótima a não ser forçada por conflito de outras turmas — o que as top-K mais próximas
     # já cobrem com folga. Medido no benchmark: reduz variáveis ~5-10x sem alterar a
-    # qualidade prática da solução (ver docs/04_04_analise_desenvolvimento.md secção 4.4.1).
+    # qualidade prática da solução (ver docs/relatorio/04_analise_desenvolvimento/ secção 4.4.1).
     solver_max_salas_candidatas: int = 5
     # Decomposição por turno (Manhã→Tarde→Noite, ver app/solver/orquestrador_turnos.py)
     # — reduz o tamanho de cada modelo CP-SAT individual em vez de resolver o
@@ -105,7 +105,7 @@ class Settings(BaseSettings):
 
     # Calendário letivo — nunca hardcoded fora daqui (ver docs/CONVENCOES.md, proibições gerais).
     # Valores por omissão servem apenas de bootstrap para ambiente local/dev.
-    # Não existe tabela Slot (ver docs/04_04_analise_desenvolvimento.md secção 4.2.4) —
+    # Não existe tabela Slot (ver docs/relatorio/04_analise_desenvolvimento/ secção 4.2.4) —
     # dia_semana + turno + periodo são campos simples; a grelha de horas reais é
     # calculada a partir daqui em app/core/calendario.py, nunca persistida.
     slot_dias_semana: list[str] = ["segunda", "terca", "quarta", "quinta", "sexta"]

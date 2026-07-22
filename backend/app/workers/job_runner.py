@@ -1,4 +1,4 @@
-# Implementa: RF09, RF10, RF13 (UC08, UC09, UC10) — ver docs/04_04_analise_desenvolvimento.md
+# Implementa: RF09, RF10, RF13 (UC08, UC09, UC10) — ver docs/relatorio/04_analise_desenvolvimento/
 #
 # Corre fora do ciclo do pedido HTTP (FastAPI BackgroundTasks, sem Celery/Redis no MVP —
 # ver backend/docs/CONVENCOES.md "Proibições absolutas"). Abre a sua própria Session porque o

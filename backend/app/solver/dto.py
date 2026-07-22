@@ -1,5 +1,5 @@
 # Implementa: RN01-RN08 (UC08) — estruturas de entrada/saída do solver
-# ver docs/04_04_analise_desenvolvimento.md secção 4.3.3 e docs/04_04_analise_desenvolvimento.md secção 4.1.2 (RNs).
+# ver docs/relatorio/04_analise_desenvolvimento/ secção 4.3.3 e docs/relatorio/04_analise_desenvolvimento/ secção 4.1.2 (RNs).
 #
 # Puras dataclasses — nunca SQLModel/Pydantic aqui. A service layer (fora de app/solver/)
 # é responsável por ler a BD e traduzir as entidades para estas estruturas simples.

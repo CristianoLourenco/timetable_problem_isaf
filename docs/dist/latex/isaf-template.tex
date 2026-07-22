@@ -1,0 +1,142 @@
+% Template LaTeX customizado — TFC ISAF
+% Implementa Artigo 9º do Regulamento TCC do ISAF de forma absoluta
+% (margens, espaçamento, numeração romano/arábico, cabeçalho, "ÍNDICE").
+\documentclass[12pt,a4paper]{report}
+
+% ---- Idioma e fontes ----
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else
+  \usepackage{fontspec}
+\fi
+\usepackage{polyglossia}
+\setmainlanguage{portuguese}
+\setotherlanguage{english}
+
+\ifPDFTeX
+\else
+  \setmainfont{Tinos} % substituto métrico de Times New Roman
+\fi
+
+% ---- Margens — Regulamento TCC Art.9º: 2.5/2.5/2.5cm, esquerda 3.5cm (encadernação) ----
+\usepackage[
+  top=2.5cm, right=2.5cm, bottom=2.5cm, left=3.5cm,
+  headheight=28pt, includeheadfoot
+]{geometry}
+
+% ---- Espaçamento 1.5 linhas (Art.9º) ----
+\usepackage{setspace}
+\onehalfspacing
+
+% ---- Parágrafos: indentação em vez de espaço em branco (padrão académico) ----
+\usepackage{parskip}
+\setlength{\parskip}{0pt}
+\setlength{\parindent}{1.25cm}
+
+% ---- Cabeçalho/rodapé ----
+\usepackage{fancyhdr}
+\newcommand{\titulotrabalho}{DESENVOLVIMENTO DE UM SISTEMA INTELIGENTE PARA A GERAÇÃO AUTOMÁTICA DE HORÁRIOS ACADÉMICOS}
+
+% Estilo sem cabeçalho/rodapé — usado na capa e pré-textual
+\fancypagestyle{semcapa}{
+  \fancyhf{}
+  \renewcommand{\headrulewidth}{0pt}
+  \renewcommand{\footrulewidth}{0pt}
+}
+% Estilo pré-textual: só numeração romana centrada no rodapé, sem cabeçalho
+\fancypagestyle{pretextual}{
+  \fancyhf{}
+  \fancyfoot[C]{\fontsize{10pt}{12pt}\selectfont\thepage}
+  \renewcommand{\headrulewidth}{0pt}
+  \renewcommand{\footrulewidth}{0pt}
+}
+% Estilo do corpo textual: cabeçalho com título (10pt, direita) + numeração arábica no rodapé
+\fancypagestyle{corpo}{
+  \fancyhf{}
+  \fancyhead[R]{\fontsize{10pt}{12pt}\selectfont\titulotrabalho}
+  \fancyfoot[C]{\fontsize{10pt}{12pt}\selectfont\thepage}
+  \renewcommand{\headrulewidth}{0pt}
+  \renewcommand{\footrulewidth}{0pt}
+}
+\pagestyle{corpo}
+
+% ---- Sumário: título "ÍNDICE" em vez de "Sumário"/"Índice remissivo" ----
+\renewcommand{\contentsname}{ÍNDICE}
+\setcounter{tocdepth}{3}
+
+% ---- Numeração de secções: desligada — os títulos já trazem o número manualmente ----
+\setcounter{secnumdepth}{-\maxdimen}
+\usepackage{titlesec}
+% pandoc mapeia "# Título" para \chapter — já quebra página por omissão (classe report);
+% aqui só ajustamos o estilo tipográfico do título.
+\titleformat{\chapter}[block]{\normalfont\Large\bfseries\centering}{}{0pt}{}
+\titlespacing*{\chapter}{0pt}{0pt}{24pt}
+% As legendas de tabelas já incluem "Tabela N — ..." manualmente no texto
+% fonte (sintaxe `Table: Tabela N --- ...` do pandoc); desligar o prefixo e
+% a numeração automática do LaTeX evita duplicação ("Tabela 2 – Tabela 1 —").
+\usepackage{caption}
+\captionsetup{labelformat=empty, labelsep=none, justification=raggedright, singlelinecheck=false}
+
+% ---- Tabelas longas, imagens, links ----
+\usepackage{longtable,booktabs,array,calc}
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\usepackage[hidelinks]{hyperref}
+\usepackage{xurl}
+\setlength{\emergencystretch}{3em}
+
+% ---- Citações (csl-refs do pandoc) ----
+$if(csl-refs)$
+\newlength{\cslhangindent}
+\setlength{\cslhangindent}{1.5em}
+\newlength{\csllabelwidth}
+\setlength{\csllabelwidth}{3em}
+\newlength{\cslentryspacingunit}
+\setlength{\cslentryspacingunit}{\parskip}
+\newenvironment{CSLReferences}[2]
+ {\setlength{\parindent}{0pt}
+  \ifodd #1
+  \let\oldpar\par
+  \def\par{\hangindent=\cslhangindent\oldpar}
+  \fi
+  \setlength{\parskip}{#2\cslentryspacingunit}}
+ {}
+\newcommand{\CSLBlock}[1]{#1\hfill\break}
+\newcommand{\CSLLeftMargin}[1]{\parbox[t]{\csllabelwidth}{#1}}
+\newcommand{\CSLRightInline}[1]{\parbox[t]{\linewidth - \csllabelwidth}{#1}\break}
+\newcommand{\CSLIndent}[1]{\hspace{\cslhangindent}#1}
+$endif$
+
+\hypersetup{
+  pdftitle={$title-meta$},
+  pdfauthor={$author-meta$},
+  pdflang={pt-PT},
+  hidelinks
+}
+
+\begin{document}
+
+% ---------- CAPA + FOLHA DE ROSTO + BANCA (sem numeração) ----------
+\pagestyle{semcapa}
+\pagenumbering{gobble}
+
+$body$
+
+\end{document}

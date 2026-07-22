@@ -1,4 +1,4 @@
-# Implementa: RF06, RF07, RF08 (UC06, UC07) — ver docs/04_04_analise_desenvolvimento.md
+# Implementa: RF06, RF07, RF08 (UC06, UC07) — ver docs/relatorio/04_analise_desenvolvimento/
 # Fluxo (ver skill excel-import-openpyxl): parse -> validar (RF07) -> gravar com idempotência por
 # chave única (RF08). Nunca aborta no primeiro erro de linha — reporta todos.
 from collections.abc import Callable, Sequence

@@ -1,4 +1,4 @@
-# Implementa: warm-start para o CP-SAT (RF13/RNF01) — ver docs/04_04_analise_desenvolvimento.md
+# Implementa: warm-start para o CP-SAT (RF13/RNF01) — ver docs/relatorio/04_analise_desenvolvimento/
 #
 # Heurística construtiva gulosa "mais restrito primeiro" (padrão clássico de CSP):
 # aloca primeiro os pares (turma, disciplina) com menos combinações válidas de

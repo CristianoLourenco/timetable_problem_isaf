@@ -1,4 +1,4 @@
-# Implementa: RF05 (UC05) — ver docs/04_04_analise_desenvolvimento.md
+# Implementa: RF05 (UC05) — ver docs/relatorio/04_analise_desenvolvimento/
 #
 # Não existe tabela Slot nem BD envolvida aqui: a grelha de tempos letivos é calculada
 # em runtime a partir de core/config.py (ver app/core/calendario.py). Sem isto o cliente

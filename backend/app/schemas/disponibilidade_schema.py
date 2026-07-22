@@ -1,4 +1,4 @@
-# Implementa: RF05 (UC05) — ver docs/04_04_analise_desenvolvimento.md
+# Implementa: RF05 (UC05) — ver docs/relatorio/04_analise_desenvolvimento/
 from sqlmodel import SQLModel
 
 from app.schemas.tempo_schema import TempoChave

@@ -3,7 +3,7 @@
 Monorepo: `backend/` (FastAPI + OR-Tools CP-SAT), `frontend/` (Flutter + Firebase), `docs/` (fonte de verdade dos requisitos).
 
 **Antes de qualquer alteração estrutural, ler:**
-- `docs/04_04_analise_desenvolvimento.md` — RFs, RNFs, RNs (fonte de verdade única)
+- `docs/relatorio/04_analise_desenvolvimento/` — RFs, RNFs, RNs (fonte de verdade única)
 - `docs/03_especificacao_casos_uso.md` — UCs e fluxos
 - `backend/CLAUDE.md` — regras específicas do backend (carregado automaticamente ao trabalhar em `backend/`)
 - `frontend/CLAUDE.md` — regras específicas do frontend (carregado automaticamente ao trabalhar em `frontend/`)
@@ -33,7 +33,7 @@ BD ≠ variáveis do solver: entidades da BD são dados mestre; o modelo CP-SAT 
 Cada ficheiro de código relevante referencia o RF/RN/UC que implementa, em comentário no topo:
 
 ```python
-# Implementa: RF09 (UC08), RF10 (UC10) — ver docs/04_04_analise_desenvolvimento.md
+# Implementa: RF09 (UC08), RF10 (UC10) — ver docs/relatorio/04_analise_desenvolvimento/
 ```
 
 ## Convenção de commits
@@ -41,7 +41,7 @@ Cada ficheiro de código relevante referencia o RF/RN/UC que implementa, em come
 ```
 feat(backend): implementa RF09 — endpoint POST /gerar-horario
 feat(frontend): UC12 — página de consulta de horário por professor
-docs: atualiza 04_04_analise_desenvolvimento.md — adiciona RN13
+docs: atualiza docs/relatorio/04_analise_desenvolvimento/ — adiciona RN13
 fix(solver): corrige modelagem esparsa para turmas sem disciplinas
 ```
 

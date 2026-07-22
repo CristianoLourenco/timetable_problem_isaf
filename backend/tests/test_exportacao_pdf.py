@@ -55,7 +55,7 @@ def _semear_e_gerar(engine, n_turmas: int = 2) -> tuple[str, list[int]]:
         session.refresh(disciplina)
         session.add(ProfessorDisciplina(professor_id=professor.id, disciplina_id=disciplina.id))
         # Grade curricular é partilhada por todas as turmas do mesmo plano — um só
-        # registo, não um por turma (ver docs/04_04_analise_desenvolvimento.md secção 4.2.3).
+        # registo, não um por turma (ver docs/relatorio/04_analise_desenvolvimento/ secção 4.2.3).
         session.add(
             PlanoCurricularDisciplina(plano_curricular_id=plano.id, disciplina_id=disciplina.id, carga_horaria_semanal=2)
         )

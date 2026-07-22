@@ -4,7 +4,7 @@
 #
 # NUNCA correr via pytest/CI — só manualmente (`python backend/scripts/benchmark_escala_real.py`),
 # exatamente o mecanismo para validar RNF01 sem impor um teste de vários minutos à
-# suite automática (ver docs/04_04_analise_desenvolvimento.md, decisão do utilizador
+# suite automática (ver docs/relatorio/04_analise_desenvolvimento/, decisão do utilizador
 # de evitar testes de 10 minutos). Gera um HorarioInput sintético inteiramente em
 # memória (sem BD) e reporta tempo de construção do modelo, nº de variáveis, tempo
 # de resolução e status para ambas as abordagens.

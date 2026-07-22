@@ -1,4 +1,4 @@
-# Implementa: RN04, RN08 + função objetivo (equidade) — docs/04_04_analise_desenvolvimento.md secção 4.1.2
+# Implementa: RN04, RN08 + função objetivo (equidade) — docs/relatorio/04_analise_desenvolvimento/ secção 4.1.2
 from collections import defaultdict
 
 from ortools.sat.python import cp_model
@@ -93,7 +93,7 @@ def _construir_termo_equidade(
 ):
     """Equidade — minimiza a amplitude (máximo - mínimo) de aulas por dia, por professor.
 
-    Proxy linear da "variância de distribuição diária" (docs/04_04_analise_desenvolvimento.md
+    Proxy linear da "variância de distribuição diária" (docs/relatorio/04_analise_desenvolvimento/
     secção 4.1.2): CP-SAT não modela variância diretamente em termos lineares, e reduzir a
     amplitude entre o dia mais cheio e o mais vazio de cada professor tem o mesmo efeito
     prático de equilibrar a carga ao longo da semana. Soma tempos de todos os turnos no

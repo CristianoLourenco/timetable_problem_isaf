@@ -1,5 +1,5 @@
 # Implementa: RN01-RN08, RF13 — poda de domínio antes da geração de variáveis
-# ver docs/04_04_analise_desenvolvimento.md secção 4.3.3 e skill ortools-timetabling-solver.
+# ver docs/relatorio/04_analise_desenvolvimento/ secção 4.3.3 e skill ortools-timetabling-solver.
 #
 # builder.py já garante que nenhum BoolVar é criado para uma combinação inválida
 # (professor não qualificado, turno errado) — mas só filtra NO MOMENTO de criar as

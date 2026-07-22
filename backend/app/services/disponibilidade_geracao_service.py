@@ -1,5 +1,5 @@
 # Implementa: RF05/RN07 — geração de disponibilidade sintética para professores
-# reais sem nenhum registo, ver docs/04_04_analise_desenvolvimento.md.
+# reais sem nenhum registo, ver docs/relatorio/04_analise_desenvolvimento/.
 #
 # RF06/RF07 importam classificacao/vinculo_casa de Professor mas não têm caminho
 # de importação para Disponibilidade — um professor real importado do Excel

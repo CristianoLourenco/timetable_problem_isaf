@@ -1,4 +1,4 @@
-# Implementa: RF02 (UC02) — ver docs/04_04_analise_desenvolvimento.md
+# Implementa: RF02 (UC02) — ver docs/relatorio/04_analise_desenvolvimento/
 from sqlmodel import Field, SQLModel
 
 

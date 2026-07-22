@@ -1,4 +1,4 @@
-# Implementa: RF05 (UC05) — ver docs/04_04_analise_desenvolvimento.md
+# Implementa: RF05 (UC05) — ver docs/relatorio/04_analise_desenvolvimento/
 # RN07: ausência de registo para um professor = totalmente disponível (fallback aplicado no solver, não aqui)
 #
 # dia_semana + turno + periodo em vez de slot_id (não existe tabela Slot — ver

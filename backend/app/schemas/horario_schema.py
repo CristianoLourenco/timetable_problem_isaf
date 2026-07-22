@@ -1,4 +1,4 @@
-# Implementa: RF11, RF12 (UC11, UC12) — ver docs/04_04_analise_desenvolvimento.md
+# Implementa: RF11, RF12 (UC11, UC12) — ver docs/relatorio/04_analise_desenvolvimento/
 #
 # Resposta estruturada por dia/tempo, pronta para o Flutter desserializar — nunca
 # linhas soltas de Alocacao (ver backend/docs/CONVENCOES.md, Fase 5).

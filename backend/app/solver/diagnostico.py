@@ -1,5 +1,5 @@
 # Implementa: RF13 (UC09) — diagnóstico aprofundado de INFEASIBLE por bisecção
-# ver docs/04_04_analise_desenvolvimento.md secção 4.3.3.
+# ver docs/relatorio/04_analise_desenvolvimento/ secção 4.3.3.
 #
 # As verificações baratas em solve.py (_diagnosticar_infeasible) apanham causas
 # estruturais óbvias (professor não qualificado, carga incompatível com o turno),

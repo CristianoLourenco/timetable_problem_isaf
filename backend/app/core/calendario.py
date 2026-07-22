@@ -1,4 +1,4 @@
-# Grelha de tempos letivos — substitui a tabela Slot (ver docs/04_04_analise_desenvolvimento.md
+# Grelha de tempos letivos — substitui a tabela Slot (ver docs/relatorio/04_analise_desenvolvimento/
 # secção 4.2.4: dia_semana + turno + periodo são campos simples, sem entidade própria no DER).
 #
 # A numeração do período reinicia a 1 em cada turno (manhã 1..6, tarde/noite 1..5) porque

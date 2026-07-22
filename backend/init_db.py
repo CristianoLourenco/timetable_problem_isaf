@@ -2,7 +2,7 @@
 
 Não existe seed de grelha de tempos: dia_semana + turno + periodo são calculados em
 runtime a partir de core/config.py (ver app/core/calendario.py) — não há tabela Slot
-para semear (ver docs/04_04_analise_desenvolvimento.md secção 4.2.4).
+para semear (ver docs/relatorio/04_analise_desenvolvimento/ secção 4.2.4).
 
 Uso: python init_db.py
 """

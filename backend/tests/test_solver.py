@@ -1,4 +1,4 @@
-# Implementa: Fase 7 (testes do solver) — ver docs/04_04_analise_desenvolvimento.md secção 4.4.1
+# Implementa: Fase 7 (testes do solver) — ver docs/relatorio/04_analise_desenvolvimento/ secção 4.4.1
 # Cenário pequeno e controlado (3 turmas) validando zero-conflitos antes de escalar (RNF01).
 from collections import defaultdict
 

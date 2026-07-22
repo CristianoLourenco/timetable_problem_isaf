@@ -1,6 +1,6 @@
 # Backend — ISAF (FastAPI + OR-Tools CP-SAT)
 
-> Especificação completa em `../docs/04_04_analise_desenvolvimento.md` (RFs/RNFs/RNs) e `../docs/03_especificacao_casos_uso.md` (UCs). Este ficheiro é o resumo operacional para desenvolvimento no dia-a-dia — em caso de conflito, os docs em `docs/` são a fonte de verdade.
+> Especificação completa em `../docs/relatorio/04_analise_desenvolvimento/` (RFs/RNFs/RNs) e `../docs/03_especificacao_casos_uso.md` (UCs). Este ficheiro é o resumo operacional para desenvolvimento no dia-a-dia — em caso de conflito, os docs em `docs/` são a fonte de verdade.
 
 ## Princípio fundamental — BD ≠ variáveis do solver
 
@@ -54,13 +54,13 @@ backend/
 
 ## Persistência — decisão confirmada
 
-PostgreSQL + SQLModel (decisão confirmada com o utilizador na Fase 0 — ver `docs/04_04_analise_desenvolvimento.md`), correndo via `docker-compose.yml` (`backend/`). Uma proposta inicial de SQLite como alternativa mais simples (Fase 0) foi descartada. `DATABASE_URL` em `.env` (ver `.env.example`), driver `psycopg` v3 (`postgresql+psycopg://`).
+PostgreSQL + SQLModel (decisão confirmada com o utilizador na Fase 0 — ver `docs/relatorio/04_analise_desenvolvimento/`), correndo via `docker-compose.yml` (`backend/`). Uma proposta inicial de SQLite como alternativa mais simples (Fase 0) foi descartada. `DATABASE_URL` em `.env` (ver `.env.example`), driver `psycopg` v3 (`postgresql+psycopg://`).
 
 Ambiente Python: `venv` padrão (`python3 -m venv .venv`) + `pip install -r requirements.txt` — Python 3.12 já traz `ensurepip`, sem necessidade de `uv` ou instalação adicional de `pip`/`venv` a nível de sistema.
 
 ## Modelos SQLModel de referência
 
-Ver `../docs/04_04_analise_desenvolvimento.md` secção 4.2 para os campos exatos de `Turma`, `PlanoCurricularDisciplina`, `ProfessorDisciplina`, `Disponibilidade`, `Job`, `Alocacao` (não existe tabela `Slot` — dia_semana/turno/periodo são campos simples, ver `app/core/calendario.py`). Nomes e FKs devem seguir exatamente essa especificação (é o contrato com o Diagrama ER da tese).
+Ver `../docs/relatorio/04_analise_desenvolvimento/` secção 4.2 para os campos exatos de `Turma`, `PlanoCurricularDisciplina`, `ProfessorDisciplina`, `Disponibilidade`, `Job`, `Alocacao` (não existe tabela `Slot` — dia_semana/turno/periodo são campos simples, ver `app/core/calendario.py`). Nomes e FKs devem seguir exatamente essa especificação (é o contrato com o Diagrama ER da tese).
 
 ## Fases de implementação (ordem estrita)
 

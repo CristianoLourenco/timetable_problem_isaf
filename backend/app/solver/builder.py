@@ -1,9 +1,9 @@
 # Implementa: RN01-RN08 — geração esparsa de variáveis do modelo CP-SAT
-# ver docs/04_04_analise_desenvolvimento.md secção 4.3.3 e skill ortools-timetabling-solver.
+# ver docs/relatorio/04_analise_desenvolvimento/ secção 4.3.3 e skill ortools-timetabling-solver.
 #
 # Nota de modelagem (resolve uma ambiguidade entre a skill e a fonte de verdade):
 # a disponibilidade do professor NÃO filtra variáveis aqui — RN04 está classificada
-# como Soft em docs/04_04_analise_desenvolvimento.md secção 4.1.2, logo alocações fora da
+# como Soft em docs/relatorio/04_analise_desenvolvimento/ secção 4.1.2, logo alocações fora da
 # disponibilidade registada devem continuar possíveis (apenas penalizadas em
 # constraints_soft.py). Só RN07 (sem registo = totalmente disponível) depende disto,
 # e é aplicado no cálculo da penalização, não na geração de variáveis.

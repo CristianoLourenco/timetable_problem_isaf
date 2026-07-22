@@ -1,6 +1,6 @@
-# Implementa: RF09, RF10, RF11, RF12 (UC08, UC10, UC11, UC12) — ver docs/04_04_analise_desenvolvimento.md
+# Implementa: RF09, RF10, RF11, RF12 (UC08, UC10, UC11, UC12) — ver docs/relatorio/04_analise_desenvolvimento/
 #
-# Passo 1 (Extração) do fluxo descrito em docs/04_04_analise_desenvolvimento.md secção 4.1:
+# Passo 1 (Extração) do fluxo descrito em docs/relatorio/04_analise_desenvolvimento/ secção 4.1:
 # lê as entidades da BD e traduz para as dataclasses simples que o solver aceita.
 # O solver nunca vê a Session nem os models SQLModel diretamente.
 from collections import defaultdict
@@ -55,7 +55,7 @@ def extrair_dados(session: Session, ano_letivo: int, semestre: str) -> HorarioIn
 
     turma_disciplinas é derivado de Turma.plano_curricular_id -> PlanoCurricularDisciplina
     (não existe TurmaDisciplina — grade curricular é partilhada por curso+ano+semestre,
-    ver docs/04_04_analise_desenvolvimento.md secção 4.2.3). O solver continua a receber
+    ver docs/relatorio/04_analise_desenvolvimento/ secção 4.2.3). O solver continua a receber
     a mesma forma (turma_id, disciplina_id, carga_horaria_semanal) de sempre.
     """
     turmas = session.exec(

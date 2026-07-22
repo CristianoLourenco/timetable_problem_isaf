@@ -1,5 +1,5 @@
 # Implementa: RN12 — prioridade docente (classificação 50% + vínculo_casa 30% +
-# escassez de disponibilidade 20%) — ver docs/04_04_analise_desenvolvimento.md secção 4.1.2.
+# escassez de disponibilidade 20%) — ver docs/relatorio/04_analise_desenvolvimento/ secção 4.1.2.
 from collections import Counter
 
 from app.core.calendario import gerar_grelha_tempos

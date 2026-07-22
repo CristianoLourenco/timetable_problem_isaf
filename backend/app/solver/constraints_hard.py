@@ -1,4 +1,4 @@
-# Implementa: RN01, RN02, RN03, RN05, RN06 — ver docs/04_04_analise_desenvolvimento.md secção 4.1.2
+# Implementa: RN01, RN02, RN03, RN05, RN06 — ver docs/relatorio/04_analise_desenvolvimento/ secção 4.1.2
 from collections import defaultdict
 
 from ortools.sat.python import cp_model

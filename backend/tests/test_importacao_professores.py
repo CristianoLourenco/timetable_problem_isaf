@@ -1,4 +1,4 @@
-# Implementa: RF06, RF07, RF08 (UC06, UC07) — ver docs/04_04_analise_desenvolvimento.md
+# Implementa: RF06, RF07, RF08 (UC06, UC07) — ver docs/relatorio/04_analise_desenvolvimento/
 #
 # Regressão: bool(dados.get("vinculo_casa")) tratava QUALQUER string não vazia (incl.
 # "Não") como True, invertendo silenciosamente a intenção do Gestor — ver correção em

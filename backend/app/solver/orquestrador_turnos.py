@@ -1,5 +1,5 @@
 # Implementa: RF09/RF13 — decomposição por turno (Manhã → Tarde → Noite)
-# ver docs/04_04_analise_desenvolvimento.md secção 4.3.3.
+# ver docs/relatorio/04_analise_desenvolvimento/ secção 4.3.3.
 #
 # Com a configuração atual de turno_hora_inicio/turno_periodos (core/config.py) os
 # três turnos nunca se sobrepõem em hora real, e RN01 já chaveia por turno — logo

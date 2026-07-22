@@ -1,6 +1,6 @@
 # Implementa: RF02 (UC02) — grade curricular oficial por curso+ano+semestre,
 # partilhada por todas as turmas desse ano (substitui TurmaDisciplina — ver
-# docs/04_04_analise_desenvolvimento.md secção 4.2.3/4.2.4).
+# docs/relatorio/04_analise_desenvolvimento/ secção 4.2.3/4.2.4).
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
 
