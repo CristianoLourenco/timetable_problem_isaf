@@ -107,6 +107,55 @@ def test_turma_inexistente_levanta_erro_404():
             HorarioService(session).consultar_horario_turma(999)
 
 
+def test_horario_professor_escopado_nao_ignora_job_mais_recente_de_outro_semestre():
+    """Bug real (2026-07-24): consultar_horario_professor usava sempre o Job DONE
+    mais recente entre TODOS os âmbitos. Um professor que só lecione no 1º
+    semestre passava a ter horário vazio assim que o 2º semestre fosse gerado
+    depois — mesmo com alocações reais na BD para o 1º semestre. Passando
+    (ano_letivo, semestre) explícitos (filtro de âmbito da UI), a busca deve
+    escopar ao Job DONE desse âmbito exato, igual ao já feito para turma."""
+    engine = _criar_engine_teste()
+    turma_id, professor_id = _semear_e_gerar(engine)  # gera o Job do 1º semestre
+
+    with Session(engine) as session:
+        curso2 = Curso(codigo="CF", nome="Contabilidade")
+        session.add(curso2)
+        session.commit()
+        session.refresh(curso2)
+        plano2 = PlanoCurricular(curso_id=curso2.id, ano=1, semestre="2")
+        session.add(plano2)
+        session.commit()
+        session.refresh(plano2)
+        turma2 = Turma(
+            codigo="T2", nome="Turma 2", ano_letivo=2026, turno="manha", numero_alunos=20, plano_curricular_id=plano2.id
+        )
+        professor2 = Professor(nome="Prof B", email="profb@isaf.co.ao", classificacao=5, vinculo_casa=True)
+        disciplina2 = Disciplina(codigo="CTB", nome="Contabilidade")
+        sala2 = Sala(codigo="S2", nome="Sala 2", capacidade=30)
+        session.add_all([turma2, professor2, disciplina2, sala2])
+        session.commit()
+        session.refresh(turma2)
+        session.refresh(professor2)
+        session.refresh(disciplina2)
+        session.add(
+            PlanoCurricularDisciplina(
+                plano_curricular_id=plano2.id, disciplina_id=disciplina2.id, carga_horaria_semanal=2
+            )
+        )
+        session.add(ProfessorDisciplina(professor_id=professor2.id, disciplina_id=disciplina2.id))
+        session.commit()
+        job2_id = JobRepository(session).criar(ano_letivo=2026, semestre="2").id
+
+    executar(job2_id, engine=engine)  # Job DONE mais recente agora é o do 2º semestre
+
+    with Session(engine) as session:
+        sem_escopo = HorarioService(session).consultar_horario_professor(professor_id)
+        com_escopo = HorarioService(session).consultar_horario_professor(professor_id, ano_letivo=2026, semestre="1")
+
+    assert not any(t for d in sem_escopo.dias for t in d.tempos)  # bug: vazio sem o escopo
+    assert any(t for d in com_escopo.dias for t in d.tempos)  # corrigido: encontra o horário do 1º semestre
+
+
 def test_sem_job_concluido_devolve_none_em_vez_de_erro():
     """"Ainda não gerado" é um estado normal da UI (ex: filtro de ano/semestre
     sem horário), não um erro — turma existente sem Job DONE devolve None (200

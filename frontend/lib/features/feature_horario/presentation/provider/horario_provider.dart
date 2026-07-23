@@ -258,7 +258,7 @@ class HorarioProvider extends ChangeNotifier {
       _jobStatus = null;
       // Mesmo com status INFEASIBLE, podemos ter pendências e alocações parciais a mostrar
       await loadPendencias(_currentJobId!);
-      await fetchTimetableByTurma(turmaId);
+      await fetchTimetableByTurma(turmaId, anoLetivo: anoLetivo, semestre: semestre);
       return;
     }
     if (status != JobStatus.done) {
@@ -272,15 +272,15 @@ class HorarioProvider extends ChangeNotifier {
     _isGenerating = false;
     _jobStatus = null;
     await loadPendencias(_currentJobId!);
-    await fetchTimetableByTurma(turmaId);
+    await fetchTimetableByTurma(turmaId, anoLetivo: anoLetivo, semestre: semestre);
   }
 
-  Future<void> fetchTimetableByTurma(String turmaId) async {
-    await _fetchTimetable(GetHorarioParams.turma(turmaId));
+  Future<void> fetchTimetableByTurma(String turmaId, {int? anoLetivo, String? semestre}) async {
+    await _fetchTimetable(GetHorarioParams.turma(turmaId, anoLetivo: anoLetivo, semestre: semestre));
   }
 
-  Future<void> fetchTimetableByProfessor(String professorId) async {
-    await _fetchTimetable(GetHorarioParams.professor(professorId));
+  Future<void> fetchTimetableByProfessor(String professorId, {int? anoLetivo, String? semestre}) async {
+    await _fetchTimetable(GetHorarioParams.professor(professorId, anoLetivo: anoLetivo, semestre: semestre));
   }
 
   Future<void> _fetchTimetable(GetHorarioParams params) async {

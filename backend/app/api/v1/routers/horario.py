@@ -76,13 +76,21 @@ def horario_por_turma(turma_id: int, service: HorarioService = Depends(_get_serv
 @router.get("/horarios/professor/{professor_id}", response_model=HorarioResponseSchema)
 def horario_por_professor(
     professor_id: int,
+    ano_letivo: int | None = None,
+    semestre: str | None = None,
     service: HorarioService = Depends(_get_service),
     user: UtilizadorAutenticado = Depends(get_current_user),
 ):
-    """RF12 (UC12) — Gestor vê qualquer professor; Professor só o seu próprio (RN11/UC15)."""
+    """RF12 (UC12) — Gestor vê qualquer professor; Professor só o seu próprio (RN11/UC15).
+
+    (ano_letivo, semestre) opcionais: quando enviados (filtro de âmbito ativo na UI),
+    escopam a busca ao Job DONE desse âmbito exato — evita que um professor sem
+    aulas no âmbito mais recentemente gerado apareça com horário vazio (ver
+    consultar_horario_professor). Omitidos, mantém o comportamento antigo (Job DONE
+    mais recente entre todos os âmbitos)."""
     verificar_acesso_professor_proprio(user, professor_id)
     try:
-        return service.consultar_horario_professor(professor_id)
+        return service.consultar_horario_professor(professor_id, ano_letivo, semestre)
     except EntidadeNaoEncontradaError as exc:
         raise HTTPException(404, str(exc)) from exc
 

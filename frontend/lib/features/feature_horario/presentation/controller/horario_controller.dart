@@ -84,12 +84,12 @@ class HorarioController extends ValueNotifier<HorarioState> {
     _provider.clearSlots();
   }
 
-  Future<void> fetchTimetableByTurma(String turmaId) async {
-    await _provider.fetchTimetableByTurma(turmaId);
+  Future<void> fetchTimetableByTurma(String turmaId, {int? anoLetivo, String? semestre}) async {
+    await _provider.fetchTimetableByTurma(turmaId, anoLetivo: anoLetivo, semestre: semestre);
   }
 
-  Future<void> fetchTimetableByProfessor(String professorId) async {
-    await _provider.fetchTimetableByProfessor(professorId);
+  Future<void> fetchTimetableByProfessor(String professorId, {int? anoLetivo, String? semestre}) async {
+    await _provider.fetchTimetableByProfessor(professorId, anoLetivo: anoLetivo, semestre: semestre);
   }
 
   Future<void> exportarHorarioTurmaPdf(String turmaId, FileShareService fileShareService) async {

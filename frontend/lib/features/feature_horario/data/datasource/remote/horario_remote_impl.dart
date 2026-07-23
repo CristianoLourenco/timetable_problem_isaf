@@ -52,8 +52,19 @@ class HorarioRemoteImpl implements IHorarioRemote {
     );
   }
 
-  Future<DataState<HorarioResponseDto>> _fetchHorario(String path) async {
-    final response = await _http.get<dynamic>(path);
+  Future<DataState<HorarioResponseDto>> _fetchHorario(
+    String path, {
+    int? anoLetivo,
+    String? semestre,
+  }) async {
+    final queryParameters = <String, dynamic>{
+      if (anoLetivo != null) 'ano_letivo': anoLetivo,
+      if (semestre != null) 'semestre': semestre,
+    };
+    final response = await _http.get<dynamic>(
+      path,
+      queryParameters: queryParameters.isEmpty ? null : queryParameters,
+    );
     if (!response.success) {
       return DataState<HorarioResponseDto>(
         success: false,
@@ -84,13 +95,21 @@ class HorarioRemoteImpl implements IHorarioRemote {
   }
 
   @override
-  Future<DataState<HorarioResponseDto>> getTimetableByTurma(String turmaId) {
-    return _fetchHorario('/horarios/turma/$turmaId');
+  Future<DataState<HorarioResponseDto>> getTimetableByTurma(
+    String turmaId, {
+    int? anoLetivo,
+    String? semestre,
+  }) {
+    return _fetchHorario('/horarios/turma/$turmaId', anoLetivo: anoLetivo, semestre: semestre);
   }
 
   @override
-  Future<DataState<HorarioResponseDto>> getTimetableByProfessor(String professorId) {
-    return _fetchHorario('/horarios/professor/$professorId');
+  Future<DataState<HorarioResponseDto>> getTimetableByProfessor(
+    String professorId, {
+    int? anoLetivo,
+    String? semestre,
+  }) {
+    return _fetchHorario('/horarios/professor/$professorId', anoLetivo: anoLetivo, semestre: semestre);
   }
 
   Future<DataState<Uint8List>> _downloadBytes(String path) async {

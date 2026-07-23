@@ -176,12 +176,27 @@ class HorarioService:
         alocacoes = self.alocacao_repo.listar_por_job_e_turma(job.id, turma_id)
         return self.montar_resposta(job.id, alocacoes)
 
-    def consultar_horario_professor(self, professor_id: int) -> HorarioResponseSchema:
-        """RF12 (UC12) — horário do professor, a partir do Job DONE mais recente."""
+    def consultar_horario_professor(
+        self, professor_id: int, ano_letivo: int | None = None, semestre: str | None = None
+    ) -> HorarioResponseSchema:
+        """RF12 (UC12) — horário do professor.
+
+        Quando (ano_letivo, semestre) é passado (filtro da UI), escopa a busca do
+        Job exatamente como consultar_horario_turma já faz — sem isto, um professor
+        que só lecione no 1º semestre aparecia com horário vazio assim que o Gestor
+        gerasse o 2º semestre (Job DONE mais recente globalmente passava a ser o do
+        2º semestre, sem nenhuma alocação deste professor). Omitido (retrocompatibilidade
+        de quem chama sem filtro), mantém o Job DONE mais recente entre todos os
+        âmbitos — um professor não está preso a um único ano/semestre."""
         if self.professor_repo.get(professor_id) is None:
             raise EntidadeNaoEncontradaError("Professor não encontrado.")
 
-        job = self._obter_ultimo_job_concluido()
+        if ano_letivo is not None and semestre is not None:
+            job = self.job_repo.obter_ultimo_concluido_para(ano_letivo, [semestre, "Anual"])
+            if job is None:
+                return self.montar_resposta("", [])
+        else:
+            job = self._obter_ultimo_job_concluido()
         alocacoes = self.alocacao_repo.listar_por_job_e_professor(job.id, professor_id)
         return self.montar_resposta(job.id, alocacoes)
 

@@ -60,6 +60,14 @@ class _DocenteDetalheScreenState extends State<DocenteDetalheScreen>
   late final HorarioController _controller;
   late final TabController _tabController;
 
+  // Filtro de ano/semestre (RF12) — sem isto, a consulta ficava sempre presa
+  // ao Job DONE mais recente entre TODOS os semestres: um professor que só
+  // leciona no 1º semestre ficava com o horário vazio assim que o 2º
+  // semestre fosse gerado (bug real corrigido no backend; mesma abordagem
+  // usada em HorarioScreen para turma/professor).
+  late int _anoLetivo = DateTime.now().year;
+  String _semestre = '1';
+
   @override
   void initState() {
     super.initState();
@@ -68,7 +76,7 @@ class _DocenteDetalheScreenState extends State<DocenteDetalheScreen>
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      _controller.fetchTimetableByProfessor(widget.docenteId);
+      _controller.fetchTimetableByProfessor(widget.docenteId, anoLetivo: _anoLetivo, semestre: _semestre);
 
       final salas = context.read<SalasProvider>();
       final disciplinas = context.read<DisciplinasProvider>();
@@ -78,6 +86,10 @@ class _DocenteDetalheScreenState extends State<DocenteDetalheScreen>
       if (disciplinas.disciplinas.isEmpty) await disciplinas.loadDisciplinas();
       if (turmas.turmas.isEmpty) await turmas.loadTurmas();
     });
+  }
+
+  void _onAmbitoChanged() {
+    _controller.fetchTimetableByProfessor(widget.docenteId, anoLetivo: _anoLetivo, semestre: _semestre);
   }
 
   @override
@@ -146,7 +158,7 @@ class _DocenteDetalheScreenState extends State<DocenteDetalheScreen>
     );
 
     if (result == true && mounted) {
-      _controller.fetchTimetableByProfessor(widget.docenteId);
+      _controller.fetchTimetableByProfessor(widget.docenteId, anoLetivo: _anoLetivo, semestre: _semestre);
     }
   }
 
@@ -295,6 +307,19 @@ class _DocenteDetalheScreenState extends State<DocenteDetalheScreen>
                         style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.blackBlue, fontFamily: 'Poppins'),
                       ),
                     const Spacer(),
+                    _AnoLetivoESemestreSeletor(
+                      anoLetivo: _anoLetivo,
+                      semestre: _semestre,
+                      onAnoLetivoChanged: (v) {
+                        setState(() => _anoLetivo = v);
+                        _onAmbitoChanged();
+                      },
+                      onSemestreChanged: (v) {
+                        setState(() => _semestre = v);
+                        _onAmbitoChanged();
+                      },
+                    ),
+                    const SizedBox(width: 16),
                     ElevatedButton.icon(
                       onPressed: () => _openAlocacaoDialog(),
                       style: ElevatedButton.styleFrom(
@@ -659,6 +684,80 @@ class _DocenteLegenda extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Seletor de Ano Letivo/Semestre (RF12) — mesmo padrão usado em
+/// HorarioScreen para escopar a consulta do horário a um (ano_letivo,
+/// semestre) exato, em vez do Job DONE mais recente entre todos os âmbitos.
+class _AnoLetivoESemestreSeletor extends StatelessWidget {
+  const _AnoLetivoESemestreSeletor({
+    required this.anoLetivo,
+    required this.semestre,
+    required this.onAnoLetivoChanged,
+    required this.onSemestreChanged,
+  });
+
+  final int anoLetivo;
+  final String semestre;
+  final ValueChanged<int> onAnoLetivoChanged;
+  final ValueChanged<String> onSemestreChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final anoAtual = DateTime.now().year;
+    final anos = [for (var a = anoAtual - 1; a <= anoAtual + 1; a++) a];
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _SeletorBox(
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<int>(
+              value: anoLetivo,
+              icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF64748B)),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.blackBlue, fontFamily: 'Poppins'),
+              items: anos.map((a) => DropdownMenuItem(value: a, child: Text('Ano lectivo: $a'))).toList(),
+              onChanged: (v) => v != null ? onAnoLetivoChanged(v) : null,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        _SeletorBox(
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: semestre,
+              icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF64748B)),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.blackBlue, fontFamily: 'Poppins'),
+              items: const [
+                DropdownMenuItem(value: '1', child: Text('1º Semestre')),
+                DropdownMenuItem(value: '2', child: Text('2º Semestre')),
+              ],
+              onChanged: (v) => v != null ? onSemestreChanged(v) : null,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SeletorBox extends StatelessWidget {
+  const _SeletorBox({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+      ),
+      child: child,
     );
   }
 }

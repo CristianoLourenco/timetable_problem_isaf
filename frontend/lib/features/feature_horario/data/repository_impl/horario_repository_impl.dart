@@ -43,13 +43,25 @@ class HorarioRepositoryImpl implements IHorarioRepository {
   }
 
   @override
-  Future<DataState<HorarioResultado>> getTimetableByTurma(String turmaId) async {
-    return _toEntityState(await remoteDatasource.getTimetableByTurma(turmaId));
+  Future<DataState<HorarioResultado>> getTimetableByTurma(
+    String turmaId, {
+    int? anoLetivo,
+    String? semestre,
+  }) async {
+    return _toEntityState(
+      await remoteDatasource.getTimetableByTurma(turmaId, anoLetivo: anoLetivo, semestre: semestre),
+    );
   }
 
   @override
-  Future<DataState<HorarioResultado>> getTimetableByProfessor(String professorId) async {
-    return _toEntityState(await remoteDatasource.getTimetableByProfessor(professorId));
+  Future<DataState<HorarioResultado>> getTimetableByProfessor(
+    String professorId, {
+    int? anoLetivo,
+    String? semestre,
+  }) async {
+    return _toEntityState(
+      await remoteDatasource.getTimetableByProfessor(professorId, anoLetivo: anoLetivo, semestre: semestre),
+    );
   }
 
   @override

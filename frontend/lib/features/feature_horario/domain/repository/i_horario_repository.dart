@@ -12,8 +12,8 @@ import 'package:ghorario/features/feature_horario/domain/entities/alocacao_manua
 abstract class IHorarioRepository {
   Future<DataState<String>> triggerGeneration({required int anoLetivo, required String semestre});
   Future<DataState<JobResultado>> checkStatus(String jobId);
-  Future<DataState<HorarioResultado>> getTimetableByTurma(String turmaId);
-  Future<DataState<HorarioResultado>> getTimetableByProfessor(String professorId);
+  Future<DataState<HorarioResultado>> getTimetableByTurma(String turmaId, {int? anoLetivo, String? semestre});
+  Future<DataState<HorarioResultado>> getTimetableByProfessor(String professorId, {int? anoLetivo, String? semestre});
   Future<DataState<Uint8List>> downloadHorarioTurmaPdf(String turmaId);
   Future<DataState<Uint8List>> downloadExportarTodosPdf(String jobId);
   Future<DataState<List<Pendencia>>> getPendencias(String jobId);

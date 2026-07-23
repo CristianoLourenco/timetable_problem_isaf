@@ -144,9 +144,9 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
       return;
     }
     if (_filtroTipo == _FiltroTipo.turma && _selectedTurmaId != null) {
-      await _controller.fetchTimetableByTurma(_selectedTurmaId!);
+      await _controller.fetchTimetableByTurma(_selectedTurmaId!, anoLetivo: _anoLetivo, semestre: _semestre);
     } else if (_filtroTipo == _FiltroTipo.professor && _selectedProfessorId != null) {
-      await _controller.fetchTimetableByProfessor(_selectedProfessorId!);
+      await _controller.fetchTimetableByProfessor(_selectedProfessorId!, anoLetivo: _anoLetivo, semestre: _semestre);
     }
   }
 
@@ -159,12 +159,12 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
 
   void _onTurmaSelected(String turmaId) {
     setState(() => _selectedTurmaId = turmaId);
-    _controller.fetchTimetableByTurma(turmaId);
+    _controller.fetchTimetableByTurma(turmaId, anoLetivo: _anoLetivo, semestre: _semestre);
   }
 
   void _onProfessorSelected(String professorId) {
     setState(() => _selectedProfessorId = professorId);
-    _controller.fetchTimetableByProfessor(professorId);
+    _controller.fetchTimetableByProfessor(professorId, anoLetivo: _anoLetivo, semestre: _semestre);
   }
 
   Future<void> _openAlocacaoDialog({
@@ -217,9 +217,9 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
 
     if (result == true && mounted) {
       if (_filtroTipo == _FiltroTipo.turma && _selectedTurmaId != null) {
-        _controller.fetchTimetableByTurma(_selectedTurmaId!);
+        _controller.fetchTimetableByTurma(_selectedTurmaId!, anoLetivo: _anoLetivo, semestre: _semestre);
       } else if (_filtroTipo == _FiltroTipo.professor && _selectedProfessorId != null) {
-        _controller.fetchTimetableByProfessor(_selectedProfessorId!);
+        _controller.fetchTimetableByProfessor(_selectedProfessorId!, anoLetivo: _anoLetivo, semestre: _semestre);
       }
       await horarioProvider.loadPendencias(jobId);
     }
@@ -238,9 +238,9 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
       // o drag-and-drop parecia "não fazer nada" mesmo com o PATCH a ter
       // sucesso no backend (bug real, 2026-07-19).
       if (_filtroTipo == _FiltroTipo.turma && _selectedTurmaId != null) {
-        await _controller.fetchTimetableByTurma(_selectedTurmaId!);
+        await _controller.fetchTimetableByTurma(_selectedTurmaId!, anoLetivo: _anoLetivo, semestre: _semestre);
       } else if (_filtroTipo == _FiltroTipo.professor && _selectedProfessorId != null) {
-        await _controller.fetchTimetableByProfessor(_selectedProfessorId!);
+        await _controller.fetchTimetableByProfessor(_selectedProfessorId!, anoLetivo: _anoLetivo, semestre: _semestre);
       }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -479,9 +479,9 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
                                   setState(() {
                                     _filtroTipo = v;
                                     if (v == _FiltroTipo.turma && _selectedTurmaId != null) {
-                                      _controller.fetchTimetableByTurma(_selectedTurmaId!);
+                                      _controller.fetchTimetableByTurma(_selectedTurmaId!, anoLetivo: _anoLetivo, semestre: _semestre);
                                     } else if (v == _FiltroTipo.professor && _selectedProfessorId != null) {
-                                      _controller.fetchTimetableByProfessor(_selectedProfessorId!);
+                                      _controller.fetchTimetableByProfessor(_selectedProfessorId!, anoLetivo: _anoLetivo, semestre: _semestre);
                                     }
                                   });
                                 },

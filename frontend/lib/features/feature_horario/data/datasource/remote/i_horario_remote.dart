@@ -17,11 +17,17 @@ abstract class IHorarioRemote {
   /// `GET /jobs/{job_id}`.
   Future<DataState<JobResultado>> checkStatus(String jobId);
 
-  /// `GET /horarios/turma/{turma_id}` — always the most recent DONE job for that turma.
-  Future<DataState<HorarioResponseDto>> getTimetableByTurma(String turmaId);
+  /// `GET /horarios/turma/{turma_id}` — always the most recent DONE job for that turma,
+  /// unless [anoLetivo]/[semestre] are given, in which case the lookup is scoped to the
+  /// DONE job of that exact (ano_letivo, semestre) pair.
+  Future<DataState<HorarioResponseDto>> getTimetableByTurma(String turmaId, {int? anoLetivo, String? semestre});
 
-  /// `GET /horarios/professor/{professor_id}`.
-  Future<DataState<HorarioResponseDto>> getTimetableByProfessor(String professorId);
+  /// `GET /horarios/professor/{professor_id}` — always the most recent DONE job across
+  /// all semesters, unless [anoLetivo]/[semestre] are given, in which case the lookup is
+  /// scoped to the DONE job of that exact (ano_letivo, semestre) pair. Sem isto, um
+  /// professor que só leciona no 1º semestre ficava com o horário vazio assim que o 2º
+  /// semestre fosse gerado (bug real corrigido no backend).
+  Future<DataState<HorarioResponseDto>> getTimetableByProfessor(String professorId, {int? anoLetivo, String? semestre});
 
   /// `GET /horarios/turma/{turma_id}/pdf` — bytes de um único PDF.
   Future<DataState<Uint8List>> downloadHorarioTurmaPdf(String turmaId);
