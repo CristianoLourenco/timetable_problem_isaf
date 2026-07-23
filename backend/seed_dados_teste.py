@@ -154,6 +154,7 @@ CURRICULO = {
                     ("Segurança Informática em Redes de Sistemas", 4, ["Dr. Edson Tomás"]),
                     ("Direito Informático", 4, ["Dr. Divaldo Sousa"]),
                     ("Fiscalidade", 4, ["Dr. Cristina Silvestre"]),
+                    ("Trabalho Final de Curso", 6, ["Doutor Victor da Silva"]),
                 ],
             },
             "2": {
@@ -163,6 +164,7 @@ CURRICULO = {
                     ("Gestão de Recursos Humanos", 5, ["Dra. Teresa Vunge"]),
                     ("Comércio Electrónico", 4, ["MSc. Euclides Catumbela"]),
                     ("Auditoria Informática", 6, ["Dr. Wilson Paiva"]),
+                    ("Trabalho Final de Curso", 6, ["Doutor Victor da Silva"]),
                 ],
             },
         },
@@ -242,6 +244,7 @@ CURRICULO = {
                     ("Gestão de Recursos Humanos", 4, ["MSc. Miguel Troco", "MSc. Etelvina Carlos", "Dr. Hildebrando Sala"]),
                     ("Contabilidade Analítica Avançada", 6, ["Professor Doutor Capela Tepa", "Dr. António Francisco"]),
                     ("História Económica", 4, ["MSc. Cidália de Castro", "Dra. Helena Miguel"]),
+                    ("Trabalho Final de Curso", 6, ["Dr. Kialanda Mbuta", "Dr. Laurindo Dias"]),
                 ],
             },
             "2": {
@@ -251,6 +254,7 @@ CURRICULO = {
                     ("Economia e Comércio Internacionais", 4, ["Dra. Helena Miguel", "MSc. João Pinho"]),
                     ("Auditoria", 6, ["MSc. Cidália de Castro", "Doutor Carla Negrão", "MSc. Marthe Kimfumu"]),
                     ("Sistemas de Controlo de Gestão", 4, ["Doutor Carla Negrão", "Dr. António dos Santos"]),
+                    ("Trabalho Final de Curso", 6, ["Dr. Kialanda Mbuta", "Dr. Laurindo Dias"]),
                 ],
             },
         },
@@ -330,6 +334,7 @@ CURRICULO = {
                     ("Seguros de Propriedade e Não-Vida", 6, ["Dr. Júlio Matias", "Dr. Silva e Rocha"]),
                     ("Economia Angolana e Internacional", 4, ["MSc. João Pinho", "MSc. Miguel Troco"]),
                     ("Operações e Prática Seguradora", 4, ["Dr. Passos Reis", "Dr. Júlio Matias"]),
+                    ("Trabalho Final de Curso", 6, ["Doutor Victor da Silva", "Doutor João Jovita"]),
                 ],
             },
             "2": {
@@ -339,6 +344,7 @@ CURRICULO = {
                     ("Auditoria Financeira Banca e Seguros", 6, ["Dr. Nelson Marcos", "MSc. Marthe Kimfumu"]),
                     ("Marketing de Serviços Financeiros", 4, ["Dr. Osmerivaldo Ramos", "MSc. Adão Chitxiami"]),
                     ("Sistemas de Controlo de Gestão", 4, ["Doutor Carla Negrão"]),
+                    ("Trabalho Final de Curso", 6, ["Doutor Victor da Silva", "Doutor João Jovita"]),
                 ],
             },
         },
