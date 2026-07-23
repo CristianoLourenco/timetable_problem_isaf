@@ -14,8 +14,10 @@ Anexo B para a mesma instituição e curso.
 
 A Figura A.1 reproduz, a título ilustrativo, o horário da turma T1 do 1º
 ano de Contabilidade e Finanças, 1º semestre. O conjunto completo dos 86
-horários encontra-se disponível no repositório do projecto, na pasta
-`docs/exemplar_isaf/`, organizado por semestre, curso e ano curricular.
+horários encontra-se disponível no repositório do projecto
+(`https://github.com/CristianoLourenco/timetable_problem_isaf`), na
+pasta `docs/exemplar_isaf/`, organizado por semestre, curso e ano
+curricular.
 
 Figura A.1
 
@@ -40,8 +42,8 @@ confundida com um horário manual real do ISAF (cf. Secção 4.4.1). A
 comparação visual entre os dois anexos evidencia a correspondência
 estrutural entre o horário produzido pelo sistema e o formato
 institucional já em uso, sem que tenha sido realizada, neste trabalho, a
-medição quantitativa dos conflitos do processo manual histórico (cf.
-Secção 5.1).
+medição quantitativa dos conflitos históricos da distribuição manual de
+horários no sistema de gestão escolar do ISAF (cf. Secção 5.1).
 
 Figura B.1
 

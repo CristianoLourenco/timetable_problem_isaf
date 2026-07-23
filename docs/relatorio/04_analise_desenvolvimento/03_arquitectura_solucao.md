@@ -95,7 +95,7 @@ CSP, instância as variáveis de decisão de acordo com a modelagem esparsa
 o solver. O resultado é devolvido como um objecto estruturado que a
 camada FastAPI serializa em JSON para consumo pela interface Flutter.
 Caso o solver devolva o status INFEASIBLE --- indicando que o conjunto
-de restrições é matematicamente irresolvível --- o motor activa o
+de restrições é matematicamente irresolvível --- o sistema activa o
 mecanismo de diagnóstico (RF13): uma verificação estrutural leve,
 executada antes de qualquer nova resolução, que testa as causas mais
 comuns de inviabilidade (ausência de professor qualificado para uma

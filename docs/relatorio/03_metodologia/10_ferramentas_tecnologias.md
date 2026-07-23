@@ -26,7 +26,7 @@ Table: Tabela 7 --- Ferramentas e tecnologias utilizadas
 | | file_picker | ^8.1.4 | Selecção de ficheiros (importação Excel) |
 | Persistência | PostgreSQL | 16 | Sistema de gestão de base de dados relacional |
 | Autenticação | Firebase Authentication | --- | Gestão de identidade e emissão de ID Tokens (RN09/RN10) |
-| Infraestrutura | Docker / Docker Compose | --- | Contentorização do PostgreSQL em ambiente de desenvolvimento |
+| Infra-estrutura | Docker / Docker Compose | --- | Contentorização do PostgreSQL em ambiente de desenvolvimento |
 | Controlo de versões | Git / GitHub | --- | Versionamento do código-fonte, histórico por fase (cf. Secção 3.9.2) |
 | Documentação | Markdown, Pandoc, LibreOffice | --- | Redacção e compilação deste relatório para DOCX/PDF |
 | | PlantUML | --- | Geração dos diagramas UML e entidade-relacional (cf. Secção 4.2) |

@@ -4,9 +4,7 @@
 
 Desenvolver um sistema inteligente para a geração automática de
 horários académicos no ISAF, recorrendo a técnicas de optimização
-combinatória e programação por restrições; a implementação técnica
-(arquitectura Python/FastAPI e Flutter) e a validação do sistema são
-detalhadas nos objectivos específicos que se seguem.
+combinatória e programação por restrições; 
 
 ### 1.6.2 Objectivos específicos
 
@@ -27,5 +25,6 @@ detalhadas nos objectivos específicos que se seguem.
 
 5.  Validar o sistema por meio de testes funcionais e de desempenho com
     dados de referência e com dados reais do ISAF à escala disponível,
-    estabelecendo a base para uma futura comparação directa com o
-    processo manual.
+    estabelecendo a base para uma futura comparação directa com a
+    distribuição manual de horários no sistema de gestão escolar do
+    ISAF.

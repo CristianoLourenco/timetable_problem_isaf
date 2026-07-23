@@ -150,7 +150,7 @@ o diagrama recorre a generalização de actor --- Gestor e Professor
 generalizam um actor comum, Utilizador, que é quem se liga a UC13 e
 UC14 --- e a validação de token em cada pedido HTTP (RN09) é, essa sim,
 documentada apenas textualmente na especificação de cada caso de uso,
-por ser uma verificação de infraestrutura (incluindo a expiração do
+por ser uma verificação de infra-estrutura (incluindo a expiração do
 token) e não um comportamento observável adicional do actor. Já a
 verificação de nível de acesso em UC12 (RN11 --- Professor só vê o seu
 próprio horário) tem valor observável específico daquele caso de uso, e

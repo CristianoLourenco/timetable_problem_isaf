@@ -24,8 +24,9 @@ especificações verificáveis ao longo do ciclo de vida do produto
 [@isoiec29148]. Neste trabalho, a necessidade central identificada
 é a seguinte: a gestão pedagógica do ISAF necessita de gerar horários
 académicos de forma automática, eliminando os conflitos de alocação de
-docentes e salas que ocorrem no processo manual actualmente utilizado. A
-propriedade esperada determina que o motor algorítmico opere sob
+docentes e salas que ocorrem na distribuição manual de horários no
+sistema de gestão escolar actualmente utilizado pelo ISAF. A
+propriedade esperada determina que o sistema opere sob
 princípios de inteligência artificial simbólica, nomeadamente resolução
 de restrições por CSP/CP, rejeitando aproximações probabilísticas que
 comprometam a integridade e a verificabilidade dos horários produzidos.
@@ -89,14 +90,15 @@ Table: Tabela 1 --- Glossário técnico do sistema
 
 ### **4.1.2 Requisitos de negócio**
 
-Segundo [@vazquezsimoes2016], Requisitos (ou necessidades) de negócio
-são declarações de mais alto nível de objetivos, metas ou necessidades
-da organização. Eles descrevem as razões pelas quais um projecto foi
-iniciado, as metas que o projecto deve atingir e as métricas que serão
-utilizadas para aferir o seu sucesso. Requisitos de negócio descrevem
-necessidades da organização como um todo e não de grupos ou partes
-interessadas. As necessidades de negócio representam os objetivos que
-uma área busca alcançar.
+Segundo @vazquezsimoes2016 [p. 125], "Requisitos (ou necessidades) de
+negócio são declarações de mais alto nível de objetivos, metas ou
+necessidades da organização. Eles descrevem as razões pelas quais um
+projeto foi iniciado, as metas que o projeto deve atingir e as métricas
+que serão utilizadas para aferir o seu sucesso. Requisitos de negócio
+descrevem necessidades da organização como um todo e não de grupos ou
+partes interessadas". No contexto deste trabalho,
+essas necessidades de negócio foram formalizadas como as regras de
+negócio apresentadas na Tabela 2.
 
 Table: Tabela 2 --- Requisitos de negócio
 

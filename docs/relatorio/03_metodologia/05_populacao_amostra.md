@@ -36,7 +36,7 @@ forma implícita no critério dos responsáveis pela elaboração manual dos
 horários, não sendo por isso extraíveis directamente dos horários finais
 em formato PDF/imagem.
 
-Nesta fase inicial de desenvolvimento e validação matemática do motor, o
+Nesta fase inicial de desenvolvimento e validação matemática do sistema, o
 sistema foi por isso testado com conjuntos de dados sintéticos
 controlados, de dimensão crescente (Secção 4.5, CT01--CT06), delineados
 segundo a mesma lógica de escalonamento por complexidade utilizada nas
@@ -46,7 +46,7 @@ comparação de algoritmos de escalonamento académico [@abdipoor2023;
 grade curricular oficial do ISAF (2025/2026), um conjunto de dados de
 entrada estruturado e correspondente a instâncias reais da instituição
 --- 45 turmas do 1.º semestre, 104 docentes e respectivas qualificações
---- permitindo validar o motor directamente contra os dados de produção
+--- permitindo validar o sistema directamente contra os dados de produção
 do ISAF (Secção 4.5, CT07), embora sem ainda cobrir a totalidade dos
 86 horários recolhidos nem constituir, por si só, a comparação de
 desempenho descrita na Secção 3.7 (cf. limitações, Secção 5.1).

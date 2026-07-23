@@ -6,18 +6,33 @@
 
 -   CP-SAT --- Constraint Programming Satisfiability
 
+-   CRUD --- Create, Read, Update, Delete
+
 -   CSP --- Constraint Satisfaction Problem
 
 -   DER --- Diagrama Entidade-Relacional
 
+-   HTTP --- Hypertext Transfer Protocol
+
 -   IA --- Inteligência Artificial
+
+-   IEEE --- Institute of Electrical and Electronics Engineers
 
 -   ISAF --- Instituto Superior de Administração e Finanças
 
 -   ITC --- International Timetabling Competition
 
--   MESCTI --- Ministério do Ensino Superior, Ciência, Tecnologia e
-    Inovação
+-   JSON --- JavaScript Object Notation
+
+-   MIP --- Mixed Integer Programming
+
+-   MVP --- Minimum Viable Product
+
+-   NP --- Nondeterministic Polynomial time
+
+-   PDF --- Portable Document Format
+
+-   REST --- Representational State Transfer
 
 -   RUP --- Rational Unified Process
 

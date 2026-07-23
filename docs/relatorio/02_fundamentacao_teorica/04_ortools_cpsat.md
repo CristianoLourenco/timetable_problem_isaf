@@ -60,7 +60,7 @@ esparsa, as variáveis de decisão são criadas apenas para as relações
 válidas e previamente filtradas --- a poda de combinações inviáveis
 antes da execução do solver reduz o espaço de busca e melhora os
 tempos de resolução, um princípio aplicado directamente na construção do
-motor deste trabalho (Secção 4.4.1) e validado empiricamente à escala
+sistema deste trabalho (Secção 4.4.1) e validado empiricamente à escala
 real do ISAF (Secção 4.5, CT07).
 
 ### 2.4.4 Aplicação ao University Timetabling Problem

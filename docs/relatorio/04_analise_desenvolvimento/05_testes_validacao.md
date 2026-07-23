@@ -18,7 +18,7 @@ auto-registo de Professor (RN10); a suite completa executa em
 aproximadamente 6 segundos. Adicionalmente, um script de medição
 dedicado (`scripts/benchmark_isaf_real.py`, fora da suite automática por
 depender da base de dados de produção e demorar vários minutos) valida o
-motor directamente contra os dados reais do ISAF (CT07).
+sistema directamente contra os dados reais do ISAF (CT07).
 
 Table: Tabela 6 --- Cenários de Teste e Critérios de Aceitação
 
@@ -87,7 +87,7 @@ semestre, eleva a escala testada para 45 turmas e 104 docentes ---
 próximo do limite de turmas formalmente definido pelo RNF01 (60+
 turmas), embora ainda aquém do limite de docentes (100+, já
 ultrapassado) considerado em conjunto com a totalidade de turmas do
-requisito. O motor produziu 973 das 1044 alocações de carga horária
+requisito. O sistema produziu 973 das 1044 alocações de carga horária
 semanal esperadas (93,2%) em 95,3 segundos, sem qualquer turma a
 utilizar mais do que uma sala dentro do mesmo turno --- confirmando por
 medição directa a decisão de modelagem de sala fixa por turma e turno
