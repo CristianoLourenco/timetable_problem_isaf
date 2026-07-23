@@ -1,0 +1,129 @@
+@startuml der
+!pragma layout smetana
+!theme plain
+skinparam backgroundColor white
+skinparam roundcorner 4
+skinparam entity {
+  BackgroundColor #EEF2FF
+  BorderColor #6366F1
+  FontColor #1E1B4B
+}
+hide circle
+
+entity "CURSO" as curso {
+  *id : int <<PK>>
+  --
+  codigo : string <<UK>>
+  nome : string
+}
+
+entity "PLANO_CURRICULAR" as plano {
+  *id : int <<PK>>
+  --
+  curso_id : int <<FK>>
+  ano : int
+  semestre : string
+}
+
+entity "PLANO_CURRICULAR_DISCIPLINA" as planoDisc {
+  *plano_curricular_id : int <<PK,FK>>
+  *disciplina_id : int <<PK,FK>>
+  --
+  carga_horaria_semanal : int
+}
+
+entity "DISCIPLINA" as disciplina {
+  *id : int <<PK>>
+  --
+  codigo : string <<UK>>
+  nome : string
+}
+
+entity "TURMA" as turma {
+  *id : int <<PK>>
+  --
+  codigo : string <<UK>>
+  nome : string
+  ano_letivo : int
+  turno : string
+  plano_curricular_id : int <<FK>>
+  numero_alunos : int
+}
+
+entity "SALA" as sala {
+  *id : int <<PK>>
+  --
+  codigo : string <<UK>>
+  nome : string
+  capacidade : int
+}
+
+entity "PROFESSOR" as professor {
+  *id : int <<PK>>
+  --
+  nome : string
+  email : string <<UK>>
+  classificacao : int
+  vinculo_casa : bool
+}
+
+entity "PROFESSOR_DISCIPLINA" as profDisc {
+  *professor_id : int <<PK,FK>>
+  *disciplina_id : int <<PK,FK>>
+}
+
+entity "DISPONIBILIDADE" as disp {
+  *professor_id : int <<PK,FK>>
+  *dia_semana : string <<PK>>
+  *turno : string <<PK>>
+  *periodo : int <<PK>>
+}
+
+entity "UTILIZADOR" as utilizador {
+  *id : int <<PK>>
+  --
+  email : string <<UK>>
+  contacto_telefonico : string
+  perfil : string
+  professor_id : int <<FK>>
+}
+
+entity "JOB" as job {
+  *id : string <<PK>>
+  --
+  status : string
+  criado_em : datetime
+  concluido_em : datetime
+  diagnostico : string
+}
+
+entity "ALOCACAO" as alocacao {
+  *id : int <<PK>>
+  --
+  job_id : string <<FK>>
+  turma_id : int <<FK>>
+  disciplina_id : int <<FK>>
+  professor_id : int <<FK>>
+  sala_id : int <<FK>>
+  dia_semana : string
+  periodo : int
+  penalizacao_aplicada : float
+}
+
+curso ||--o{ plano : "possui"
+plano ||--o{ planoDisc : "detalha"
+disciplina ||--o{ planoDisc : "integra"
+plano ||--o{ turma : "segue"
+
+professor ||--o{ profDisc : "qualifica"
+disciplina ||--o{ profDisc : "referencia"
+professor ||--o{ disp : "regista"
+utilizador |o--o| professor : "professor_id (opcional)"
+
+job ||--o{ alocacao : "gera"
+turma ||--o{ alocacao : "tem"
+disciplina ||--o{ alocacao : "referencia"
+professor ||--o{ alocacao : "referencia"
+sala ||--o{ alocacao : "ocupa"
+
+@enduml

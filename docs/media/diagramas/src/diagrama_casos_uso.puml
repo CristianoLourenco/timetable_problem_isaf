@@ -1,0 +1,68 @@
+@startuml usecase
+!pragma layout smetana
+!theme plain
+skinparam backgroundColor white
+skinparam actor {
+  BorderColor #6366F1
+  BackgroundColor #EEF2FF
+}
+skinparam usecase {
+  BorderColor #6366F1
+  BackgroundColor #EEF2FF
+  FontColor #1E1B4B
+}
+left to right direction
+
+actor "Utilizador" as Utilizador
+actor "Gestor Académico\n/ Secretaria" as Gestor
+actor "Professor" as Professor
+
+Gestor --|> Utilizador
+Professor --|> Utilizador
+
+rectangle "Sistema Inteligente para a Geração de Horários Académicos (ISAF)" {
+  usecase "UC13 - Login" as UC13
+  usecase "UC14 - Recuperar Password" as UC14
+
+  usecase "UC01 - Gerir Professores" as UC01
+  usecase "UC02 - Gerir Turmas" as UC02
+  usecase "UC03 - Gerir Disciplinas" as UC03
+  usecase "UC04 - Gerir Salas" as UC04
+  usecase "UC05 - Registar Disponibilidade" as UC05
+  usecase "UC06 - Importar Dados em\nMassa via Excel" as UC06
+  usecase "UC07 - Validar Dados\nImportados" as UC07
+  usecase "UC08 - Disparar Geração\nde Horário" as UC08
+  usecase "UC09 - Notificar Cenário\nSem Solução Viável" as UC09
+  usecase "UC10 - Consultar Estado de\nProcessamento" as UC10
+  usecase "UC11 - Consultar Horário\npor Turma" as UC11
+  usecase "UC12 - Consultar Horário\npor Professor" as UC12
+  usecase "UC15 - Validar Nível\nde Acesso" as UC15
+}
+
+Utilizador -- UC13
+Utilizador -- UC14
+
+Gestor -- UC01
+Gestor -- UC02
+Gestor -- UC03
+Gestor -- UC04
+Gestor -- UC06
+Gestor -- UC08
+Gestor -- UC10
+Gestor -- UC11
+Gestor -- UC12
+
+Professor -- UC05
+Professor -- UC12
+
+UC06 ..> UC07 : <<include>>
+UC12 ..> UC15 : <<include>>
+UC09 ..> UC08 : <<extend>>
+
+Utilizador -[hidden]up- Gestor
+Gestor -[hidden]up- Professor
+UC13 -[hidden]up- UC03
+UC14 -[hidden]up- UC04
+UC08 -[hidden]left- UC09
+
+@enduml

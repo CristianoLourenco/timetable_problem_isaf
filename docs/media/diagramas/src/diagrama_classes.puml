@@ -1,0 +1,101 @@
+@startuml classes
+!pragma layout smetana
+!theme plain
+skinparam backgroundColor white
+skinparam class {
+  BackgroundColor #EEF2FF
+  BorderColor #6366F1
+  FontColor #1E1B4B
+  ArrowColor #4338CA
+}
+
+class Curso {
+  +id : int
+  +codigo : string
+  +nome : string
+}
+
+class PlanoCurricular {
+  +id : int
+  +ano : int
+  +semestre : string
+}
+
+class PlanoCurricularDisciplina {
+  +carga_horaria_semanal : int
+}
+
+class Disciplina {
+  +id : int
+  +codigo : string
+  +nome : string
+}
+
+class Turma {
+  +id : int
+  +codigo : string
+  +nome : string
+  +ano_letivo : int
+  +turno : TurnoEnum
+  +numero_alunos : int
+}
+
+class Sala {
+  +id : int
+  +codigo : string
+  +nome : string
+  +capacidade : int
+}
+
+class Professor {
+  +id : int
+  +nome : string
+  +email : string
+  +classificacao : int
+  +vinculo_casa : bool
+}
+
+class Disponibilidade {
+  +dia_semana : string
+  +turno : string
+  +periodo : int
+}
+
+class Utilizador {
+  +id : int
+  +email : string
+  +contacto_telefonico : string
+  +perfil : PerfilUtilizador
+}
+
+class Job {
+  +id : string
+  +status : JobStatus
+  +criado_em : datetime
+  +concluido_em : datetime
+  +diagnostico : string
+}
+
+class Alocacao {
+  +id : int
+  +dia_semana : string
+  +periodo : int
+  +penalizacao_aplicada : float
+}
+
+Curso "1" o-- "0..*" PlanoCurricular : possui
+PlanoCurricular "1" *-- "0..*" PlanoCurricularDisciplina : detalha
+Disciplina "1" --- "0..*" PlanoCurricularDisciplina : integra
+PlanoCurricular "1" -- "0..*" Turma : segue
+
+Professor "0..*" -- "0..*" Disciplina : qualificação
+Professor "1" -- "0..*" Disponibilidade : regista
+Utilizador "0..1" -- "1" Professor : professor_id
+
+Job "1" *-- "0..*" Alocacao : gera
+Turma "1" -- "0..*" Alocacao : turma\nalocada
+Disciplina "1" --- "0..*" Alocacao : disciplina\nalocada
+Professor "1" --- "0..*" Alocacao : professor\nalocado
+Sala "1" -- "0..*" Alocacao : sala\nocupada
+
+@enduml

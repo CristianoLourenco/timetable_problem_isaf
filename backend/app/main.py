@@ -20,7 +20,7 @@ from app.api.v1.routers import (
 )
 from app.core.exceptions import AcessoNegadoError, TokenInvalidoError
 
-app = FastAPI(title="ISAF — Sistema Inteligente de Geração de Horários", version="0.1.0")
+app = FastAPI(title="API - Sistema Inteligente para a Geração de Horários", version="0.1.0")
 
 # CORS aberto em desenvolvimento para o cliente Flutter (web/mobile). Restringir origins em produção.
 app.add_middleware(
