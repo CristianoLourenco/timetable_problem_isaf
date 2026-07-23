@@ -15,7 +15,7 @@ Anexo B para a mesma instituição e curso.
 A Figura A.1 reproduz, a título ilustrativo, o horário da turma T1 do 1º
 ano de Contabilidade e Finanças, 1º semestre. O conjunto completo dos 86
 horários encontra-se disponível no repositório do projecto
-(`https://github.com/CristianoLourenco/timetable_problem_isaf`), na
+(<https://github.com/CristianoLourenco/timetable_problem_isaf>), na
 pasta `docs/exemplar_isaf/`, organizado por semestre, curso e ano
 curricular.
 

@@ -1,6 +1,6 @@
 ## 3.3 Abordagem da pesquisa
 
-Segundo [@gil2017] e Tashakkori e Creswell (2007, apud Gil, 2017), as
+Segundo @gil2017 e Tashakkori e Creswell (2007, apud Gil, 2017), as
 pesquisas distinguem-se metodologicamente pela natureza do tratamento e
 análise dos dados:
 

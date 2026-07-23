@@ -73,7 +73,7 @@ comparação de metodologias num conjunto de referência comum.
 O UCTP pertence à classe dos problemas de optimização combinatória (COP
 --- Combinatorial Optimization Problems), caracterizados por um espaço
 de soluções que cresce exponencialmente com a dimensão do problema
-[@bashab2023]. Uma vez que existem R\^E formas de alocação
+[@bashab2023]. Uma vez que existem $R^E$ formas de alocação
 possíveis no UCTP, o tempo computacional necessário aumenta de forma
 exponencial com o crescimento do número de eventos, salas e períodos
 considerados [@abdipoor2023].

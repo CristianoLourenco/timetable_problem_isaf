@@ -22,52 +22,48 @@ sistema directamente contra os dados reais do ISAF (CT07).
 
 Table: Tabela 6 --- Cenários de Teste e Critérios de Aceitação
 
-  ---------------------------------------------------------------------------
-  ID     Cenário         Dimensão                    Critério de Aceitação
-  ------ --------------- --------------------------- -------------------------
-  CT01   Cenário mínimo  3 turmas, 3 disciplinas, 2  Status OPTIMAL/FEASIBLE;
-         viável          professores, 1 sala         6 alocações geradas;
-                                                     RN01--RN03, RN05 e RN06
-                                                     satisfeitas.
-
-  CT02   Cenário de      12 turmas, 6 disciplinas,   Status OPTIMAL/FEASIBLE
-         escala          8 professores, 5 salas      em até 10s; RN01--RN03 e
-                                                     RN05 satisfeitas sem
-                                                     violação.
-
-  CT03   Inviabilidade   1 turma, 1 disciplina, 1    Status INFEASIBLE;
-         estrutural      professor, 1 sala, carga    diagnóstico identifica a
-         intencional     semanal = 1                 causa estrutural (carga
-                                                     incompatível com o bloco
-                                                     mínimo do RN06); zero
-                                                     alocações.
-
-  CT04   Distinção entre Cenário de escala (CT02)    Status INFEASIBLE;
-         esgotamento de  com tempo-limite reduzido   diagnóstico refere o
-         tempo e         para 0,01s                  limite de tempo, sem
-         inviabilidade                               reportar falsamente uma
-         genuína                                     causa estrutural.
-
-  CT05   Fluxo           Criação de entidades via    Job conclui com sucesso;
-         ponta-a-ponta   API, POST /gerar-horario,   GET /horarios/turma/{id}
-         (Golden Path)   polling do Job, consulta    e /horarios/professor/{id}
-                         por turma e por professor   devolvem JSON estruturado
-                                                     por dia/slot.
-
-  CT06   Idempotência da Reimportação do mesmo       Registos já existentes
-         importação      ficheiro institucional      são ignorados; nenhum
-         Excel                                       registo duplicado é
-                                                     criado na segunda
-                                                     importação.
-
-  CT07   Cenário real à  45 turmas, 104 docentes,   Status FEASIBLE em
-         escala do ISAF  25 salas, 1044 tempos       95,3s; 973/1044
-         (dados de       lectivos esperados          tempos lectivos
-         produção,       (2025/2026, 1.º semestre)   alocados (93,2%);
-         2025/2026)                                  zero turmas com
-                                                     mais de uma sala no
-                                                     mesmo turno.
-  ---------------------------------------------------------------------------
++------+------------------------+----------------------------+----------------------------+
+| ID   | Cenário                | Dimensão                   | Critério de Aceitação      |
++======+========================+============================+============================+
+| CT01 | Cenário mínimo viável  | 3 turmas, 3 disciplinas, 2 | Status OPTIMAL/FEASIBLE; 6 |
+|      |                        | professores, 1 sala        | alocações geradas; RN01--  |
+|      |                        |                            | RN03, RN05 e RN06          |
+|      |                        |                            | satisfeitas.               |
++------+------------------------+----------------------------+----------------------------+
+| CT02 | Cenário de escala      | 12 turmas, 6 disciplinas,  | Status OPTIMAL/FEASIBLE em |
+|      |                        | 8 professores, 5 salas     | até 10s; RN01--RN03 e RN05 |
+|      |                        |                            | satisfeitas sem violação.  |
++------+------------------------+----------------------------+----------------------------+
+| CT03 | Inviabilidade          | 1 turma, 1 disciplina, 1   | Status INFEASIBLE;         |
+|      | estrutural intencional | professor, 1 sala, carga   | diagnóstico identifica a   |
+|      |                        | semanal = 1                | causa estrutural (carga    |
+|      |                        |                            | incompatível com o bloco   |
+|      |                        |                            | mínimo do RN06); zero      |
+|      |                        |                            | alocações.                 |
++------+------------------------+----------------------------+----------------------------+
+| CT04 | Distinção entre        | Cenário de escala (CT02)   | Status INFEASIBLE;         |
+|      | esgotamento de tempo e | com tempo-limite reduzido  | diagnóstico refere o       |
+|      | inviabilidade genuína  | para 0,01s                 | limite de tempo, sem       |
+|      |                        |                            | reportar falsamente uma    |
+|      |                        |                            | causa estrutural.          |
++------+------------------------+----------------------------+----------------------------+
+| CT05 | Fluxo ponta-a-ponta    | Criação de entidades via   | Job conclui com sucesso;   |
+|      | (Golden Path)          | API, POST /gerar-horario,  | GET /horarios/turma/{id} e |
+|      |                        | polling do Job, consulta   | /horarios/professor/{id}   |
+|      |                        | por turma e por professor  | devolvem JSON estruturado  |
+|      |                        |                            | por dia/slot.              |
++------+------------------------+----------------------------+----------------------------+
+| CT06 | Idempotência da        | Reimportação do mesmo      | Registos já existentes são |
+|      | importação Excel       | ficheiro institucional     | ignorados; nenhum registo  |
+|      |                        |                            | duplicado é criado na      |
+|      |                        |                            | segunda importação.        |
++------+------------------------+----------------------------+----------------------------+
+| CT07 | Cenário real à escala  | 45 turmas, 104 docentes,   | Status FEASIBLE em 95,3s;  |
+|      | do ISAF (dados de      | 25 salas, 1044 tempos      | 973/1044 tempos lectivos   |
+|      | produção, 2025/2026)   | lectivos esperados         | alocados (93,2%); zero     |
+|      |                        | (2025/2026, 1.º semestre)  | turmas com mais de uma     |
+|      |                        |                            | sala no mesmo turno.       |
++------+------------------------+----------------------------+----------------------------+
 
 O cenário CT01 corresponde ao critério mínimo de aceitação definido na
 Secção 3.5.1 e foi o primeiro a ser validado, na Fase 3, antes de

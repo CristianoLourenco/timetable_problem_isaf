@@ -292,10 +292,23 @@ parênteses em citações narrativas introduzidas por «segundo», «para»,
 «com base em», «de acordo com», «enunciados por». Recomenda-se revisão
 global.
 
-**Estado:** Já corrigido — nenhuma ocorrência de "Segundo (", "Para (",
-"Com base em (", "De acordo com (" encontrada no relatório actual;
-citações usam a sintaxe `@chave` do pandoc-citeproc, que já resolve para
-o formato narrativo correcto.
+**Estado:** Parcialmente corrigido em sessão anterior, com falso negativo
+na validação — a verificação por `"Segundo ("` (parêntese literal) não
+detectava o padrão real, que é `Segundo [@chave]` (colchetes do pandoc,
+que renderizam como citação parentética mesmo em posição narrativa: "Segundo
+(Gil, 2017)"). Detectado durante a revisão do PDF LaTeX completo (não
+visível na validação anterior, feita só por grep de texto). Corrigidas
+as 7 ocorrências reais: `Segundo [@gil2017]`, `Para [@marconilakatos2017]`,
+`Com base em [@gil2017]`, `De acordo com [@marconilakatos2017] e [@gil2017]`,
+`Conforme assinala [@sommerville2011]`, `Tal como destaca [@sommerville2011]`
+— todas convertidas para `@chave` sem colchetes (formato narrativo correcto
+do pandoc-citeproc).
+
+**Ficheiros:** `03_metodologia/01_conceito.md`,
+`03_metodologia/03_abordagem_pesquisa.md`,
+`03_metodologia/04_classificacao_objectivos.md`,
+`03_metodologia/06_tecnicas_recolha_dados.md`,
+`04_analise_desenvolvimento/01_levantamento_requisitos.md`
 
 ---
 

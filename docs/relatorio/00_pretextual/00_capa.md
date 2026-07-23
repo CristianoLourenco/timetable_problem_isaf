@@ -1,105 +1,16 @@
-```{=latex}
-\begin{center}
-```
+<!--
+Capa, folha de rosto e banca examinadora (Artigo 9º, nº3, alíneas a-c do
+Regulamento TCC do ISAF) são geradas directamente pelo template LaTeX
+(`docs/dist/latex/isaf-template.tex`, macros \cabecalhoInstitucional /
+\tituloCentral / \localEData e os três blocos \begin{titlepage}), não a
+partir deste ficheiro — ver `docs/dist/README.md`, secção "Rota
+alternativa: LaTeX".
 
-::: {custom-style="Title"}
-![](media/screenshots/isaf_logo.png){width=4.5cm}
-:::
+A rota docx (via LibreOffice) não gera actualmente capa própria a partir
+deste ficheiro; ficou pendente de decisão futura se voltar a ser
+necessária.
 
-**INSTITUTO SUPERIOR DE ADMINISTRAÇÃO E FINANÇAS**
-
-**CURSO DE INFORMÁTICA DE GESTÃO FINANCEIRA**
-
-**DESENVOLVIMENTO DE UM SISTEMA INTELIGENTE PARA A GERAÇÃO AUTOMÁTICA DE
-HORÁRIOS ACADÉMICOS**
-
-**CRISTIANO FRANCISCO LOURENÇO**
-
-**Luanda, 2026**
-
-```{=latex}
-\end{center}
-\newpage
-\begin{center}
-```
-
-::: {custom-style="Title"}
-![](media/screenshots/isaf_logo.png){width=4.5cm}
-:::
-
-**INSTITUTO SUPERIOR DE ADMINISTRAÇÃO E FINANÇAS**
-
-**CURSO DE INFORMÁTICA DE GESTÃO FINANCEIRA**
-
-**DESENVOLVIMENTO DE UM SISTEMA INTELIGENTE PARA A GERAÇÃO AUTOMÁTICA DE
-HORÁRIOS ACADÉMICOS**
-
-**CRISTIANO FRANCISCO LOURENÇO**
-
-> Projecto apresentado ao Instituto Superior de
->
-> Administração e Finanças -- ISAF, como requisito
->
-> para obtenção do grau de licenciatura em
->
-> Informática de Gestão Financeira.
->
-> **Orientador**: Eng. Euclides J.M. Catumbela
-
-**Luanda, 2026**
-
-```{=latex}
-\end{center}
-\newpage
-\begin{center}
-```
-
-::: {custom-style="Title"}
-![](media/screenshots/isaf_logo.png){width=4.5cm}
-:::
-
-**INSTITUTO SUPERIOR DE ADMINISTRAÇÃO E FINANÇAS**
-
-**CURSO DE INFORMÁTICA DE GESTÃO FINANCEIRA**
-
-**DESENVOLVIMENTO DE UM SISTEMA INTELIGENTE PARA A GERAÇÃO AUTOMÁTICA DE
-HORÁRIOS ACADÉMICOS**
-
-**CRISTIANO FRANCISCO LOURENÇO**
-
-> Projecto de pesquisa submetido ao corpo docente do Instituto Superior de
-> Administração e Finanças -- ISAF, como exigência para obtenção do grau de
-> Licenciatura em Informática de Gestão Financeira.
-
-**BANCA EXAMINADORA**
-
-------------------------------------------------------------------------
-
-Prof. [NOME] -- Presidente da Banca
-
-IGF/ISAF
-
-------------------------------------------------------------------------
-
-Prof. [NOME] -- Primeiro oponente
-
-IGF/ISAF
-
-------------------------------------------------------------------------
-
-Prof. [NOME] -- Segundo oponente
-
-IGF/ISAF
-
-------------------------------------------------------------------------
-
-Secretário: [NOME]
-
-**Luanda, 2026**
-
-```{=latex}
-\end{center}
-\clearpage
-\pagestyle{pretextual}
-\pagenumbering{roman}
-```
+Este ficheiro fica vazio de propósito, mas mantido na numeração
+00_pretextual/ para preservar a ordem alfabética de compilação glob
+(relatorio/*/*.md) descrita em `docs/dist/README.md`.
+-->

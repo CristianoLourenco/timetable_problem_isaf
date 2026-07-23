@@ -3,6 +3,10 @@
 % (margens, espaçamento, numeração romano/arábico, cabeçalho, "ÍNDICE").
 \documentclass[12pt,a4paper]{report}
 
+% etoolbox carregado cedo — \AfterEndPreamble usado mais abaixo para vencer a
+% tradução de \contentsname do polyglossia precisa da macro já definida.
+\usepackage{etoolbox}
+
 % ---- Idioma e fontes ----
 \usepackage{iftex}
 \ifPDFTeX
@@ -29,6 +33,9 @@
 % ---- Espaçamento 1.5 linhas (Art.9º) ----
 \usepackage{setspace}
 \onehalfspacing
+
+% ---- \justifying (usado nas capas — \begin{titlepage}) ----
+\usepackage{ragged2e}
 
 % ---- Parágrafos: indentação em vez de espaço em branco (padrão académico) ----
 \usepackage{parskip}
@@ -63,7 +70,13 @@
 \pagestyle{corpo}
 
 % ---- Sumário: título "ÍNDICE" em vez de "Sumário"/"Índice remissivo" ----
-\renewcommand{\contentsname}{ÍNDICE}
+% \renewcommand sozinho no preâmbulo não chega, nem \AtBeginDocument — o polyglossia
+% regista o seu próprio \AtBeginDocument (via \AfterEndPreamble, internamente) que
+% corre depois do nosso e sobrepõe-no de volta para "Conteúdo"; \AfterEndPreamble
+% (etoolbox, já carregado mais abaixo — mas o macro em si só precisa estar definido
+% no momento da expansão, não da leitura) corre depois de todos os \AtBeginDocument
+% do preâmbulo, incluindo o do polyglossia.
+\AfterEndPreamble{\renewcommand{\contentsname}{ÍNDICE}}
 \setcounter{tocdepth}{3}
 
 % ---- Numeração de secções: desligada — os títulos já trazem o número manualmente ----
@@ -81,7 +94,6 @@
 
 % ---- Tabelas longas, imagens, links ----
 \usepackage{longtable,booktabs,array,calc}
-\usepackage{etoolbox}
 \makeatletter
 \patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
 \makeatother
@@ -101,6 +113,38 @@
 \usepackage[hidelinks]{hyperref}
 \usepackage{xurl}
 \setlength{\emergencystretch}{3em}
+
+% ---- Capa, folha de rosto e banca examinadora (Artigo 9º, nº3, alíneas a-c) ----
+\newcommand{\instituicao}{INSTITUTO SUPERIOR DE ADMINISTRAÇÃO E FINANÇAS}
+\newcommand{\curso}{CURSO DE INFORMÁTICA DE GESTÃO FINANCEIRA}
+\newcommand{\tituloTrabalho}{DESENVOLVIMENTO DE UM SISTEMA INTELIGENTE PARA A GERAÇÃO\\[0.35cm]
+  AUTOMÁTICA DE HORÁRIOS ACADÉMICOS}
+\newcommand{\autorTrabalho}{CRISTIANO FRANCISCO LOURENÇO}
+\newcommand{\orientadorTrabalho}{Eng. Euclides J.M. Catumbela}
+\newcommand{\localTrabalho}{Luanda}
+\newcommand{\anoTrabalho}{2026}
+
+\newcommand{\cabecalhoInstitucional}{%
+  \begin{center}
+    \includegraphics[width=4.5cm]{media/screenshots/isaf_logo.png}\par
+    \vspace{0.55cm}
+    {\bfseries \instituicao\par}
+    \vspace{0.35cm}
+    {\bfseries \curso\par}
+  \end{center}
+}
+
+\newcommand{\tituloCentral}{%
+  \begin{center}
+    \bfseries\tituloTrabalho
+  \end{center}
+}
+
+\newcommand{\localEData}{%
+  \begin{center}
+    \localTrabalho, \anoTrabalho
+  \end{center}
+}
 
 % ---- Citações (csl-refs do pandoc) ----
 $if(csl-refs)$
@@ -136,6 +180,118 @@ $endif$
 % ---------- CAPA + FOLHA DE ROSTO + BANCA (sem numeração) ----------
 \pagestyle{semcapa}
 \pagenumbering{gobble}
+
+% CAPA
+\begin{titlepage}
+  \thispagestyle{empty}
+  \singlespacing
+  \cabecalhoInstitucional
+
+  \vspace{4.9cm}
+  \tituloCentral
+
+  \vfill
+  \begin{center}
+    \bfseries\autorTrabalho
+  \end{center}
+
+  \vfill
+  \localEData
+\end{titlepage}
+
+% CONTRACAPA / FOLHA DE ROSTO
+\begin{titlepage}
+  \thispagestyle{empty}
+  \singlespacing
+  \cabecalhoInstitucional
+
+  \vspace{4.25cm}
+  \tituloCentral
+
+  \vspace{2.35cm}
+  \begin{center}
+    \bfseries\autorTrabalho
+  \end{center}
+
+  \vspace{1.05cm}
+  \hspace*{0.44\textwidth}%
+  \begin{minipage}{0.44\textwidth}
+    \justifying
+    \small
+    Projecto apresentado ao Instituto Superior de Administração e Finanças -- ISAF,
+    como requisito para obtenção do grau de licenciatura em Informática de Gestão
+    Financeira.
+
+    \vspace{0.35cm}
+    \textbf{Orientador:} \mbox{\orientadorTrabalho}
+  \end{minipage}
+
+  \vfill
+  \localEData
+\end{titlepage}
+
+% BANCA EXAMINADORA (Artigo 9º, nº3, alínea c — espaço para assinaturas do Júri)
+\begin{titlepage}
+  \thispagestyle{empty}
+  \singlespacing
+  \cabecalhoInstitucional
+
+  \vspace{0.55cm}
+  \tituloCentral
+
+  \vspace{0.8cm}
+  \begin{center}
+    \bfseries\autorTrabalho
+  \end{center}
+
+  \vspace{0.65cm}
+  \hspace*{0.44\textwidth}%
+  \begin{minipage}{0.44\textwidth}
+    \justifying
+    \small
+    Projecto de pesquisa submetido ao corpo docente do Instituto Superior de
+    Administração e Finanças -- ISAF, como exigência para obtenção do grau de
+    licenciatura em Informática de Gestão Financeira.
+
+    \vspace{0.2cm}
+    \textbf{Orientador:} \mbox{\orientadorTrabalho}
+  \end{minipage}
+
+  \vspace{0.3cm}
+  \begin{center}
+    {\large BANCA EXAMINADORA}\par
+    \vspace{0.65cm}
+
+    \rule{\textwidth}{1.2pt}\par
+    \vspace{0.25cm}
+    Prof. [NOME] -- Presidente da Banca\par
+    IGF/ISAF\par
+    \vspace{0.45cm}
+
+    \rule{\textwidth}{1.2pt}\par
+    \vspace{0.25cm}
+    Prof. [NOME] -- Primeiro oponente\par
+    IGF/ISAF\par
+    \vspace{0.45cm}
+
+    \rule{\textwidth}{1.2pt}\par
+    \vspace{0.25cm}
+    Prof. [NOME] -- Segundo oponente\par
+    IGF/ISAF\par
+    \vspace{0.45cm}
+
+    \rule{\textwidth}{1.2pt}\par
+    \vspace{0.25cm}
+    Secretário: [NOME]
+  \end{center}
+
+  \vfill
+  \localEData
+\end{titlepage}
+
+\clearpage
+\pagestyle{pretextual}
+\pagenumbering{roman}
 
 $body$
 

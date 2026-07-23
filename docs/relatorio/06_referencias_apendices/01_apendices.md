@@ -6,7 +6,7 @@ O código-fonte completo do módulo de optimização (`app/solver/`), que
 implementa em Google OR-Tools CP-SAT a arquitectura de três passos descrita
 na Secção 4.4.1 (extracção → geração esparsa de variáveis → resolução e
 mapeamento do resultado), encontra-se disponível no repositório do projecto
-(`https://github.com/CristianoLourenco/timetable_problem_isaf`),
+(<https://github.com/CristianoLourenco/timetable_problem_isaf>),
 não sendo reproduzido neste apêndice por extensão. Cada ficheiro do módulo
 mantém rastreabilidade directa aos Requisitos Funcionais e Regras de Negócio
 correspondentes através de um comentário no cabeçalho (`# Implementa: ...`),

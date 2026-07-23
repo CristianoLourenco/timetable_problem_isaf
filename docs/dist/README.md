@@ -121,9 +121,16 @@ pandoc \
   relatorio/06_referencias_apendices/*.md \
   --citeproc --bibliography=referencias.bib --csl=apa.csl \
   --template=dist/latex/isaf-template.tex \
+  --top-level-division=chapter \
   --pdf-engine=lualatex \
   -o dist/TFC_Cristiano_Lourenco_LaTeX.pdf
 ```
+
+**`--top-level-division=chapter` é obrigatório**: sem esta flag, o pandoc mapeia
+`# Título` para `\section` em vez de `\chapter` (a classe `report` do
+`isaf-template.tex` não é suficiente para o pandoc inferir isto sozinho) —
+resultado: nenhuma quebra de página entre secções pré-textuais/capítulos, todas
+fluindo na mesma página.
 
 Um único passo, sem pós-processamento — `dist/latex/isaf-template.tex` controla
 directamente em LaTeX tudo o que na rota docx exige editar o OOXML depois:

@@ -1,6 +1,6 @@
 ## 3.6 Técnicas e instrumentos de recolha de dados
 
-De acordo com [@marconilakatos2017] e [@gil2017], as técnicas de
+De acordo com @marconilakatos2017 e @gil2017, as técnicas de
 recolha de dados constituem os procedimentos sistemáticos utilizados
 para a obtenção de informação relevante ao problema de investigação.
 Para o presente trabalho foram adoptadas as seguintes técnicas:

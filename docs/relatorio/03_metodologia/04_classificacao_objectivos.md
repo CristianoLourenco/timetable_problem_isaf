@@ -1,6 +1,6 @@
 ## 3.4 Classificação quanto aos objectivos
 
-Com base em [@gil2017], as pesquisas classificam-se em:
+Com base em @gil2017, as pesquisas classificam-se em:
 
 1.  **Pesquisas exploratórias**: procuram proporcionar maior
     familiaridade com o problema, tornando-o mais explícito ou ajudando

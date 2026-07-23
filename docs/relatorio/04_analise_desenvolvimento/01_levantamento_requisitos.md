@@ -183,7 +183,7 @@ situações. No contexto deste estudo, os requisitos funcionais incluem
 tanto funções directamente visíveis ao utilizador --- como gerar
 horários, validar disponibilidades e devolver relatórios --- como
 comportamentos internos indispensáveis para assegurar a produção de uma
-solução válida. Conforme assinala [@sommerville2011], estes requisitos
+solução válida. Conforme assinala @sommerville2011, estes requisitos
 podem também explicitar comportamentos que o sistema não deve permitir,
 nomeadamente situações que comprometam a coerência ou a viabilidade da
 solução produzida.
@@ -283,7 +283,7 @@ concentram nas funções e comportamentos esperados, os requisitos não
 funcionais incidem sobre aspectos como desempenho, eficiência,
 interoperabilidade, escalabilidade, segurança e fiabilidade. Em muitos
 casos, estes requisitos aplicam-se ao sistema como um todo e não a uma
-funcionalidade isolada. Tal como destaca [@sommerville2011], a distinção
+funcionalidade isolada. Tal como destaca @sommerville2011, a distinção
 entre requisitos funcionais e não funcionais nem sempre é absoluta, pois
 um requisito não funcional pode originar novos requisitos funcionais ou
 impor restrições à sua implementação. No presente trabalho, os
