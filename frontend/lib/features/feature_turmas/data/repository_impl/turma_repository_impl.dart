@@ -2,6 +2,7 @@ import 'package:ghorario/core/core.dart';
 import 'package:ghorario/features/feature_turmas/data/datasource/remote/i_turma_remote.dart';
 import 'package:ghorario/features/feature_turmas/data/models/turma_dto.dart';
 import 'package:ghorario/features/feature_turmas/domain/entities/turma.dart';
+import 'package:ghorario/features/feature_turmas/domain/entities/turma_detalhada.dart';
 import 'package:ghorario/features/feature_turmas/domain/repository/i_turma_repository.dart';
 
 /// Concrete implementation of [ITurmaRepository].
@@ -58,5 +59,23 @@ class TurmaRepositoryImpl implements ITurmaRepository {
   @override
   Future<DataState<void>> delete(String id) async {
     return remoteDatasource.delete(id);
+  }
+
+  @override
+  Future<DataState<List<TurmaDetalhada>>> getDetalhadas({int? anoLetivo, String? semestre}) async {
+    final response = await remoteDatasource.getDetalhadas(anoLetivo: anoLetivo, semestre: semestre);
+    if (response.success && response.data != null) {
+      final entities = response.data!.map((dto) => dto.toEntity()).toList();
+      return DataState<List<TurmaDetalhada>>(
+        data: entities,
+        success: true,
+        statusCode: response.statusCode,
+      );
+    }
+    return DataState<List<TurmaDetalhada>>(
+      success: false,
+      error: response.error,
+      statusCode: response.statusCode,
+    );
   }
 }

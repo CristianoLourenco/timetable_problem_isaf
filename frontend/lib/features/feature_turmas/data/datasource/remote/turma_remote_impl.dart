@@ -1,5 +1,6 @@
 import 'package:ghorario/core/core.dart';
 import 'package:ghorario/features/feature_turmas/data/datasource/remote/i_turma_remote.dart';
+import 'package:ghorario/features/feature_turmas/data/models/turma_detalhada_dto.dart';
 import 'package:ghorario/features/feature_turmas/data/models/turma_dto.dart';
 
 /// Concrete implementation of [ITurmaRemote] using [IHttpMethods].
@@ -80,5 +81,35 @@ class TurmaRemoteImpl implements ITurmaRemote {
       error: response.error,
       statusCode: response.statusCode,
     );
+  }
+
+  @override
+  Future<DataState<List<TurmaDetalhadaDto>>> getDetalhadas({int? anoLetivo, String? semestre}) async {
+    final queryParameters = <String, dynamic>{
+      if (anoLetivo != null) 'ano_letivo': anoLetivo,
+      if (semestre != null) 'semestre': semestre,
+    };
+    final response = await _http.get<dynamic>(
+      '/turmas-detalhadas',
+      queryParameters: queryParameters.isEmpty ? null : queryParameters,
+    );
+    if (!response.success || response.data == null) {
+      return DataState<List<TurmaDetalhadaDto>>(
+        success: false,
+        error: response.error,
+        statusCode: response.statusCode,
+      );
+    }
+    try {
+      final list = (response.data as List)
+          .map((dynamic e) => TurmaDetalhadaDto.fromJson(e as Map<String, dynamic>))
+          .toList();
+      return DataState<List<TurmaDetalhadaDto>>(data: list, success: true, statusCode: response.statusCode);
+    } catch (e) {
+      return DataState<List<TurmaDetalhadaDto>>(
+        success: false,
+        error: ServerFailure(message: 'Erro ao processar dados detalhados das turmas: $e'),
+      );
+    }
   }
 }

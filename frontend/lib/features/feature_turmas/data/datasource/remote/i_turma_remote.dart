@@ -1,4 +1,5 @@
 import 'package:ghorario/core/core.dart';
+import 'package:ghorario/features/feature_turmas/data/models/turma_detalhada_dto.dart';
 import 'package:ghorario/features/feature_turmas/data/models/turma_dto.dart';
 
 /// Abstract remote datasource interface for Turmas.
@@ -8,4 +9,8 @@ abstract class ITurmaRemote {
   Future<DataState<void>> create(TurmaDto dto);
   Future<DataState<void>> update(TurmaDto dto);
   Future<DataState<void>> delete(String id);
+
+  /// `GET /turmas-detalhadas` — `anoLetivo`/`semestre` opcionais; quando
+  /// ambos omitidos, comportamento igual a [getAll] mas com os campos extra.
+  Future<DataState<List<TurmaDetalhadaDto>>> getDetalhadas({int? anoLetivo, String? semestre});
 }

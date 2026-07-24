@@ -28,6 +28,7 @@ import 'package:ghorario/features/feature_turmas/data/repository_impl/curso_repo
 import 'package:ghorario/features/feature_turmas/data/repository_impl/plano_curricular_repository_impl.dart';
 import 'package:ghorario/features/feature_turmas/data/repository_impl/turma_repository_impl.dart';
 import 'package:ghorario/features/feature_turmas/domain/repository/i_curso_repository.dart';
+import 'package:ghorario/features/feature_turmas/domain/usecase/get_turmas_detalhadas_usecase.dart';
 import 'package:ghorario/features/feature_turmas/domain/repository/i_plano_curricular_repository.dart';
 import 'package:ghorario/features/feature_turmas/domain/repository/i_turma_repository.dart';
 import 'package:ghorario/features/feature_turmas/domain/usecase/create_curso_usecase.dart';
@@ -184,6 +185,7 @@ class AppMultiProviders {
     final ITurmaRepository turmaRepository = TurmaRepositoryImpl(remoteDatasource: turmaRemote);
     final getAllTurmasUseCase = GetAllTurmasUseCase(turmaRepository);
     final createTurmaUseCase = CreateTurmaUseCase(turmaRepository);
+    final getTurmasDetalhadasUseCase = GetTurmasDetalhadasUseCase(turmaRepository);
     final ICursoRemote cursoRemote = CursoRemoteImpl(httpMethods);
     final ICursoRepository cursoRepository = CursoRepositoryImpl(remoteDatasource: cursoRemote);
     final getAllCursosUseCase = GetAllCursosUseCase(cursoRepository);
@@ -325,6 +327,7 @@ class AppMultiProviders {
       // (bug real, 2026-07-24): a grade nunca carregava, mostrando sempre
       // "Nenhum tempo letivo definido" mesmo com um horário real já gerado.
       Provider<GetAllTemposUseCase>.value(value: getAllTemposUseCase),
+      Provider<GetTurmasDetalhadasUseCase>.value(value: getTurmasDetalhadasUseCase),
       Provider<GetAllCursosUseCase>.value(value: getAllCursosUseCase),
       Provider<GetAllPlanosCurricularesUseCase>.value(value: getAllPlanosCurricularesUseCase),
       Provider<ImportarExcelUseCase>.value(value: importarExcelUseCase),

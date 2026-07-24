@@ -17,7 +17,8 @@ import 'package:ghorario/features/feature_horario/presentation/provider/horario_
 import 'package:ghorario/features/feature_horario/presentation/states/horario_state.dart';
 import 'package:ghorario/features/feature_horario/ui/components/alocacao_manual_dialog.dart';
 import 'package:ghorario/features/feature_salas/presentation/provider/salas_provider.dart';
-import 'package:ghorario/features/feature_turmas/domain/entities/turma.dart';
+import 'package:ghorario/features/feature_turmas/domain/entities/turma_detalhada.dart';
+import 'package:ghorario/features/feature_turmas/domain/usecase/get_turmas_detalhadas_usecase.dart';
 import 'package:ghorario/features/feature_turmas/presentation/provider/turmas_provider.dart';
 import 'package:ghorario/features/feature_docentes/presentation/provider/docentes_provider.dart';
 import 'package:ghorario/core/enums/dia_semana.dart';
@@ -88,6 +89,13 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
   late int _anoLetivo = DateTime.now().year;
   String _semestre = '1';
 
+  // RF02 — turmas do dropdown, filtradas por _anoLetivo/_semestre (GET
+  // /turmas-detalhadas), ao contrário de TurmasProvider.turmas (todas as
+  // turmas, todos os anos/semestres — usado por outros ecrãs). Sem este
+  // filtro, o dropdown mostrava turmas de âmbitos sem nenhum Job gerado,
+  // parecendo "sem horário" um bug do solver (bug real, 2026-07-24).
+  List<TurmaDetalhada> _turmasDoAmbito = const <TurmaDetalhada>[];
+
   // Grelha oficial de tempos (GET /slots) — independente das alocações já
   // feitas. Sem isto, a grade era derivada dos próprios `HorarioSlot`
   // preenchidos: uma turma/professor sem NENHUMA alocação ficava sem grade
@@ -117,10 +125,30 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
       await _carregarTodosTempos(getAllTemposUseCase);
 
       if (!mounted) return;
-      if (turmasProvider.turmas.isNotEmpty) {
-        setState(() => _selectedTurmaId = turmasProvider.turmas.first.id);
-      }
       await _onAmbitoChanged();
+    });
+  }
+
+  /// Recarrega o dropdown de turmas para o âmbito atual (_anoLetivo/_semestre)
+  /// e resincroniza _selectedTurmaId: se a turma selecionada deixou de
+  /// pertencer ao novo âmbito, repõe para a primeira da nova lista (ou null
+  /// se vier vazia) — nunca deixar um id selecionado "fantasma" que já não
+  /// existe no dropdown.
+  Future<void> _carregarTurmasDoAmbito() async {
+    final getTurmasDetalhadasUseCase = context.read<GetTurmasDetalhadasUseCase>();
+    final result = await getTurmasDetalhadasUseCase(
+      GetTurmasDetalhadasParams(anoLetivo: _anoLetivo, semestre: _semestre),
+    );
+    if (!mounted) return;
+
+    final turmas = result.success ? (result.data ?? const <TurmaDetalhada>[]) : const <TurmaDetalhada>[];
+    final aindaValida = _selectedTurmaId != null && turmas.any((t) => t.id == _selectedTurmaId);
+
+    setState(() {
+      _turmasDoAmbito = turmas;
+      if (!aindaValida) {
+        _selectedTurmaId = turmas.isNotEmpty ? turmas.first.id : null;
+      }
     });
   }
 
@@ -172,6 +200,11 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
   /// já tratam "sem Job" devolvendo vazio, sem precisar do resultado de
   /// checkScope para isso.
   Future<void> _onAmbitoChanged() async {
+    // Resincroniza o dropdown de turmas ANTES de decidir o que buscar —
+    // _selectedTurmaId pode mudar aqui (turma antiga fora do novo âmbito).
+    await _carregarTurmasDoAmbito();
+    if (!mounted) return;
+
     await _controller.checkScope(_anoLetivo, _semestre);
     if (!mounted) return;
 
@@ -354,7 +387,6 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    final turmas = context.watch<TurmasProvider>().turmas;
     final docentes = context.watch<DocentesProvider>().docentes;
 
     return Scaffold(
@@ -545,9 +577,9 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
                               const SizedBox(width: 16),
                               // Entity selector
                               _filtroTipo == _FiltroTipo.turma
-                                  ? _EntityDropdown<Turma>(
-                                      items: turmas,
-                                      value: turmas.where((t) => t.id == _selectedTurmaId).firstOrNull,
+                                  ? _EntityDropdown<TurmaDetalhada>(
+                                      items: _turmasDoAmbito,
+                                      value: _turmasDoAmbito.where((t) => t.id == _selectedTurmaId).firstOrNull,
                                       itemLabel: (t) => t.code ?? t.name,
                                       hint: 'Selecione Turma',
                                       onChanged: (t) {
@@ -604,7 +636,7 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
                                           ? _TurmaView(
                                               slots: state.slots,
                                               todosTempos: _todosTempos,
-                                              turno: turmas.where((t) => t.id == _selectedTurmaId).firstOrNull?.period,
+                                              turno: _turmasDoAmbito.where((t) => t.id == _selectedTurmaId).firstOrNull?.turma.period,
                                               onMoveAlocacao: _moverAlocacao,
                                               onEmptyCellTap: _onEmptyCellTap,
                                             )
