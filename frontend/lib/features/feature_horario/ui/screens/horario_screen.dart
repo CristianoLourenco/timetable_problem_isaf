@@ -135,11 +135,22 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
   /// terminar — checkScope então limpava (ou não repunha) `_slots` por cima
   /// do resultado que tinha acabado de chegar, fazendo a grelha nunca
   /// aparecer mesmo com um horário real já gerado.
+  ///
+  /// Bug real #2 (2026-07-24): `hasScopeJob` é `null` quando checkScope FALHOU
+  /// (erro de rede/servidor, ex: 500 transitório) — distinto de `false`
+  /// ("confirmado que não há Job para este âmbito"). `!= true` tratava os
+  /// dois casos da mesma forma e limpava a grelha mesmo quando a falha foi
+  /// só em verificar o âmbito, escondendo um horário real já carregado ou
+  /// prestes a ser carregado. Só limpar quando `hasScopeJob == false`
+  /// (confirmado ausente); em caso de falha (`null`), manter o que já
+  /// estava visível e tentar buscar na mesma — fetchTimetableByTurma/Professor
+  /// já tratam "sem Job" devolvendo vazio, sem precisar do resultado de
+  /// checkScope para isso.
   Future<void> _onAmbitoChanged() async {
     await _controller.checkScope(_anoLetivo, _semestre);
     if (!mounted) return;
 
-    if (_controller.value.hasScopeJob != true) {
+    if (_controller.value.hasScopeJob == false) {
       _controller.clearSlots();
       return;
     }
