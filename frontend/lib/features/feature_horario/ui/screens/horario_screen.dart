@@ -114,10 +114,7 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
       if (disciplinasProvider.disciplinas.isEmpty) await disciplinasProvider.loadDisciplinas();
       if (salasProvider.salas.isEmpty) await salasProvider.loadSalas();
 
-      final temposResult = await getAllTemposUseCase(null);
-      if (mounted && temposResult.success && temposResult.data != null) {
-        setState(() => _todosTempos = temposResult.data!);
-      }
+      await _carregarTodosTempos(getAllTemposUseCase);
 
       if (!mounted) return;
       if (turmasProvider.turmas.isNotEmpty) {
@@ -125,6 +122,34 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
       }
       await _onAmbitoChanged();
     });
+  }
+
+  /// GET /slots alimenta a estrutura fixa da grade (linhas/colunas), independente
+  /// de haver ou não alocações — sem isto a grade mostra sempre "Nenhum tempo
+  /// letivo definido" mesmo com um horário real já gerado (ver _HorarioGrid).
+  /// Bug real (2026-07-24): uma falha de rede/servidor transitória nesta única
+  /// chamada, sem retry nem aviso nenhum, deixava _todosTempos vazio até a tela
+  /// ser reaberta — indistinguível, para o Gestor, de "não há horário gerado".
+  /// Tenta 3 vezes (backoff curto) antes de admitir falha e avisar visivelmente.
+  Future<void> _carregarTodosTempos(GetAllTemposUseCase getAllTemposUseCase) async {
+    for (var tentativa = 1; tentativa <= 3; tentativa++) {
+      final temposResult = await getAllTemposUseCase(null);
+      if (!mounted) return;
+      if (temposResult.success && temposResult.data != null) {
+        setState(() => _todosTempos = temposResult.data!);
+        return;
+      }
+      if (tentativa < 3) {
+        await Future<void>.delayed(Duration(milliseconds: 300 * tentativa));
+      }
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Não foi possível carregar a grelha de tempos letivos. Tente recarregar a página.'),
+        backgroundColor: AppColors.error,
+      ),
+    );
   }
 
   /// RF09/RF10 — troca de filtro ano/semestre nunca deve reutilizar o
@@ -276,7 +301,27 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
   /// Botão "Limpar Horário" (RF09) — ação destrutiva (apaga o Job do âmbito
   /// selecionado e todas as suas Alocacao/Pendencia), por isso pede
   /// confirmação antes de chamar o provider.
+  ///
+  /// Bug real (2026-07-24): o botão só ficava ativo com hasScopeJob == true —
+  /// uma falha transitória em checkScope (hasScopeJob == null) desativava o
+  /// botão sem nenhum aviso, parecendo simplesmente avariado. Agora o botão
+  /// fica ativo também quando a verificação falhou (null), e tenta
+  /// re-verificar o âmbito aqui antes de desistir.
   Future<void> _confirmarLimparHorario() async {
+    if (_controller.value.hasScopeJob != true) {
+      await _controller.checkScope(_anoLetivo, _semestre);
+      if (!mounted) return;
+      if (_controller.value.hasScopeJob != true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Não foi possível confirmar o horário deste âmbito. Tente novamente.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+    }
+
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -393,7 +438,7 @@ class _HorarioScreenState extends State<HorarioScreen> with SingleTickerProvider
                         ),
                         const SizedBox(width: 12),
                         OutlinedButton.icon(
-                          onPressed: (state.isGenerating || state.hasScopeJob != true)
+                          onPressed: (state.isGenerating || state.hasScopeJob == false)
                               ? null
                               : _confirmarLimparHorario,
                           style: OutlinedButton.styleFrom(
