@@ -1071,7 +1071,7 @@ class _GridCell extends StatelessWidget {
       ),
     );
 
-    return Draggable<HorarioSlot>(
+    final draggableCell = Draggable<HorarioSlot>(
       data: match,
       feedback: Material(
         color: Colors.transparent,
@@ -1089,6 +1089,33 @@ class _GridCell extends StatelessWidget {
         child: cellContent,
       ),
       child: cellContent,
+    );
+
+    // Sem isto, arrastar uma alocação por cima de uma célula já ocupada não
+    // dava nenhum feedback (nem cor, nem "Ocupado") — só a célula vazia tinha
+    // DragTarget, então o Gestor largava aqui sem perceber porque nada
+    // acontecia. Nunca aceita o drop (RN01-RN03 já bloqueariam no backend de
+    // qualquer forma); só sinaliza visualmente que este slot não está livre.
+    return DragTarget<HorarioSlot>(
+      onWillAcceptWithDetails: (details) => details.data.alocacaoId != match.alocacaoId,
+      builder: (context, candidateData, rejectedData) {
+        if (candidateData.isNotEmpty) {
+          return Container(
+            margin: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: const Color(0xFF64748B).withOpacity(0.35),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFF64748B), width: 1.2),
+            ),
+            alignment: Alignment.center,
+            child: const Text(
+              'Ocupado',
+              style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+            ),
+          );
+        }
+        return draggableCell;
+      },
     );
   }
 }
