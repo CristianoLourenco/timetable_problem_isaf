@@ -127,7 +127,9 @@ def test_gerar_pdf_turma_sem_horario_gerado_levanta_erro():
             gerar_pdf_turma(session, turma_id)
 
 
-def test_gerar_zip_por_job_contem_um_pdf_por_turma():
+def test_gerar_zip_por_job_contem_um_pdf_por_turma_organizado_por_semestre_curso_ano():
+    """Hierarquia de pastas replica os exemplares reais do ISAF
+    (docs/exemplar_isaf/<semestre>/<curso>/<ano>/<turma>.pdf)."""
     engine = _criar_engine_teste()
     job_id, turma_ids = _semear_e_gerar(engine, n_turmas=3)
 
@@ -136,7 +138,11 @@ def test_gerar_zip_por_job_contem_um_pdf_por_turma():
 
     with zipfile.ZipFile(BytesIO(zip_bytes)) as zf:
         nomes = sorted(zf.namelist())
-        assert nomes == ["T1.pdf", "T2.pdf", "T3.pdf"]
+        assert nomes == [
+            "1º SEMESTRE/INFORMÁTICA/1º ANO/T1.pdf",
+            "1º SEMESTRE/INFORMÁTICA/1º ANO/T2.pdf",
+            "1º SEMESTRE/INFORMÁTICA/1º ANO/T3.pdf",
+        ]
         for nome in nomes:
             conteudo = zf.read(nome)
             assert conteudo.startswith(b"%PDF")

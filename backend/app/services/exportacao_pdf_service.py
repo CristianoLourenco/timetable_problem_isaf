@@ -62,11 +62,18 @@ def gerar_pdf_turma(session: Session, turma_id: int) -> bytes:
     return _renderizar_pdf(turma, plano, curso, resposta)
 
 
+_NOME_SEMESTRE = {"1": "1º SEMESTRE", "2": "2º SEMESTRE", "Anual": "ANUAL"}
+
+
+def _nome_pasta_ano(ano: int) -> str:
+    return f"{ano}º ANO" if ano != 1 else "1º ANO"
+
+
 def gerar_zip_por_job(session: Session, job_id: str) -> bytes:
-    """Um .zip com um PDF por turma (nome do ficheiro = código da turma), replicando
-    a estrutura de um ficheiro por turma dos exemplares reais do ISAF — todas as
-    turmas cobertas por este Job (RF09 — um Job cobre sempre um único
-    (ano_letivo, semestre))."""
+    """Um .zip com um PDF por turma (nome do ficheiro = código da turma), com a
+    mesma hierarquia de pastas dos exemplares reais do ISAF (docs/exemplar_isaf/):
+    SEMESTRE/CURSO/ANO/<turma>.pdf — todas as turmas cobertas por este Job (RF09 —
+    um Job cobre sempre um único (ano_letivo, semestre))."""
     job_repo = JobRepository(session)
     job = job_repo.obter(job_id)
     if job is None:
@@ -86,8 +93,13 @@ def gerar_zip_por_job(session: Session, job_id: str) -> bytes:
             resposta = horario_service.montar_resposta(job_id, alocacoes_turma)
             turma, plano, curso = _obter_cabecalho(session, turma_id)
             pdf_bytes = _renderizar_pdf(turma, plano, curso, resposta)
+
             nome_ficheiro = f"{turma.codigo}.pdf" if turma else f"turma_{turma_id}.pdf"
-            zf.writestr(nome_ficheiro, pdf_bytes)
+            pasta_semestre = _NOME_SEMESTRE.get(plano.semestre, plano.semestre) if plano else "SEM_SEMESTRE"
+            pasta_curso = curso.nome.upper() if curso else "SEM_CURSO"
+            pasta_ano = _nome_pasta_ano(plano.ano) if plano else "SEM_ANO"
+            caminho = f"{pasta_semestre}/{pasta_curso}/{pasta_ano}/{nome_ficheiro}"
+            zf.writestr(caminho, pdf_bytes)
     return buffer.getvalue()
 
 
