@@ -319,6 +319,12 @@ class AppMultiProviders {
           setDisponibilidadeUseCase: setDisponibilidadeUseCase,
         ),
       ),
+      // HorarioScreen também precisa deste use case directamente (grelha de
+      // tempos, GET /slots) — sem este provider, context.read<GetAllTemposUseCase>()
+      // lançava "Could not find the correct Provider<GetAllTemposUseCase>"
+      // (bug real, 2026-07-24): a grade nunca carregava, mostrando sempre
+      // "Nenhum tempo letivo definido" mesmo com um horário real já gerado.
+      Provider<GetAllTemposUseCase>.value(value: getAllTemposUseCase),
       Provider<GetAllCursosUseCase>.value(value: getAllCursosUseCase),
       Provider<GetAllPlanosCurricularesUseCase>.value(value: getAllPlanosCurricularesUseCase),
       Provider<ImportarExcelUseCase>.value(value: importarExcelUseCase),
