@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
@@ -142,6 +143,13 @@ class AppMultiProviders {
       ),
     );
     dio.interceptors.add(AuthInterceptor(storage, dio));
+    // Log de todos os pedidos/respostas HTTP (URL, headers, body) — só em modo
+    // debug, nunca em release (evita expor tokens/dados em logs de produção).
+    if (kDebugMode) {
+      dio.interceptors.add(
+        LogInterceptor(requestBody: true, responseBody: true, requestHeader: true, responseHeader: false),
+      );
+    }
     final IHttpMethods httpMethods = DioClient(dio);
 
     // 2. Auth Dependencies
