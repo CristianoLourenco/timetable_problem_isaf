@@ -54,6 +54,42 @@ def test_listar_turmas_detalhadas_resolve_curso_e_ano_curricular():
     assert detalhe.ano_curricular != detalhe.ano_letivo
 
 
+def test_listar_turmas_detalhadas_filtra_por_ano_letivo_e_semestre():
+    """RF09 — o ecrã de Horário não deve receber turmas de um âmbito diferente
+    do selecionado (bug real: turmas de ambos os semestres apareciam juntas no
+    mesmo seletor, fazendo parecer que turmas "ficavam sem horário" quando na
+    verdade pertenciam a um âmbito para o qual nenhum Job tinha sido gerado)."""
+    engine = _criar_engine_teste()
+    with Session(engine) as session:
+        curso = Curso(codigo="IGF", nome="Informática de Gestão Financeira")
+        session.add(curso)
+        session.commit()
+        session.refresh(curso)
+
+        plano_sem1 = PlanoCurricular(curso_id=curso.id, ano=1, semestre="1")
+        plano_sem2 = PlanoCurricular(curso_id=curso.id, ano=1, semestre="2")
+        plano_anual = PlanoCurricular(curso_id=curso.id, ano=2, semestre="Anual")
+        session.add_all([plano_sem1, plano_sem2, plano_anual])
+        session.commit()
+        session.refresh(plano_sem1)
+        session.refresh(plano_sem2)
+        session.refresh(plano_anual)
+
+        session.add_all([
+            Turma(codigo="T-SEM1", nome="T Sem1", ano_letivo=2026, turno="tarde", numero_alunos=20, plano_curricular_id=plano_sem1.id),
+            Turma(codigo="T-SEM2", nome="T Sem2", ano_letivo=2026, turno="tarde", numero_alunos=20, plano_curricular_id=plano_sem2.id),
+            Turma(codigo="T-ANUAL", nome="T Anual", ano_letivo=2026, turno="tarde", numero_alunos=20, plano_curricular_id=plano_anual.id),
+            Turma(codigo="T-OUTRO-ANO", nome="T Outro Ano", ano_letivo=2025, turno="tarde", numero_alunos=20, plano_curricular_id=plano_sem1.id),
+        ])
+        session.commit()
+
+    with Session(engine) as session:
+        resultado = listar_turmas_detalhadas(session, ano_letivo=2026, semestre="1")
+
+    codigos = sorted(t.codigo for t in resultado)
+    assert codigos == ["T-ANUAL", "T-SEM1"]
+
+
 def test_listar_turmas_detalhadas_com_plano_ou_curso_em_falta_nao_rebenta():
     """Defesa contra dados inconsistentes (ex: plano_curricular_id órfão) — nunca
     deixar a listagem inteira falhar por uma turma com referência quebrada."""

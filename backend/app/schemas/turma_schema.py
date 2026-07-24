@@ -45,3 +45,4 @@ class TurmaDetalhadaSchema(TurmaBase):
     curso_codigo: str
     curso_nome: str
     ano_curricular: int
+    semestre: str

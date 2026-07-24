@@ -25,7 +25,14 @@ router_detalhado = APIRouter(tags=["Turmas"], dependencies=[Depends(require_gest
 
 
 @router_detalhado.get("/turmas-detalhadas", response_model=list[TurmaDetalhadaSchema])
-def turmas_detalhadas(session: Session = Depends(get_session)):
-    """RF02 — Turma já com curso_codigo/curso_nome/ano_curricular resolvidos, para
-    o frontend não montar essa junção por conta própria (ver turma_service.py)."""
-    return listar_turmas_detalhadas(session)
+def turmas_detalhadas(
+    ano_letivo: int | None = None,
+    semestre: str | None = None,
+    session: Session = Depends(get_session),
+):
+    """RF02 — Turma já com curso_codigo/curso_nome/ano_curricular/semestre
+    resolvidos, para o frontend não montar essa junção por conta própria (ver
+    turma_service.py). (ano_letivo, semestre) opcionais: quando ambos fornecidos
+    (ecrã de Horário), filtra ao âmbito exato — omitidos, mantém a listagem
+    completa (ecrã de gestão de Turmas, importação Excel)."""
+    return listar_turmas_detalhadas(session, ano_letivo, semestre)
