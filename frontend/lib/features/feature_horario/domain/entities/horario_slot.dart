@@ -5,6 +5,7 @@ class HorarioSlot {
     required this.docenteName,
     required this.turmaName,
     required this.disciplinaName,
+    required this.disciplinaNomeCurto,
     required this.salaName,
     required this.dayOfWeek,
     required this.timeSlot,
@@ -20,6 +21,7 @@ class HorarioSlot {
   final String docenteName;
   final String turmaName;
   final String disciplinaName;
+  final String disciplinaNomeCurto;
   final String salaName;
   final int dayOfWeek; // 1 to 5 for Mon-Fri
   final String timeSlot; // e.g., "08:00-09:30"

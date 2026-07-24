@@ -231,6 +231,7 @@ class HorarioService:
                     turma_nome=turmas[aloc.turma_id].nome,
                     disciplina_id=aloc.disciplina_id,
                     disciplina_nome=disciplinas[aloc.disciplina_id].nome,
+                    disciplina_nome_curto=disciplinas[aloc.disciplina_id].nome_curto,
                     professor_id=aloc.professor_id,
                     professor_nome=professores[aloc.professor_id].nome,
                     sala_id=aloc.sala_id,

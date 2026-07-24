@@ -1049,7 +1049,7 @@ class _GridCell extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            match.disciplinaName,
+            match.disciplinaNomeCurto.isNotEmpty ? match.disciplinaNomeCurto : match.disciplinaName,
             style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -1129,9 +1129,13 @@ class _Legenda extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Grade mostra a sigla curta (mais espaço para nomes disciplina + docente
+    // + turma na mesma célula) — legenda liga a sigla ao nome completo.
     final Map<int, String> disciplinaNames = {};
     for (final slot in slots) {
-      disciplinaNames[slot.disciplinaId] = slot.disciplinaName;
+      final sigla = slot.disciplinaNomeCurto.isNotEmpty ? slot.disciplinaNomeCurto : slot.disciplinaName;
+      disciplinaNames[slot.disciplinaId] =
+          sigla == slot.disciplinaName ? slot.disciplinaName : '$sigla — ${slot.disciplinaName}';
     }
 
     return Container(

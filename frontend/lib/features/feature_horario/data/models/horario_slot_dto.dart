@@ -10,6 +10,7 @@ class HorarioSlotDto {
     required this.docenteName,
     required this.turmaName,
     required this.disciplinaName,
+    required this.disciplinaNomeCurto,
     required this.salaName,
     required this.dayOfWeek,
     required this.timeSlot,
@@ -25,6 +26,7 @@ class HorarioSlotDto {
   final String docenteName;
   final String turmaName;
   final String disciplinaName;
+  final String disciplinaNomeCurto;
   final String salaName;
   final int dayOfWeek;
   final String timeSlot;
@@ -45,6 +47,7 @@ class HorarioSlotDto {
       docenteName: json['professor_nome'] as String? ?? '',
       turmaName: json['turma_nome'] as String? ?? '',
       disciplinaName: json['disciplina_nome'] as String? ?? '',
+      disciplinaNomeCurto: json['disciplina_nome_curto'] as String? ?? '',
       salaName: json['sala_nome'] as String? ?? '',
       dayOfWeek: DiaSemana.fromApi(diaSemana).ordem,
       timeSlot: '$horaInicio - $horaFim',
@@ -63,6 +66,7 @@ class HorarioSlotDto {
       docenteName: docenteName,
       turmaName: turmaName,
       disciplinaName: disciplinaName,
+      disciplinaNomeCurto: disciplinaNomeCurto,
       salaName: salaName,
       dayOfWeek: dayOfWeek,
       timeSlot: timeSlot,

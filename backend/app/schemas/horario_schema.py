@@ -17,6 +17,7 @@ class HorarioItemSchema(SQLModel):
     turma_nome: str
     disciplina_id: int
     disciplina_nome: str
+    disciplina_nome_curto: str
     professor_id: int
     professor_nome: str
     sala_id: int
