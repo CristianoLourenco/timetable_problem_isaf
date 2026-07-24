@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
@@ -145,9 +145,18 @@ class AppMultiProviders {
     dio.interceptors.add(AuthInterceptor(storage, dio));
     // Log de todos os pedidos/respostas HTTP (URL, headers, body) — só em modo
     // debug, nunca em release (evita expor tokens/dados em logs de produção).
+    // `debugPrint` (não `print`, usado por omissão pelo LogInterceptor) é o que
+    // o Flutter tooling encaminha para o terminal do `flutter run` — em Flutter
+    // web, `print()` só chega à consola do browser (F12), nunca ao terminal.
     if (kDebugMode) {
       dio.interceptors.add(
-        LogInterceptor(requestBody: true, responseBody: true, requestHeader: true, responseHeader: false),
+        LogInterceptor(
+          requestBody: true,
+          responseBody: true,
+          requestHeader: true,
+          responseHeader: false,
+          logPrint: (Object object) => debugPrint(object.toString()),
+        ),
       );
     }
     final IHttpMethods httpMethods = DioClient(dio);
