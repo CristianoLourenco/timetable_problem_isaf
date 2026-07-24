@@ -9,11 +9,21 @@ from app.core.exceptions import EntidadeNaoEncontradaError, IntegridadeVioladaEr
 from app.models.alocacao import Alocacao
 from app.models.professor import Professor
 from app.repositories.alocacao_repository import AlocacaoRepository
+from app.repositories.disciplina_repository import DisciplinaRepository
 from app.repositories.pendencia_repository import PendenciaRepository
 from app.repositories.professor_disciplina_repository import ProfessorDisciplinaRepository
 from app.repositories.professor_repository import ProfessorRepository
 from app.repositories.sala_repository import SalaRepository
 from app.repositories.turma_repository import TurmaRepository
+
+_NOME_DIA = {
+    "segunda": "segunda-feira",
+    "terca": "terça-feira",
+    "quarta": "quarta-feira",
+    "quinta": "quinta-feira",
+    "sexta": "sexta-feira",
+}
+_NOME_TURNO = {"manha": "manhã", "tarde": "tarde", "noite": "noite"}
 
 
 class AlocacaoManualService:
@@ -33,6 +43,7 @@ class AlocacaoManualService:
         self.sala_repo = SalaRepository(session)
         self.professor_repo = ProfessorRepository(session)
         self.professor_disciplina_repo = ProfessorDisciplinaRepository(session)
+        self.disciplina_repo = DisciplinaRepository(session)
 
     def criar(
         self,
@@ -103,9 +114,12 @@ class AlocacaoManualService:
 
     def _validar_qualificacao(self, professor_id: int, disciplina_id: int) -> None:
         if not self.professor_disciplina_repo.existe(professor_id, disciplina_id):
+            professor = self.professor_repo.get(professor_id)
+            disciplina = self.disciplina_repo.get(disciplina_id)
+            nome_professor = professor.nome if professor else f"#{professor_id}"
+            nome_disciplina = disciplina.nome if disciplina else f"#{disciplina_id}"
             raise IntegridadeVioladaError(
-                f"Professor {professor_id} não está qualificado (ProfessorDisciplina) para a "
-                f"disciplina {disciplina_id}."
+                f"O professor {nome_professor} não está qualificado para lecionar {nome_disciplina}."
             )
 
     def _validar_sem_conflito(
@@ -127,20 +141,29 @@ class AlocacaoManualService:
                 Alocacao.periodo == periodo,
             )
         ).all()
+        quando = f"{_NOME_DIA.get(dia_semana, dia_semana)}, {_NOME_TURNO.get(turno, turno)}, {periodo}º tempo"
         for aloc in existentes:
             if aloc.id == ignorar_id:
                 continue
             if aloc.professor_id == professor_id:
+                professor = self.professor_repo.get(professor_id)
+                nome = professor.nome if professor else f"#{professor_id}"
                 raise IntegridadeVioladaError(
-                    f"RN01: professor {professor_id} já tem alocação em {dia_semana}/{turno}/{periodo}."
+                    f"RN01: o professor {nome} já tem uma aula marcada em {quando}."
                 )
             if aloc.turma_id == turma_id:
+                turma = self.turma_repo.get(turma_id)
+                disciplina_existente = self.disciplina_repo.get(aloc.disciplina_id)
+                nome_turma = turma.nome if turma else f"#{turma_id}"
+                nome_disciplina = disciplina_existente.nome if disciplina_existente else f"#{aloc.disciplina_id}"
                 raise IntegridadeVioladaError(
-                    f"RN02: turma {turma_id} já tem disciplina alocada em {dia_semana}/{turno}/{periodo}."
+                    f"RN02: a turma {nome_turma} já tem {nome_disciplina} marcada em {quando}."
                 )
             if aloc.sala_id == sala_id:
+                sala = self.sala_repo.get(sala_id)
+                nome_sala = sala.nome if sala else f"#{sala_id}"
                 raise IntegridadeVioladaError(
-                    f"RN03: sala {sala_id} já está ocupada em {dia_semana}/{turno}/{periodo}."
+                    f"RN03: a sala {nome_sala} já está ocupada em {quando}."
                 )
 
     def listar_professores_qualificados(self, disciplina_id: int) -> list[Professor]:

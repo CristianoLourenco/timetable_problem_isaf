@@ -154,6 +154,8 @@ def test_criar_alocacao_manual_professor_nao_qualificado_e_rejeitado():
             assert False, "devia ter lançado IntegridadeVioladaError"
         except IntegridadeVioladaError as exc:
             assert "qualificado" in str(exc).lower()
+            assert professor.nome in str(exc)
+            assert disciplina.nome in str(exc)
 
 
 def test_criar_alocacao_manual_professor_ja_ocupado_e_rejeitado():
@@ -199,7 +201,11 @@ def test_criar_alocacao_manual_professor_ja_ocupado_e_rejeitado():
             )
             assert False, "devia ter lançado IntegridadeVioladaError"
         except IntegridadeVioladaError as exc:
-            assert "RN01" in str(exc) or "professor" in str(exc).lower()
+            # Mensagem deve usar o NOME do professor, nunca só o id numérico
+            # (bug real reportado pelo Gestor: mensagens ilegíveis tipo
+            # "professor 42 já tem alocação", sem contexto nenhum).
+            assert professor.nome in str(exc)
+            assert f"professor {professor.id} " not in str(exc)
 
 
 def test_criar_alocacao_manual_reduz_pendencia_existente():
@@ -433,4 +439,6 @@ def test_mover_alocacao_para_slot_ja_ocupado_e_rejeitado():
             service.mover(outra[0].id, dia_semana="segunda", periodo=1)
             assert False, "devia ter lançado IntegridadeVioladaError"
         except IntegridadeVioladaError as exc:
-            assert "RN01" in str(exc) or "professor" in str(exc).lower()
+            # Mesma exigência de nome legível no fluxo de mover (drag-and-drop).
+            assert professor.nome in str(exc)
+            assert f"professor {professor.id} " not in str(exc)
